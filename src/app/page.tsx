@@ -20,7 +20,7 @@ export default async function Home({ searchParams }: Props) {
     let designsResponse: DesignsResponse;
     try {
         const response = await fetch(
-            `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/designs?albumId=${albumId}&pageSize=${pageSize}&nPage=${nPage}`,
+            `http://localhost:3000/api/designs?albumId=${albumId}&pageSize=${pageSize}&nPage=${nPage}`,
             { cache: 'no-store' }
         );
         if (!response.ok) {
