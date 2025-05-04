@@ -3,8 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { DesignsResponse, Design } from "@/types/design";
 
+
 // Force SSR to avoid static generation issues
 export const dynamic = 'force-dynamic';
+const dynamoDBClient = new DynamoDBClient({
+    region: process.env.AWS_REGION,
+});
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
@@ -23,7 +27,7 @@ export async function GET(req: NextRequest) {
             { status: 500 }
         );
     }
-
+/*
     const dynamoDBClient = new DynamoDBClient({
         region: process.env.AWS_REGION,
         credentials: {
@@ -32,7 +36,7 @@ export async function GET(req: NextRequest) {
             sessionToken: process.env.AWS_SESSION_TOKEN || undefined,
         },
     });
-
+*/
     try {
         const { Items } = await dynamoDBClient.send(
             new ScanCommand({
