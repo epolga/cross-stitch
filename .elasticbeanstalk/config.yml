@@ -1,13 +1,13 @@
 branch-defaults:
   main:
-    environment: nextjs-eb-db-template-env
+    environment: cross-stitch-env
     group_suffix: null
 environment-defaults:
   template-env:
     branch: null
     repository: null
 global:
-  application_name: nextjs-eb-db-template-app
+  application_name: cross-stitch
   branch: null
   default_ec2_keyname: null
   default_platform: Node.js 20
