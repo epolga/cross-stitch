@@ -50,42 +50,50 @@ export default async function Home({ searchParams }: Props) {
                 <meta property="og:image" content={designs[0]?.ImageUrl || "https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg"} />
             </Head>
             <h1 className="text-3xl font-bold mb-6">Cross Stitch Designs ({entryCount} designs)</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="flex flex-wrap gap-6 items-stretch">
                 {designs.map((design) => (
-                    <div key={`${design.AlbumID}-${design.DesignID}`} className="border rounded-lg p-4 shadow hover:shadow-lg">
+                    <div key={`${design.AlbumID}-${design.DesignID}`} className="border-2 rounded-lg p-4 shadow hover:shadow-lg w-fit flex flex-col items-center min-h-[240px] justify-between">
                         <Link href={`/designs/${design.DesignID}`}>
-                            <div className="block">
+                            <div className="block flex flex-col items-center">
                                 {design.ImageUrl ? (
-                                    <Image
-                                        src={design.ImageUrl}
-                                        alt={design.Caption}
-                                        width={200}
-                                        height={200}
-                                        className="w-full h-48 object-cover rounded"
-                                    />
+                                    <div className="w-[100px] h-[100px] flex items-center justify-center">
+                                        <Image
+                                            src={design.ImageUrl}
+                                            alt={design.Caption}
+                                            width={100}
+                                            height={100}
+                                            className="max-w-[100px] max-h-[100px] object-cover rounded"
+                                        />
+                                    </div>
                                 ) : (
-                                    <div className="w-full h-48 bg-gray-200 rounded" />
+                                    <div className="w-[100px] h-[100px] bg-gray-200 rounded flex items-center justify-center">
+                                        <span className="text-gray-500 text-sm">No Image</span>
+                                    </div>
                                 )}
-                                <h3 className="text-lg font-semibold mt-2">{design.Caption}</h3>
+                                <div className="w-[150px] mt-2">
+                                    <h3 className="text-lg font-semibold text-center">{design.Caption}</h3>
+                                </div>
                             </div>
                         </Link>
-                        {design.PdfUrl ? (
-                            <a
-                                href={design.PdfUrl}
-                                className="mt-2 inline-block text-blue-600 hover:underline"
-                                download
-                            >
-                                Download PDF
-                            </a>
-                        ) : (
-                            <p className="mt-2 text-gray-500">PDF not available</p>
-                        )}
+                        <div className="w-[150px] mt-2">
+                            {design.PdfUrl ? (
+                                <a
+                                    href={design.PdfUrl}
+                                    className="inline-block text-blue-600 hover:underline text-center w-full"
+                                    download
+                                >
+                                    Download PDF
+                                </a>
+                            ) : (
+                                <p className="text-gray-500 text-center">PDF not available</p>
+                            )}
+                        </div>
                     </div>
                 ))}
             </div>
             <div className="mt-6 flex justify-center items-center space-x-4">
                 <p>Page {page} of {totalPages}</p>
-                <p> {responsePageSize}</p>
+                <p>{responsePageSize}</p>
                 {page > 1 && (
                     <Link href={`/?albumId=${albumId}&pageSize=${pageSize}&nPage=${page - 1}`}>
                         <div className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Previous</div>
