@@ -39,63 +39,74 @@ export default async function Home({ searchParams }: Props) {
     const { designs, entryCount, page, totalPages } = designsResponse;
 
     return (
-        <div className="container mx-auto p-4">
-            <Head>
-                <title>Cross Stitch Designs</title>
-                <meta name="description" content="Explore 6,000 cross-stitch designs with downloadable PDFs" />
-                <meta name="keywords" content="cross stitch, designs, patterns, PDFs" />
-                <meta property="og:title" content="Cross Stitch Designs" />
-                <meta property="og:description" content="Explore 6,000 cross-stitch designs with downloadable PDFs" />
+      <div className="container mx-auto p-4">
+      <Head>
+        <title>Cross Stitch Designs</title>
+        <meta name="description" content="Explore 6,000 cross-stitch designs with downloadable PDFs" />
+        <meta name="keywords" content="cross stitch, designs, patterns, PDFs" />
+        <meta property="og:title" content="Cross Stitch Designs" />
+        <meta property="og:description" content="Explore 6,000 cross-stitch designs with downloadable PDFs" />
                 <meta property="og:image" content={designs[0]?.ImageUrl || "https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg"} />
-            </Head>
-            <h1 className="text-3xl font-bold mb-6">Cross Stitch Designs ({entryCount} designs)</h1>
-            <div className="mb-6">
-                <PaginationControl page={page} totalPages={totalPages} pageSize={pageSize} />
+      </Head>
+     <h1 className="text-3xl font-bold mb-6">Cross Stitch Designs ({entryCount} designs)</h1>
+      <div className="mb-6">
+        <PaginationControl
+          page={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+        />
+      </div>
+      <div className="overflow-hidden">
+        {designs.map((design) => (
+          <div
+            key={`${design.AlbumID}-${design.DesignID}`}
+            className="float-left m-[3px] p-[5px] border border-gray-500 rounded-lg shadow hover:shadow-lg w-[15%] min-w-[120px] h-[240px]"
+          >
+            <Link href={`/designs/${design.DesignID}`}>
+              <div className="text-center">
+                {design.ImageUrl ? (
+                  <div className="w-[100px] h-[100px] mx-auto flex items-center justify-center">
+                    <Image
+                      src={design.ImageUrl}
+                      alt={design.Caption}
+                      width={100}
+                      height={100}
+                      className="max-w-[100px] max-h-[100px] object-cover rounded"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-[100px] h-[100px] mx-auto bg-gray-200 rounded flex items-center justify-center">
+                    <span className="text-gray-500 text-sm">No Image</span>
+                  </div>
+                )}
+                <div className="w-full mt-2">
+                  <h3 className="text-lg font-semibold truncate">{design.Caption}</h3>
+                </div>
+              </div>
+            </Link>
+            <div className="w-full mt-2 text-center">
+              {design.PdfUrl ? (
+                <a
+                  href={design.PdfUrl}
+                  className="inline-block text-blue-600 hover:underline w-full"
+                  download
+                >
+                  Download PDF
+                </a>
+              ) : (
+                <p className="text-gray-500">PDF not available</p>
+              )}
             </div>
-            <div className="flex flex-wrap gap-6 items-stretch">
-                {designs.map((design) => (
-                    <div key={`${design.AlbumID}-${design.DesignID}`} className="float-left m-[3px] p-[5px] border border-gray-500 rounded-lg shadow hover:shadow-lg w-[15%] min-w-[120px] h-[240px]">
-                        <Link href={`/designs/${design.DesignID}`}>
-                            <div className="block flex flex-col items-center">
-                                {design.ImageUrl ? (
-                                    <div className="w-[100px] h-[100px] flex items-center justify-center">
-                                        <Image
-                                            src={design.ImageUrl}
-                                            alt={design.Caption}
-                                            width={100}
-                                            height={100}
-                                            className="max-w-[100px] max-h-[100px] object-cover rounded"
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="w-[100px] h-[100px] bg-gray-200 rounded flex items-center justify-center">
-                                        <span className="text-gray-500 text-sm">No Image</span>
-                                    </div>
-                                )}
-                                <div className="w-[150px] mt-2">
-                                    <h3 className="text-lg font-semibold text-center">{design.Caption}</h3>
-                                </div>
-                            </div>
-                        </Link>
-                        <div className="w-[150px] mt-2">
-                            {design.PdfUrl ? (
-                                <a
-                                    href={design.PdfUrl}
-                                    className="inline-block text-blue-600 hover:underline text-center w-full"
-                                    download
-                                >
-                                    Download PDF
-                                </a>
-                            ) : (
-                                <p className="text-gray-500 text-center">PDF not available</p>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
-            <div className="mt-6">
-                <PaginationControl page={page} totalPages={totalPages} pageSize={pageSize} />
-            </div>
-        </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-6">
+        <PaginationControl
+          page={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+        />
+      </div>
+    </div>
     );
 }
