@@ -37,19 +37,19 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
     );
   }
 
-  const { designs, entryCount, page, totalPages } = designsResponse;
-
+  const { designs, entryCount, page, totalPages, albumCaption } = designsResponse;
+  console.log(`designsResponse = ${JSON.stringify(designsResponse)}`);
   return (
     <div className="container mx-auto p-4">
       <Head>
-        <title>Designs in Album {albumId}</title>
+        <title> Designs in Album {albumCaption}</title>
         <meta name="description" content={`Explore cross-stitch designs in album ${albumId}`} />
         <meta name="keywords" content="cross stitch, designs, patterns, PDFs, album" />
         <meta property="og:title" content={`Designs in Album {albumId}`} />
         <meta property="og:description" content={`Explore cross-stitch designs in album ${albumId}`} />
         <meta property="og:image" content={designs[0]?.ImageUrl || "https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg"} />
       </Head>
-      <h1 className="text-3xl font-bold mb-6">Designs in Album {albumId} ({entryCount} designs)</h1>
+      <h1 className="text-3xl font-bold mb-6">Designs in Album {albumCaption} ({entryCount} designs)</h1>
       <div className="mb-6">
         <PaginationControl
           page={page}

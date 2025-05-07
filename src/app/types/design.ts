@@ -1,4 +1,5 @@
 // src/types/design.ts
+
 export interface Design {
     DesignID: number;
     AlbumID: number;
@@ -20,4 +21,5 @@ export interface DesignsResponse {
     page: number;
     pageSize: number;
     totalPages: number;
+    albumCaption?: string;
 }

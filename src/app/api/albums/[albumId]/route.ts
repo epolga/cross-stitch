@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DynamoDBClient, QueryCommand, Select } from "@aws-sdk/client-dynamodb";
 import { DesignsResponse, Design } from "@/app/types/design";
+import { getAlbumCaption } from "@/app/utils/utils";
 
 // Force SSR to avoid static generation issues
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ albu
   }
 
   try {
+    const albumCaption = await (getAlbumCaption(parseInt(albumId)));
     // Pad albumId to 4 digits with leading zeros
     const paddedAlbumId = albumId.padStart(4, "0");
     const partitionKey = `ALB#${paddedAlbumId}`;
@@ -53,9 +55,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ albu
         page: nPage,
         pageSize,
         totalPages: 1,
+        albumCaption: undefined
       });
     }
-
+    
     // Query designs for the current page
     const queryParams = {
       TableName: process.env.DYNAMODB_TABLE_NAME,
@@ -104,13 +107,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ albu
     });
 
     const totalPages = Math.ceil(totalItems / pageSize) || 1;
-
+    console.log(`Received albumCaption ${albumCaption}`)
     const responseData: DesignsResponse = {
       designs: enrichedDesigns,
       entryCount: totalItems,
       page: nPage,
       pageSize,
       totalPages,
+      albumCaption: albumCaption
     };
 
     return NextResponse.json(responseData);
