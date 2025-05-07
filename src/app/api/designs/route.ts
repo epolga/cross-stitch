@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
-import { DesignsResponse, Design } from "@/types/design";
+import { DesignsResponse, Design } from "@/app/types/design";
 
 // Force SSR to avoid static generation issues
 export const dynamic = 'force-dynamic';

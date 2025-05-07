@@ -2,7 +2,7 @@
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
-import type { DesignsResponse } from "@/types/design";
+import type { DesignsResponse } from "@/app/types/design";
 
 export const dynamic = 'force-dynamic';
 
