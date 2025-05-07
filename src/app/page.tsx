@@ -54,7 +54,7 @@ export default async function Home({ searchParams }: Props) {
             </div>
             <div className="flex flex-wrap gap-6 items-stretch">
                 {designs.map((design) => (
-                    <div key={`${design.AlbumID}-${design.DesignID}`} className="border-2 rounded-lg p-4 shadow hover:shadow-lg w-fit flex flex-col items-center min-h-[240px] justify-between">
+                    <div key={`${design.AlbumID}-${design.DesignID}`} className="float-left m-[3px] p-[5px] border border-gray-500 rounded-lg shadow hover:shadow-lg w-[15%] min-w-[120px] h-[240px]">
                         <Link href={`/designs/${design.DesignID}`}>
                             <div className="block flex flex-col items-center">
                                 {design.ImageUrl ? (
