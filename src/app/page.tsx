@@ -1,7 +1,7 @@
-// src/app/page.tsx
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
+import PaginationControl from "./components/paginationControl";
 import type { DesignsResponse } from "@/app/types/design";
 
 export const dynamic = 'force-dynamic';
@@ -13,14 +13,13 @@ interface Props {
 export default async function Home({ searchParams }: Props) {
     // Await searchParams to resolve the Promise
     const resolvedSearchParams = await searchParams;
-    const albumId = resolvedSearchParams.albumId as string || "0";
     const pageSize = parseInt(resolvedSearchParams.pageSize as string || "10");
     const nPage = parseInt(resolvedSearchParams.nPage as string || "1");
 
     let designsResponse: DesignsResponse;
     try {
         const response = await fetch(
-            `http://localhost:3000/api/designs?albumId=${albumId}&pageSize=${pageSize}&nPage=${nPage}`,
+            `http://localhost:3000/api/designs?pageSize=${pageSize}&nPage=${nPage}`,
             { cache: 'no-store' }
         );
         if (!response.ok) {
@@ -37,7 +36,7 @@ export default async function Home({ searchParams }: Props) {
         );
     }
 
-    const { designs, entryCount, page, pageSize: responsePageSize, totalPages } = designsResponse;
+    const { designs, entryCount, page, totalPages } = designsResponse;
 
     return (
         <div className="container mx-auto p-4">
@@ -50,6 +49,9 @@ export default async function Home({ searchParams }: Props) {
                 <meta property="og:image" content={designs[0]?.ImageUrl || "https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg"} />
             </Head>
             <h1 className="text-3xl font-bold mb-6">Cross Stitch Designs ({entryCount} designs)</h1>
+            <div className="mb-6">
+                <PaginationControl page={page} totalPages={totalPages} pageSize={pageSize} />
+            </div>
             <div className="flex flex-wrap gap-6 items-stretch">
                 {designs.map((design) => (
                     <div key={`${design.AlbumID}-${design.DesignID}`} className="border-2 rounded-lg p-4 shadow hover:shadow-lg w-fit flex flex-col items-center min-h-[240px] justify-between">
@@ -91,19 +93,8 @@ export default async function Home({ searchParams }: Props) {
                     </div>
                 ))}
             </div>
-            <div className="mt-6 flex justify-center items-center space-x-4">
-                <p>Page {page} of {totalPages}</p>
-                <p>{responsePageSize}</p>
-                {page > 1 && (
-                    <Link href={`/?albumId=${albumId}&pageSize=${pageSize}&nPage=${page - 1}`}>
-                        <div className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Previous</div>
-                    </Link>
-                )}
-                {page < totalPages && (
-                    <Link href={`/?albumId=${albumId}&pageSize=${pageSize}&nPage=${page + 1}`}>
-                        <div className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Next</div>
-                    </Link>
-                )}
+            <div className="mt-6">
+                <PaginationControl page={page} totalPages={totalPages} pageSize={pageSize} />
             </div>
         </div>
     );
