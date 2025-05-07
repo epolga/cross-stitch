@@ -25,6 +25,9 @@
 # webstorm
 /.idea/
 
+# vs code
+/.vs/
+
 # production
 /build
 
