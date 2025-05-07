@@ -13,7 +13,7 @@ interface Props {
 export default async function Home({ searchParams }: Props) {
     // Await searchParams to resolve the Promise
     const resolvedSearchParams = await searchParams;
-    const albumId = resolvedSearchParams.albumId as string || "15";
+    const albumId = resolvedSearchParams.albumId as string || "0";
     const pageSize = parseInt(resolvedSearchParams.pageSize as string || "10");
     const nPage = parseInt(resolvedSearchParams.nPage as string || "1");
 

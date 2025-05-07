@@ -9,8 +9,8 @@
         "lint": "next lint"
     },
     "dependencies": {
-        "@aws-sdk/client-dynamodb": "^3.645.0",
-        "@aws-sdk/lib-dynamodb": "^3.645.0",
+        "@aws-sdk/client-dynamodb": "^3.803.0",
+        "@aws-sdk/lib-dynamodb": "^3.803.0",
         "@fontsource/geist-mono": "^5.2.6",
         "@fontsource/geist-sans": "^5.2.5",
         "next": "15.3.1",
