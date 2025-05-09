@@ -39,6 +39,23 @@ export default function PaginationControl({ page, totalPages, pageSize, baseUrl 
         ))}
       </select>
       <p>Page {page} of {totalPages}</p>
+      {page !== 1 && (
+        <button
+          onClick={() => updateUrl(undefined, 1)}
+          className={`${styles.button} ${page === 1 ? styles.disabled : ''}`}
+          aria-label="First page"
+          disabled={page === 1}
+        >
+          <Image
+            src="/arrow-start-left-icon.svg"
+            alt=""
+            width={16}
+            height={16}
+            className={styles.icon}
+            aria-hidden="true"
+          />
+        </button>
+      )}
       {page > 1 && (
         <button
           onClick={() => updateUrl(undefined, page - 1)}
@@ -53,7 +70,7 @@ export default function PaginationControl({ page, totalPages, pageSize, baseUrl 
             height={32}
             className={styles.icon}
             aria-hidden="true"
-          /> 
+          />
         </button>
       )}
       {page < totalPages && (
@@ -70,7 +87,24 @@ export default function PaginationControl({ page, totalPages, pageSize, baseUrl 
             height={32}
             className={styles.icon}
             aria-hidden="true"
-          /> 
+          />
+        </button>
+      )}
+      {page !== totalPages && (
+        <button
+          onClick={() => updateUrl(undefined, totalPages)}
+          className={`${styles.button} ${page === totalPages ? styles.disabled : ''}`}
+          aria-label="Last page"
+          disabled={page === totalPages}
+        >
+          <Image
+            src="/arrow-end-right-icon.svg"
+            alt=""
+            width={16}
+            height={16}
+            className={styles.icon}
+            aria-hidden="true"
+          />
         </button>
       )}
     </div>
