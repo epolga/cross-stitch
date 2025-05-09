@@ -4,13 +4,11 @@ import { NextResponse } from 'next/server';
 import type { Design } from '@/app/types/design';
 
 // Initialize DynamoDB client
+export const dynamic = 'force-dynamic';
 const client = new DynamoDBClient({
-  region: 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-  },
+  region: process.env.AWS_REGION,
 });
+
 const docClient = DynamoDBDocumentClient.from(client);
 
 export async function GET(request: Request, { params }: { params: Promise<{ designId: string }> }) {
