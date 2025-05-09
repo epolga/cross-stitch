@@ -1,12 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from 'next/image';
+import styles from './paginationControl.module.css';
 
 interface PaginationControlProps {
   page: number;
   totalPages: number;
   pageSize: number;
-  baseUrl?: string; // New prop for dynamic URL base
+  baseUrl?: string;
 }
 
 export default function PaginationControl({ page, totalPages, pageSize, baseUrl = "/" }: PaginationControlProps) {
@@ -22,13 +24,13 @@ export default function PaginationControl({ page, totalPages, pageSize, baseUrl 
   };
 
   return (
-    <div className="flex items-center space-x-4">
-      <label htmlFor="pageSize" className="text-lg">Items per page:</label>
+    <div className={styles.pagination}>
+      <label htmlFor="pageSize" className={styles.label}>Items per page:</label>
       <select
         id="pageSize"
         value={pageSize}
-        onChange={(e) => updateUrl(e.target.value, 1)} // Reset to page 1 on pageSize change
-        className="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        onChange={(e) => updateUrl(e.target.value, 1)}
+        className={styles.select}
       >
         {pageSizeOptions.map((size) => (
           <option key={size} value={size}>
@@ -40,17 +42,35 @@ export default function PaginationControl({ page, totalPages, pageSize, baseUrl 
       {page > 1 && (
         <button
           onClick={() => updateUrl(undefined, page - 1)}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className={`${styles.button} ${page === 1 ? styles.disabled : ''}`}
+          aria-label="Previous page"
+          disabled={page === 1}
         >
-          Previous
+          <Image
+            src="/angle-circle-left-icon.svg"
+            alt=""
+            width={32}
+            height={32}
+            className={styles.icon}
+            aria-hidden="true"
+          /> 
         </button>
       )}
       {page < totalPages && (
         <button
           onClick={() => updateUrl(undefined, page + 1)}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className={`${styles.button} ${page === totalPages ? styles.disabled : ''}`}
+          aria-label="Next page"
+          disabled={page === totalPages}
         >
-          Next
+          <Image
+            src="/angle-circle-right-icon.svg"
+            alt=""
+            width={32}
+            height={32}
+            className={styles.icon}
+            aria-hidden="true"
+          /> 
         </button>
       )}
     </div>
