@@ -53,8 +53,8 @@ export default async function Home({ searchParams }: Props) {
         page={currentPage}
         totalPages={totalPages}
         pageSize={pageSize}
-        caption="All Designs"
+        caption=""
       />
-    </div>
+    </div> 
   );
 }
