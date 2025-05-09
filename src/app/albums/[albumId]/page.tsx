@@ -1,8 +1,6 @@
-import Head from "next/head";
-import Link from "next/link";
-import Image from "next/image";
-import PaginationControl from "../../components/paginationControl";
-import type { DesignsResponse } from "@/app/types/design";
+import Head from 'next/head';
+import { DesignList } from '@/app/components/designList'; // Adjust path
+import type { DesignsResponse } from '@/app/types/design';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,13 +12,13 @@ interface Props {
 export default async function AlbumDesignsPage({ params, searchParams }: Props) {
   const { albumId } = await params;
   const searchParamsRes = await searchParams;
-  const pageSize = parseInt(searchParamsRes.pageSize as string || "10");
-  const nPage = parseInt(searchParamsRes.nPage as string || "1");
+  const pageSize = parseInt(searchParamsRes.pageSize as string || '10');
+  const page = parseInt(searchParamsRes.nPage as string || '1');
 
   let designsResponse: DesignsResponse;
   try {
     const response = await fetch(
-      `http://localhost:3000/api/albums/${albumId}?pageSize=${pageSize}&nPage=${nPage}`,
+      `http://localhost:3000/api/albums/${albumId}?pageSize=${pageSize}&nPage=${page}`,
       { cache: 'no-store' }
     );
     if (!response.ok) {
@@ -28,17 +26,18 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
     }
     designsResponse = await response.json();
   } catch (error) {
-    console.error("Error fetching designs for album:", error);
+    console.error('Error fetching designs for album:', error);
     return (
       <div className="container mx-auto p-4">
         <h1 className="text-3xl font-bold mb-6">Designs in Album {albumId}</h1>
-        <p className="text-red-500">Error loading designs: {error instanceof Error ? error.message : 'Unknown error'}</p>
+        <p className="text-red-500">
+          Error loading designs: {error instanceof Error ? error.message : 'Unknown error'}
+        </p>
       </div>
     );
   }
 
-  const { designs, entryCount, page, totalPages, albumCaption } = designsResponse;
-  console.log(`designsResponse = ${JSON.stringify(designsResponse)}`);
+  const { designs, entryCount, page: currentPage, totalPages, albumCaption } = designsResponse;
 
   return (
     <div className="container mx-auto p-4">
@@ -48,69 +47,17 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
         <meta name="keywords" content="cross stitch, designs, patterns, PDFs, album" />
         <meta property="og:title" content={`Designs in Album ${albumId}`} />
         <meta property="og:description" content={`Explore cross-stitch designs in album ${albumId}`} />
-        <meta property="og:image" content={designs[0]?.ImageUrl || "https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg"} />
+        <meta property="og:image" content={designs[0]?.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg'} />
       </Head>
       <h1 className="text-3xl font-bold mb-6">Designs in {albumCaption || `Album ${albumId}`} ({entryCount} designs)</h1>
-      <div className="mb-6">
-        <PaginationControl
-          page={page}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          baseUrl={`/albums/${albumId}`}
-        />
-      </div>
-      <div className="overflow-hidden">
-        {designs.map((design) => (
-          <div
-            key={`${design.AlbumID}-${design.DesignID}`}
-            className="float-left m-[3px] p-[5px] border border-gray-500 rounded-lg shadow hover:shadow-lg w-[15%] min-w-[120px] h-[240px]"
-          >
-            <Link href={`/designs/${design.DesignID}`}>
-              <div className="text-center">
-                {design.ImageUrl ? (
-                  <div className="w-[100px] h-[100px] mx-auto flex items-center justify-center">
-                    <Image
-                      src={design.ImageUrl}
-                      alt={design.Caption}
-                      width={100}
-                      height={100}
-                      className="max-w-[100px] max-h-[100px] object-cover rounded"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-[100px] h-[100px] mx-auto bg-gray-200 rounded flex items-center justify-center">
-                    <span className="text-gray-500 text-sm">No Image</span>
-                  </div>
-                )}
-                <div className="w-full mt-2">
-                  <h3 className="text-lg font-semibold truncate">{design.Caption}</h3>
-                </div>
-              </div>
-            </Link>
-            <div className="w-full mt-2 text-center">
-              {design.PdfUrl ? (
-                <a
-                  href={design.PdfUrl}
-                  className="inline-block text-blue-600 hover:underline w-full"
-                  download
-                >
-                  Download PDF
-                </a>
-              ) : (
-                <p className="text-gray-500">PDF not available</p>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-6">
-        <PaginationControl
-          page={page}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          baseUrl={`/albums/${albumId}`}
-        />
-      </div>
+      <DesignList
+        designs={designs}
+        page={currentPage}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        caption={albumCaption || `Album ${albumId}`}
+        baseUrl={`/albums/${albumId}`}
+      />
     </div>
   );
 }
