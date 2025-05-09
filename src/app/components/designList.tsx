@@ -72,10 +72,10 @@ export function DesignList({
                     className="inline-block text-blue-600 hover:underline w-full"
                     download
                   >
-                    Download PDF
+                    Download PDF 
                   </a>
                 ) : (
-                  <p className="text-gray-500">PDF not available</p>
+                  <p className="text-gray-500">PDF not available {design.DesignID}</p>
                 )}
               </div>
             </div>
