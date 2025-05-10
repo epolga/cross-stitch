@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { DesignList } from '@/app/components/designList'; // Adjust path
+import { DesignList } from '@/app/components/DesignList'; // Adjust path
 import type { DesignsResponse } from '@/app/types/design';
 
 export const dynamic = 'force-dynamic';

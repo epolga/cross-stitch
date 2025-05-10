@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import PaginationControl from './paginationControl'; // Adjust path if needed
+import PaginationControl from './PaginationControl';
 import styles from './designList.module.css';
 import type { Design } from '@/app/types/design';
 
@@ -24,7 +24,7 @@ export function DesignList({
   className,
 }: DesignListProps) {
   return (
-    <div className={`${styles.container} ${className || ''}`}>
+    <div className={`${styles.container} ${className || ''} shadow-md`}>
       {caption && <h2 className={styles.caption}>{caption}</h2>}
       <div className={styles.pagination}>
         <PaginationControl
@@ -72,7 +72,7 @@ export function DesignList({
                     className="inline-block text-blue-600 hover:underline w-full"
                     download
                   >
-                    Download PDF 
+                    Download PDF
                   </a>
                 ) : (
                   <p className="text-gray-500">PDF not available {design.DesignID}</p>

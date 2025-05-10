@@ -12,13 +12,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className="min-h-screen bg-gray-100">
-        <nav className="bg-white border-b border-gray-200 py-4" aria-label="Main navigation">
+        <nav className="bg-white border-b border-gray-200 py-4 shadow-md" aria-label="Main navigation">
           <div className="container mx-auto px-4 flex items-center space-x-2">
-            <Link href="/" className="text-blue-600 hover:underline text-xl">
+            <Link href="/" className="text-gray-700 hover:text-gray-900 text-xl">
               Home
             </Link>
             <span className="text-gray-500 text-xl">»</span>
-            <Link href="/albums" className="text-blue-600 hover:underline text-xl">
+            <Link href="/albums" className="text-gray-700 hover:text-gray-900 text-xl">
               To the thematic catalog
             </Link>
             <span className="text-gray-500 text-xl">»</span>

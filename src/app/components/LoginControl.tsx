@@ -25,7 +25,7 @@ export default function LoginControl() {
       {isLoggedIn ? (
         <button
           onClick={handleLogout}
-          className="text-blue-600 hover:underline text-xl"
+          className="text-gray-700 hover:text-gray-900 text-xl"
           aria-label="Logout"
         >
           Logout
@@ -34,7 +34,7 @@ export default function LoginControl() {
         <>
           <button
             onClick={handleLogin}
-            className="text-blue-600 hover:underline text-xl"
+            className="text-gray-700 hover:text-gray-900 text-xl"
             aria-label="Login"
           >
             Login
@@ -42,7 +42,7 @@ export default function LoginControl() {
           <span className="text-gray-500 text-xl">|</span>
           <button
             onClick={handleRegister}
-            className="text-blue-600 hover:underline text-xl"
+            className="text-gray-700 hover:text-gray-900 text-xl"
             aria-label="Register"
           >
             Register
