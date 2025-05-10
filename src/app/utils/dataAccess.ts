@@ -1,4 +1,4 @@
-import { DynamoDBClient, QueryCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, QueryCommand, ScanCommand, Select } from "@aws-sdk/client-dynamodb";
 import type { Design, DesignsResponse } from '@/app/types/design';
 
 // Force SSR to avoid static generation issues
@@ -205,6 +205,93 @@ export async function getDesigns(pageSize: number, nPage: number): Promise<Desig
     return responseData;
   } catch (error) {
     console.error("Error fetching designs:", error);
+    throw error; // Let caller handle the error
+  }
+}
+
+export async function getDesignsByAlbumId(albumId: string, pageSize: number, nPage: number): Promise<DesignsResponse> {
+  try {
+    // Fetch album caption
+    const albumCaption = await getAlbumCaption(parseInt(albumId));
+
+    // Pad albumId to 4 digits with leading zeros
+    const paddedAlbumId = albumId.padStart(4, "0");
+    const partitionKey = `ALB#${paddedAlbumId}`;
+
+    // Query to get total items for pagination
+    const countParams = {
+      TableName: process.env.DYNAMODB_TABLE_NAME,
+      KeyConditionExpression: "ID = :id",
+      FilterExpression: "EntityType = :entityType",
+      ExpressionAttributeValues: {
+        ":id": { S: partitionKey },
+        ":entityType": { S: "DESIGN" },
+      },
+      Select: Select.COUNT,
+    };
+
+    console.debug(`Querying DynamoDB for count with partitionKey: ${partitionKey}`);
+    const { Count } = await dynamoDBClient.send(new QueryCommand(countParams));
+    const totalItems = Count || 0;
+
+    const responseData: DesignsResponse = {
+      designs: [],
+      entryCount: totalItems,
+      page: nPage,
+      pageSize,
+      totalPages: Math.ceil(totalItems / pageSize) || 1,
+      albumCaption,
+    };
+
+    if (totalItems === 0) {
+      console.warn(`No designs found for AlbumID ${albumId}`);
+      return responseData;
+    }
+
+    // Query designs for the current page
+    const queryParams = {
+      TableName: process.env.DYNAMODB_TABLE_NAME,
+      KeyConditionExpression: "ID = :id",
+      FilterExpression: "EntityType = :entityType",
+      ExpressionAttributeValues: {
+        ":id": { S: partitionKey },
+        ":entityType": { S: "DESIGN" },
+      },
+      Limit: pageSize,
+      ScanIndexForward: false, // Descending order
+    };
+
+    const { Items } = await dynamoDBClient.send(new QueryCommand(queryParams));
+
+    if (!Items || Items.length === 0) {
+      console.warn(`No items found for AlbumID ${albumId} on page ${nPage}`);
+      return responseData;
+    }
+
+    const enrichedDesigns = Items.map((item) => {
+      const design: Design = {
+        DesignID: item.DesignID?.N ? parseInt(item.DesignID.N) : 0,
+        AlbumID: item.AlbumID?.N ? parseInt(item.AlbumID.N) : 0,
+        Caption: item.Caption?.S || "",
+        Description: item.Description?.S || "",
+        NDownloaded: item.NDownloaded?.N ? parseInt(item.NDownloaded.N) : 0,
+        Width: item.Width?.N ? parseInt(item.Width.N) : 0,
+        Height: item.Height?.N ? parseInt(item.Height.N) : 0,
+        Notes: item.Notes?.S || "",
+        Text: item.Text?.S || "",
+        NPage: item.NPage?.S ? parseInt(item.NPage.S || "0") : 0,
+        ImageUrl: item.ImageUrl?.S || (item.AlbumID?.N && item.DesignID?.N
+          ? `https://d2o1uvvg91z7o4.cloudfront.net/photos/${item.AlbumID.N}/${item.DesignID.N}/4.jpg`
+          : null),
+        PdfUrl: item.PdfUrl?.S || null,
+      };
+      return design;
+    });
+
+    responseData.designs = enrichedDesigns;
+    return responseData;
+  } catch (error) {
+    console.error(`Error fetching designs for AlbumID ${albumId}:`, error);
     throw error; // Let caller handle the error
   }
 }
