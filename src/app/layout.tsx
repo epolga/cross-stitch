@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
+import LoginControl from '@/app/components/LoginControl';
 import './globals.css';
 
 export const metadata = {
@@ -21,6 +22,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               To the thematic catalog
             </Link>
             <span className="text-gray-500 text-xl">»</span>
+            <div className="ml-auto">
+              <LoginControl />
+            </div>
           </div>
         </nav>
         <main>{children}</main>
