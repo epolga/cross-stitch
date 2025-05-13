@@ -1,4 +1,4 @@
-import { DynamoDBClient, QueryCommand, ScanCommand, Select } from "@aws-sdk/client-dynamodb";
+import { AttributeValue, DynamoDBClient, QueryCommand, ScanCommand, Select } from "@aws-sdk/client-dynamodb";
 import type { Design, DesignsResponse } from '@/app/types/design';
 
 // Force SSR to avoid static generation issues
@@ -78,6 +78,13 @@ export async function getAllAlbumCaptions(): Promise<{ albumId: number; Caption:
   }
 }
 
+function getPDFUrl(albumId: AttributeValue, designId: AttributeValue): string | null
+{
+    return (albumId?.N && designId?.N) 
+        ? `https://d2o1uvvg91z7o4.cloudfront.net/pdfs/${albumId.N}/Stitch${designId.N}_Kit.pdf`
+        :null
+}
+
 export async function getDesignById(designId: number): Promise<Design | undefined> {
   try {
     // Query the DesignsByID-index
@@ -100,7 +107,7 @@ export async function getDesignById(designId: number): Promise<Design | undefine
     }
 
     // Map DynamoDB item to Design interface
-    const item = Items[0];
+    const item = Items[0];   
     const design: Design = {
       DesignID: parseInt(item.DesignID?.N || '0', 10),
       AlbumID: parseInt(item.AlbumID?.N || '0', 10),
@@ -115,7 +122,7 @@ export async function getDesignById(designId: number): Promise<Design | undefine
       ImageUrl: item.ImageUrl?.S || (item.AlbumID?.N && item.DesignID?.N
         ? `https://d2o1uvvg91z7o4.cloudfront.net/photos/${item.AlbumID.N}/${item.DesignID.N}/4.jpg`
         : null),
-      PdfUrl: item.PdfUrl?.S || null,
+        PdfUrl: getPDFUrl(item.AlbumID, item.DesignID)      
     };
 
     return design;
@@ -196,7 +203,7 @@ export async function getDesigns(pageSize: number, nPage: number): Promise<Desig
         ImageUrl: item.ImageUrl?.S || (item.AlbumID?.N && item.DesignID?.N
           ? `https://d2o1uvvg91z7o4.cloudfront.net/photos/${item.AlbumID.N}/${item.DesignID.N}/4.jpg`
           : null),
-        PdfUrl: item.PdfUrl?.S || null,
+        PdfUrl: getPDFUrl(item.AlbumID, item.DesignID)   
       };
       return design;
     });
@@ -283,7 +290,7 @@ export async function getDesignsByAlbumId(albumId: string, pageSize: number, nPa
         ImageUrl: item.ImageUrl?.S || (item.AlbumID?.N && item.DesignID?.N
           ? `https://d2o1uvvg91z7o4.cloudfront.net/photos/${item.AlbumID.N}/${item.DesignID.N}/4.jpg`
           : null),
-        PdfUrl: item.PdfUrl?.S || null,
+        PdfUrl: getPDFUrl(item.AlbumID, item.DesignID)   
       };
       return design;
     });
