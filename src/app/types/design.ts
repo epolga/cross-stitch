@@ -5,6 +5,7 @@ export interface Design {
     AlbumID: number;
     Caption: string;
     Description: string;
+    NColors: number;
     NDownloaded: number;
     Width: number;
     Height: number;
