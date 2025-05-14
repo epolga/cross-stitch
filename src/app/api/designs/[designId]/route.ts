@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDesignById } from '@/app/utils/CataAccess';
+import { getDesignById } from '@/app/utils/DataAccess';
 export async function GET(request: Request, { params }: { params: Promise<{ designId: string }> }) {
   const { designId } = await params;
 
