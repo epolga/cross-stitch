@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDesigns } from '@/app/utils/dataAccess';
+import { getDesigns } from '@/app/utils/CataAccess';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
