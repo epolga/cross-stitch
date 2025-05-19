@@ -52,7 +52,7 @@ export function DesignList({
                         alt={design.Caption}
                         width={100}
                         height={100}
-                        className="max-w-[100px] max-h-[100px] object-cover rounded"
+                        className="max-w-[100px] max-h-[100px] object-contain rounded"
                       />
                     </div>
                   ) : (
@@ -62,6 +62,7 @@ export function DesignList({
                   )}
                   <div className="w-full mt-2">
                     <h3 className="text-lg font-semibold truncate">{design.Caption}</h3>
+                    <p className="text-sm text-gray-600 mt-1 line-clamp-3">{design.Description}</p>
                   </div>
                 </div>
               </Link>
@@ -92,4 +93,4 @@ export function DesignList({
       </div>
     </div>
   );
-}
+} 

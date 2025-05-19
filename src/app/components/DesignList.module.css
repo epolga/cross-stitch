@@ -16,13 +16,17 @@
 .card {
   float: left;
   margin: 3px;
-  padding: 5px;
+  padding: 15px 5px;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   width: 15%;
   min-width: 120px;
   height: 240px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .card:hover {
