@@ -336,3 +336,86 @@ export async function getDesignsByAlbumId(albumId: string, pageSize: number, nPa
     throw error; // Let caller handle the error
   }
 }
+
+interface FilterOptions {
+  widthFrom: number;
+  widthTo: number;
+  heightFrom: number;
+  heightTo: number;
+  ncolorsFrom: number;
+  ncolorsTo: number;
+  page: number;
+  pageSize: number;
+}
+
+export async function fetchFilteredDesigns(filters: FilterOptions): Promise<DesignsResponse> {  
+  const params: ScanCommandInput = {
+    TableName: process.env.DYNAMODB_TABLE_NAME,
+    IndexName: 'Designs-index',
+    FilterExpression:
+      '#e = :etype AND Width BETWEEN :w1 AND :w2 AND Height BETWEEN :h1 AND :h2 AND NColors BETWEEN :c1 AND :c2',
+    ExpressionAttributeNames: {
+      '#e': 'EntityType',
+    },
+    ExpressionAttributeValues: {
+      ':etype': { S: 'DESIGN' },
+      ':w1': { N: filters.widthFrom.toString() },
+      ':w2': { N: filters.widthTo.toString() },
+      ':h1': { N: filters.heightFrom.toString() },
+      ':h2': { N: filters.heightTo.toString() },
+      ':c1': { N: filters.ncolorsFrom.toString() },
+      ':c2': { N: filters.ncolorsTo.toString() },
+    },
+  };
+
+  console.log((`Inside fetchFilteredDesigns filters = ${JSON.stringify(filters)}`));
+  //const result = await dynamoDBClient.send(new ScanCommand(params));
+  const { Items } = await dynamoDBClient.send(new ScanCommand(params));
+  //const allItems = result.Items?.map((item) => unmarshall(item) as Design) || [];
+  const responseData: DesignsResponse = {
+    designs: [],
+    entryCount: 0,
+    page: 0,
+    pageSize : 0,
+    totalPages: 0,
+  };
+
+  if (!Items || Items.length === 0) {
+    console.warn("No items found in DynamoDB query");
+    return responseData;
+  }
+
+  const enrichedDesigns = Items.map((item) => {
+    const design: Design = {
+      DesignID: item.DesignID?.N ? parseInt(item.DesignID.N) : 0,
+      AlbumID: item.AlbumID?.N ? parseInt(item.AlbumID.N) : 0,
+      Caption: item.Caption?.S || "",
+      Description: item.Description?.S || "",
+      NDownloaded: item.NDownloaded?.N ? parseInt(item.NDownloaded.N) : 0,
+      NColors: item.NColors?.N ? parseInt(item.NColors.N) : 0,
+      Width: item.Width?.N ? parseInt(item.Width.N) : 0,
+      Height: item.Height?.N ? parseInt(item.Height.N) : 0,
+      Notes: item.Notes?.S || "",
+      Text: item.Text?.S || "",
+      NPage: item.NPage?.S ? parseInt(item.NPage.S) : 0, // Convert string to number
+      ImageUrl: item.ImageUrl?.S || (item.AlbumID?.N && item.DesignID?.N
+        ? `https://d2o1uvvg91z7o4.cloudfront.net/photos/${item.AlbumID.N}/${item.DesignID.N}/4.jpg`
+        : null),
+      PdfUrl: getPDFUrl(item.AlbumID, item.DesignID)   
+    };
+    return design;
+  });
+
+  const start = (filters.page - 1) * filters.pageSize;
+  const end = start + filters.pageSize;
+  const pagedItems = enrichedDesigns?.slice(start, end);
+  const totalPages = enrichedDesigns?.length ? (Math.ceil(enrichedDesigns.length / filters.pageSize)) : 0;
+
+  return {
+    designs: pagedItems,
+    entryCount: enrichedDesigns.length,
+    page: filters.page,
+    pageSize: filters.pageSize,
+    totalPages,
+  };
+}
