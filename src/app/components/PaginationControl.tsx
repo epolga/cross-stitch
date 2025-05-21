@@ -16,10 +16,14 @@ export default function PaginationControl({ page, totalPages, pageSize, baseUrl 
   const pageSizeOptions = [10, 20, 50];
 
   const updateUrl = (newPageSize?: string, newPage?: number) => {
-    const params = new URLSearchParams({
-      pageSize: newPageSize || pageSize.toString(),
-      nPage: (newPage !== undefined ? newPage : page).toString(),
-    });
+    // Get current query parameters
+    const params = new URLSearchParams(window.location.search);
+    
+    // Update pagination parameters
+    params.set('pageSize', newPageSize || pageSize.toString());
+    params.set('nPage', (newPage !== undefined ? newPage : page).toString());
+
+    // Navigate to new URL, preserving all parameters
     router.push(`${baseUrl}?${params.toString()}`);
   };
 

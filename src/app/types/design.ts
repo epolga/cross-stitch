@@ -14,6 +14,7 @@ export interface Design {
     NPage: number;
     ImageUrl?: string | null;
     PdfUrl?: string | null;
+    NGlobalPage: number;
 }
 
 export interface DesignsResponse {

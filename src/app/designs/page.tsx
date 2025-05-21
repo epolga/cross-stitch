@@ -9,7 +9,7 @@ export default async function Page({
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const resolvedSearchParams = await searchParams; // Await the Promise
-  const page = parseInt(resolvedSearchParams?.page?.toString() || '1', 10);
+  const nPage = parseInt(resolvedSearchParams?.nPage?.toString() || '1', 10);
   const pageSize = parseInt(resolvedSearchParams?.pageSize?.toString() || '20', 10);
 
   const filters = {
@@ -19,10 +19,10 @@ export default async function Page({
     heightTo: parseInt(resolvedSearchParams?.heightTo?.toString() || '10000', 10),
     ncolorsFrom: parseInt(resolvedSearchParams?.ncolorsFrom?.toString() || '0', 10),
     ncolorsTo: parseInt(resolvedSearchParams?.ncolorsTo?.toString() || '10000', 10),
-    page,
+    nPage,
     pageSize,
   };
-
+  
   const { designs, totalPages } = await fetchFilteredDesigns(filters);
 
   return (
@@ -31,7 +31,7 @@ export default async function Page({
       <Suspense fallback={<div>Loading...</div>}>
         <DesignList
           designs={designs}
-          page={page}
+          page={nPage}
           totalPages={totalPages}
           pageSize={pageSize}
           baseUrl="/designs"
