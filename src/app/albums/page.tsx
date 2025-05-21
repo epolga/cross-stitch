@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
-import { getAllAlbumCaptions } from "@/app/utils/DataAccess";
+import { getAllAlbumCaptions } from "@/lib/DataAccess";
 
 export const dynamic = 'force-dynamic';
 

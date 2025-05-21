@@ -1,6 +1,6 @@
 import { DesignList } from '@/app/components/DesignList';
 import SearchForm from '@/app/components/SearchForm';
-import { fetchFilteredDesigns } from '@/app/utils/DataAccess';
+import { fetchFilteredDesigns } from '@/lib/DataAccess';
 import { Suspense } from 'react';
 
 export default async function Page({

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDesignsByAlbumId } from '@/app/utils/DataAccess';
+import { getDesignsByAlbumId } from '@/lib/DataAccess';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ albumId: string }> }) {
   const { albumId } = await params;
