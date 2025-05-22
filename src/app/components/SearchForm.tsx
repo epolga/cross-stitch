@@ -13,6 +13,7 @@ export default function SearchForm() {
   const [heightTo, setHeightTo] = useState(params.get('heightTo') || '');
   const [ncolorsFrom, setNColorsFrom] = useState(params.get('ncolorsFrom') || '');
   const [ncolorsTo, setNColorsTo] = useState(params.get('ncolorsTo') || '');
+  const [searchText, setSearchText] = useState(params.get('searchText') || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,40 +24,96 @@ export default function SearchForm() {
     if (heightTo) searchParams.set('heightTo', heightTo);
     if (ncolorsFrom) searchParams.set('ncolorsFrom', ncolorsFrom);
     if (ncolorsTo) searchParams.set('ncolorsTo', ncolorsTo);
-    router.push(`/designs?${searchParams.toString()}`);
+    if (searchText) searchParams.set('searchText', searchText);
+    router.push(`/?${searchParams.toString()}`);
+  };
+
+  const handleReset = () => {
+    setWidthFrom('');
+    setWidthTo('');
+    setHeightFrom('');
+    setHeightTo('');
+    setNColorsFrom('');
+    setNColorsTo('');
+    setSearchText('');
+    router.push('/');
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-4 p-4 bg-gray-100 rounded shadow">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium">Width From</label>
-          <input type="number" value={widthFrom} onChange={(e) => setWidthFrom(e.target.value)} className="w-full border rounded px-2 py-1" />
+    <form onSubmit={handleSubmit} className="mb-4 p-2 bg-gray-100 rounded shadow min-w-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div className="md:col-span-2">
+          <label className="block text-xs font-medium">Text Search</label>
+          <input
+            type="text"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="w-full border rounded px-0.5 py-0.5 text-sm"
+          />
         </div>
         <div>
-          <label className="block text-sm font-medium">Width To</label>
-          <input type="number" value={widthTo} onChange={(e) => setWidthTo(e.target.value)} className="w-full border rounded px-2 py-1" />
+          <label className="block text-xs font-medium">Width From</label>
+          <input
+            type="number"
+            value={widthFrom}
+            onChange={(e) => setWidthFrom(e.target.value)}
+            className="w-full border rounded px-0.5 py-0.5 text-sm"
+          />
         </div>
         <div>
-          <label className="block text-sm font-medium">Height From</label>
-          <input type="number" value={heightFrom} onChange={(e) => setHeightFrom(e.target.value)} className="w-full border rounded px-2 py-1" />
+          <label className="block text-xs font-medium">Width To</label>
+          <input
+            type="number"
+            value={widthTo}
+            onChange={(e) => setWidthTo(e.target.value)}
+            className="w-full border rounded px-0.5 py-0.5 text-sm"
+          />
         </div>
         <div>
-          <label className="block text-sm font-medium">Height To</label>
-          <input type="number" value={heightTo} onChange={(e) => setHeightTo(e.target.value)} className="w-full border rounded px-2 py-1" />
+          <label className="block text-xs font-medium">Height From</label>
+          <input
+            type="number"
+            value={heightFrom}
+            onChange={(e) => setHeightFrom(e.target.value)}
+            className="w-full border rounded px-0.5 py-0.5 text-sm"
+          />
         </div>
         <div>
-          <label className="block text-sm font-medium">Colors From</label>
-          <input type="number" value={ncolorsFrom} onChange={(e) => setNColorsFrom(e.target.value)} className="w-full border rounded px-2 py-1" />
+          <label className="block text-xs font-medium">Height To</label>
+          <input
+            type="number"
+            value={heightTo}
+            onChange={(e) => setHeightTo(e.target.value)}
+            className="w-full border rounded px-0.5 py-0.5 text-sm"
+          />
         </div>
         <div>
-          <label className="block text-sm font-medium">Colors To</label>
-          <input type="number" value={ncolorsTo} onChange={(e) => setNColorsTo(e.target.value)} className="w-full border rounded px-2 py-1" />
+          <label className="block text-xs font-medium">Colors From</label>
+          <input
+            type="number"
+            value={ncolorsFrom}
+            onChange={(e) => setNColorsFrom(e.target.value)}
+            className="w-full border rounded px-0.5 py-0.5 text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium">Colors To</label>
+          <input
+            type="number"
+            value={ncolorsTo}
+            onChange={(e) => setNColorsTo(e.target.value)}
+            className="w-full border rounded px-0.5 py-0.5 text-sm"
+          />
         </div>
       </div>
-      <button type="submit" className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-        Search
-      </button>
+      <div className="mt-4 flex gap-2">
+        <button type="submit" className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">
+          Search
+        </button>
+        <button type="button" onClick={handleReset} className="px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm">
+          Reset
+        </button>
+      </div>
     </form>
   );
 }

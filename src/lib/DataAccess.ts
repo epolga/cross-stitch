@@ -8,8 +8,9 @@ const dynamoDBClient = new DynamoDBClient({
   region: process.env.AWS_REGION,
 });
 
-// In-memory cache for designs
+// In-memory cache for designs and album captions
 const designCache: Map<number, Design> = new Map();
+const albumCaptionCache: Map<number, string> = new Map();
 let cacheInitialized: boolean = false;
 let cacheInitializationPromise: Promise<void> | null = null;
 
@@ -103,8 +104,13 @@ async function withCache<T>(fn: () => Promise<T>): Promise<T> {
   return fn();
 }
 
-// Existing album caption functions (unchanged)
+// Fetch album caption with caching
 export async function getAlbumCaption(albumId: number): Promise<string | undefined> {
+  // Check cache first
+  if (albumCaptionCache.has(albumId)) {
+    return albumCaptionCache.get(albumId);
+  }
+
   try {
     const paddedAlbumId = albumId.toString().padStart(4, "0");
     const partitionKey = `ALB#${paddedAlbumId}`;
@@ -124,18 +130,16 @@ export async function getAlbumCaption(albumId: number): Promise<string | undefin
 
     if (!Items || Items.length === 0) {
       console.warn(`No album found for AlbumID ${albumId}`);
+      albumCaptionCache.set(albumId, "");
       return undefined;
     }
 
-    const caption = Items[0].Caption?.S;
-    if (!caption) {
-      console.warn(`No Caption found for AlbumID ${albumId}`);
-      return undefined;
-    }
-
+    const caption = Items[0].Caption?.S || "";
+    albumCaptionCache.set(albumId, caption);
     return caption;
   } catch (error) {
     console.error(`Error fetching album caption for AlbumID ${albumId}:`, error);
+    albumCaptionCache.set(albumId, "");
     return undefined;
   }
 }
@@ -181,6 +185,9 @@ export async function getAllAlbumCaptions(): Promise<{ albumId: number; Caption:
       return [];
     }
 
+    // Update cache
+    albums.forEach(({ albumId, Caption }) => albumCaptionCache.set(albumId, Caption));
+
     console.info(`Total albums fetched: ${albums.length}`);
     return albums;
   } catch (error) {
@@ -195,7 +202,6 @@ function getPDFUrl(albumId: AttributeValue, designId: AttributeValue): string | 
     : null;
 }
 
-// Modified to use cache with first-access initialization
 export async function getDesignById(designId: number): Promise<Design | undefined> {
   return withCache(async () => {
     try {
@@ -212,7 +218,6 @@ export async function getDesignById(designId: number): Promise<Design | undefine
   });
 }
 
-// Modified to use cache with first-access initialization
 export async function getDesigns(pageSize: number, nPage: number): Promise<DesignsResponse> {
   return withCache(async () => {
     try {
@@ -232,10 +237,8 @@ export async function getDesigns(pageSize: number, nPage: number): Promise<Desig
         return responseData;
       }
 
-      // Sort by NGlobalPage (descending) to match original query
       allDesigns.sort((a, b) => (b.NGlobalPage || 0) - (a.NGlobalPage || 0));
 
-      // Paginate
       const startIndex = (nPage - 1) * pageSize;
       const endIndex = startIndex + pageSize;
       responseData.designs = allDesigns.slice(startIndex, endIndex);
@@ -252,11 +255,9 @@ export async function getDesigns(pageSize: number, nPage: number): Promise<Desig
   });
 }
 
-// Modified to use cache with first-access initialization
 export async function getDesignsByAlbumId(albumId: string, pageSize: number, nPage: number): Promise<DesignsResponse> {
   return withCache(async () => {
     try {
-      // Fetch album caption (still uses DynamoDB)
       const albumCaption = await getAlbumCaption(parseInt(albumId)) || "Unknown Album";
 
       const allDesigns = Array.from(designCache.values()).filter(
@@ -278,10 +279,8 @@ export async function getDesignsByAlbumId(albumId: string, pageSize: number, nPa
         return responseData;
       }
 
-      // Sort by NPage (descending) to match original query
       allDesigns.sort((a, b) => (b.NPage || 0) - (a.NPage || 0));
 
-      // Paginate
       const startIndex = (nPage - 1) * pageSize;
       const endIndex = startIndex + pageSize;
       responseData.designs = allDesigns.slice(startIndex, endIndex);
@@ -307,13 +306,13 @@ interface FilterOptions {
   ncolorsTo: number;
   nPage: number;
   pageSize: number;
+  searchText?: string;
 }
 
-// Modified to use cache with first-access initialization
 export async function fetchFilteredDesigns(filters: FilterOptions): Promise<DesignsResponse> {
   return withCache(async () => {
     try {
-      const { nPage, pageSize } = filters;
+      const { nPage, pageSize, searchText } = filters;
       let allDesigns = Array.from(designCache.values());
 
       // Apply filters
@@ -332,6 +331,16 @@ export async function fetchFilteredDesigns(filters: FilterOptions): Promise<Desi
           (design) => design.NColors >= filters.ncolorsFrom && design.NColors <= filters.ncolorsTo
         );
       }
+      if (searchText) {
+        const searchLower = searchText.toLowerCase();
+        allDesigns = await Promise.all(
+          allDesigns.map(async (design) => {
+            const designCaption = design.Caption.toLowerCase();
+            const albumCaption = (await getAlbumCaption(design.AlbumID))?.toLowerCase() || '';
+            return designCaption.includes(searchLower) || albumCaption.includes(searchLower) ? design : null;
+          })
+        ).then((results) => results.filter((design): design is Design => design !== null));
+      }
 
       const totalItems = allDesigns.length;
       const totalPages = totalItems > 0 ? Math.ceil(totalItems / pageSize) : 0;
@@ -349,10 +358,8 @@ export async function fetchFilteredDesigns(filters: FilterOptions): Promise<Desi
         return responseData;
       }
 
-      // Sort by DesignID
       allDesigns.sort((a, b) => b.DesignID - a.DesignID);
 
-      // Paginate
       const startIndex = (nPage - 1) * pageSize;
       const endIndex = startIndex + pageSize;
       responseData.designs = allDesigns.slice(startIndex, endIndex);
@@ -369,16 +376,11 @@ export async function fetchFilteredDesigns(filters: FilterOptions): Promise<Desi
   });
 }
 
-// Manual cache refresh (optional)
 export async function refreshDesignCache(): Promise<void> {
   console.info('Refreshing design cache');
   designCache.clear();
+  albumCaptionCache.clear();
   cacheInitialized = false;
   cacheInitializationPromise = null;
   await initializeDesignCache();
-}
-
-// Check cache status (optional)
-export function isCacheInitialized(): boolean {
-  return cacheInitialized;
 }
