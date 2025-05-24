@@ -1,5 +1,6 @@
 import { AttributeValue, DynamoDBClient, QueryCommand, ScanCommand, ScanCommandInput } from "@aws-sdk/client-dynamodb";
 import type { Design, DesignsResponse } from '@/app/types/design';
+import type { Album, AlbumsResponse } from '@/app/types/album';
 
 // Force SSR to avoid static generation issues
 export const dynamic = 'force-dynamic';
@@ -8,16 +9,17 @@ const dynamoDBClient = new DynamoDBClient({
   region: process.env.AWS_REGION,
 });
 
-// In-memory cache for designs and album captions
+// In-memory caches for designs and albums
 const designCache: Map<number, Design> = new Map();
+const albumCache: Map<number, Album> = new Map();
 const albumCaptionCache: Map<number, string> = new Map();
 let cacheInitialized: boolean = false;
 let cacheInitializationPromise: Promise<void> | null = null;
 
-// Initialize the cache by fetching all designs from DynamoDB
-async function initializeDesignCache(): Promise<void> {
+// Initialize the cache by fetching all designs and albums from DynamoDB
+async function initializeCache(): Promise<void> {
   if (cacheInitialized) {
-    console.info('Design cache already initialized');
+    console.info('Cache already initialized');
     return;
   }
 
@@ -28,8 +30,10 @@ async function initializeDesignCache(): Promise<void> {
 
   cacheInitializationPromise = (async () => {
     try {
-      console.info('Starting design cache initialization');
-      const scanParams: ScanCommandInput = {
+      console.info('Starting cache initialization');
+
+      // Scan for designs
+      const designScanParams: ScanCommandInput = {
         TableName: process.env.DYNAMODB_TABLE_NAME,
         FilterExpression: "EntityType = :entityType",
         ExpressionAttributeValues: {
@@ -37,16 +41,16 @@ async function initializeDesignCache(): Promise<void> {
         },
       };
 
-      let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+      let designLastEvaluatedKey: Record<string, AttributeValue> | undefined;
       let totalDesigns = 0;
 
       do {
-        if (lastEvaluatedKey) {
-          scanParams.ExclusiveStartKey = lastEvaluatedKey;
+        if (designLastEvaluatedKey) {
+          designScanParams.ExclusiveStartKey = designLastEvaluatedKey;
         }
 
-        const { Items, LastEvaluatedKey } = await dynamoDBClient.send(new ScanCommand(scanParams));
-        lastEvaluatedKey = LastEvaluatedKey;
+        const { Items, LastEvaluatedKey } = await dynamoDBClient.send(new ScanCommand(designScanParams));
+        designLastEvaluatedKey = LastEvaluatedKey;
 
         if (Items && Items.length > 0) {
           Items.forEach((item) => {
@@ -75,13 +79,52 @@ async function initializeDesignCache(): Promise<void> {
           totalDesigns += Items.length;
         }
 
-        console.debug(`Fetched ${Items?.length || 0} designs, Total so far: ${totalDesigns}`);
-      } while (lastEvaluatedKey);
+        console.debug(`Fetched ${Items?.length || 0} designs, Total designs so far: ${totalDesigns}`);
+      } while (designLastEvaluatedKey);
+
+      // Scan for albums
+      const albumScanParams: ScanCommandInput = {
+        TableName: process.env.DYNAMODB_TABLE_NAME,
+        FilterExpression: "EntityType = :entityType",
+        ExpressionAttributeValues: {
+          ":entityType": { S: "ALBUM" },
+        },
+      };
+
+      let albumLastEvaluatedKey: Record<string, AttributeValue> | undefined;
+      let totalAlbums = 0;
+
+      do {
+        if (albumLastEvaluatedKey) {
+          albumScanParams.ExclusiveStartKey = albumLastEvaluatedKey;
+        }
+
+        const { Items, LastEvaluatedKey } = await dynamoDBClient.send(new ScanCommand(albumScanParams));
+        albumLastEvaluatedKey = LastEvaluatedKey;
+
+        if (Items && Items.length > 0) {
+          Items.forEach((item) => {
+            const albumId = item.AlbumID?.N ? parseInt(item.AlbumID.N) : 0;
+            const caption = item.Caption?.S || "";
+            if (albumId > 0 && caption) {
+              const album: Album = {
+                AlbumID: albumId,
+                Caption: caption,
+              };
+              albumCache.set(albumId, album);
+              albumCaptionCache.set(albumId, caption); // Update caption cache
+            }
+          });
+          totalAlbums += Items.length;
+        }
+
+        console.debug(`Fetched ${Items?.length || 0} albums, Total albums so far: ${totalAlbums}`);
+      } while (albumLastEvaluatedKey);
 
       cacheInitialized = true;
-      console.info(`Design cache initialized with ${totalDesigns} designs`);
+      console.info(`Cache initialized with ${totalDesigns} designs and ${totalAlbums} albums`);
     } catch (error) {
-      console.error('Error initializing design cache:', error);
+      console.error('Error initializing cache:', error);
       cacheInitialized = false;
       throw error;
     } finally {
@@ -96,7 +139,7 @@ async function initializeDesignCache(): Promise<void> {
 async function withCache<T>(fn: () => Promise<T>): Promise<T> {
   if (!cacheInitialized && !cacheInitializationPromise) {
     console.debug('First access, initializing cache');
-    await initializeDesignCache();
+    await initializeCache();
   } else if (cacheInitializationPromise) {
     console.debug('Waiting for cache initialization');
     await cacheInitializationPromise;
@@ -106,7 +149,13 @@ async function withCache<T>(fn: () => Promise<T>): Promise<T> {
 
 // Fetch album caption with caching
 export async function getAlbumCaption(albumId: number): Promise<string | undefined> {
-  // Check cache first
+  // Check album cache first
+  const album = albumCache.get(albumId);
+  if (album) {
+    return album.Caption;
+  }
+
+  // Fallback to caption cache
   if (albumCaptionCache.has(albumId)) {
     return albumCaptionCache.get(albumId);
   }
@@ -145,55 +194,64 @@ export async function getAlbumCaption(albumId: number): Promise<string | undefin
 }
 
 export async function getAllAlbumCaptions(): Promise<{ albumId: number; Caption: string }[] | undefined> {
-  try {
-    const albums: { albumId: number; Caption: string }[] = [];
-    let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+  return withCache(async () => {
+    try {
+      const albums = Array.from(albumCache.values()).map(album => ({
+        albumId: album.AlbumID,
+        Caption: album.Caption,
+      }));
 
-    const scanParams: ScanCommandInput = {
-      TableName: process.env.DYNAMODB_TABLE_NAME,
-      FilterExpression: "begins_with(ID, :idPrefix) AND NPage = :nPage",
-      ExpressionAttributeValues: {
-        ":idPrefix": { S: "ALB#" },
-        ":nPage": { S: "00000" },
-      },
-      ExclusiveStartKey: undefined,
-    };
-
-    do {
-      if (lastEvaluatedKey) {
-        scanParams.ExclusiveStartKey = lastEvaluatedKey;
+      if (albums.length === 0) {
+        console.warn(`No albums found in cache`);
+        return [];
       }
 
-      const { Items, LastEvaluatedKey } = await dynamoDBClient.send(new ScanCommand(scanParams));
-      lastEvaluatedKey = LastEvaluatedKey;
-
-      if (Items && Items.length > 0) {
-        const newAlbums = Items.map((item) => {
-          const id = item.ID?.S || "";
-          const albumId = parseInt(id.replace("ALB#", "")) || 0;
-          const caption = item.Caption?.S || "";
-          return { albumId, Caption: caption };
-        }).filter((album) => album.albumId > 0 && album.Caption);
-        albums.push(...newAlbums);
-      }
-
-      console.debug(`Fetched ${Items?.length || 0} items, Total so far: ${albums.length}, LastEvaluatedKey: ${!!lastEvaluatedKey}`);
-    } while (lastEvaluatedKey);
-
-    if (albums.length === 0) {
-      console.warn(`No albums found`);
-      return [];
+      console.info(`Fetched ${albums.length} albums from cache`);
+      return albums;
+    } catch (error) {
+      console.error(`Error fetching all album captions:`, error);
+      return undefined;
     }
+  });
+}
 
-    // Update cache
-    albums.forEach(({ albumId, Caption }) => albumCaptionCache.set(albumId, Caption));
+export async function getAllAlbums(pageSize: number, nPage: number): Promise<AlbumsResponse> {
+  return withCache(async () => {
+    try {
+      const allAlbums = Array.from(albumCache.values());
+      const totalItems = allAlbums.length;
 
-    console.info(`Total albums fetched: ${albums.length}`);
-    return albums;
-  } catch (error) {
-    console.error(`Error fetching all album captions:`, error);
-    return undefined;
-  }
+      const responseData: AlbumsResponse = {
+        albums: [],
+        entryCount: totalItems,
+        page: nPage,
+        pageSize,
+        totalPages: Math.ceil(totalItems / pageSize) || 1,
+      };
+
+      if (totalItems === 0) {
+        console.warn("No albums found in cache");
+        return responseData;
+      }
+
+      // Sort by AlbumID
+      allAlbums.sort((a, b) => a.AlbumID - b.AlbumID);
+
+      // Paginate
+      const startIndex = (nPage - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      responseData.albums = allAlbums.slice(startIndex, endIndex);
+
+      if (responseData.albums.length === 0) {
+        console.warn(`No albums found for page ${nPage}`);
+      }
+
+      return responseData;
+    } catch (error) {
+      console.error("Error fetching albums:", error);
+      throw error;
+    }
+  });
 }
 
 function getPDFUrl(albumId: AttributeValue, designId: AttributeValue): string | null {
@@ -353,7 +411,7 @@ export async function fetchFilteredDesigns(filters: FilterOptions): Promise<Desi
         totalPages,
       };
 
-      if (totalItems === 0) {
+      if (totalItems == 0) {
         console.warn("No designs found matching filters");
         return responseData;
       }
@@ -376,11 +434,16 @@ export async function fetchFilteredDesigns(filters: FilterOptions): Promise<Desi
   });
 }
 
-export async function refreshDesignCache(): Promise<void> {
-  console.info('Refreshing design cache');
+export async function refreshCache(): Promise<void> {
+  console.info('Refreshing cache');
   designCache.clear();
+  albumCache.clear();
   albumCaptionCache.clear();
   cacheInitialized = false;
   cacheInitializationPromise = null;
-  await initializeDesignCache();
+  await initializeCache();
+}
+
+export function isCacheInitialized(): boolean {
+  return cacheInitialized;
 }
