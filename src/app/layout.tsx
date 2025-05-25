@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
-import LoginControl from '@/app/components/LoginControl';
+import AuthControl from '@/app/components/AuthControl';
 import './globals.css';
 
 export const metadata = {
@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </Link>
             <span className="text-gray-500 text-xl">»</span>
             <div className="ml-auto">
-              <LoginControl />
+              <AuthControl/>
             </div>
           </div>
         </nav>
