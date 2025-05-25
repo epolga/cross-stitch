@@ -79,7 +79,7 @@ async function initializeCache(): Promise<void> {
           totalDesigns += Items.length;
         }
 
-        console.debug(`Fetched ${Items?.length || 0} designs, Total designs so far: ${totalDesigns}`);
+        //console.log(`Fetched ${Items?.length || 0} designs, Total designs so far: ${totalDesigns}`);
       } while (designLastEvaluatedKey);
 
       // Scan for albums
@@ -118,7 +118,7 @@ async function initializeCache(): Promise<void> {
           totalAlbums += Items.length;
         }
 
-        console.debug(`Fetched ${Items?.length || 0} albums, Total albums so far: ${totalAlbums}`);
+        //console.log(`Fetched ${Items?.length || 0} albums, Total albums so far: ${totalAlbums}`);
       } while (albumLastEvaluatedKey);
 
       cacheInitialized = true;
@@ -432,6 +432,46 @@ export async function fetchFilteredDesigns(filters: FilterOptions): Promise<Desi
       throw error;
     }
   });
+}
+
+// Verify user credentials by email and password
+export async function verifyUser(email: string, password: string): Promise<boolean> {
+  try {
+    console.log('verifyUser called with:', { email, password });
+    const userId = `USR#${email}`;
+    console.log('Querying DynamoDB with ID:', userId);
+    
+    const queryParams = {
+      TableName: process.env.DYNAMODB_TABLE_NAME,
+      KeyConditionExpression: "ID = :id",
+      ExpressionAttributeValues: {
+        ":id": { S: userId },
+      },
+      Limit: 1,
+    };
+
+    const { Items } = await dynamoDBClient.send(new QueryCommand(queryParams));
+    console.log('DynamoDB query result:', Items);
+
+    if (!Items || Items.length === 0) {
+      console.log(`No user found for ID ${userId}`);
+      return false;
+    }
+
+    const storedPassword = Items[0].OpenPwd?.S;
+    console.log('Stored password:', storedPassword);
+    if (!storedPassword) {
+      console.log(`No OpenPwd found for ID ${userId}`);
+      return false;
+    }
+
+    const isMatch = storedPassword === password;
+    console.log('Password match:', isMatch);
+    return isMatch;
+  } catch (error) {
+    console.error(`Error verifying user for ID USR#${email}:`, error);
+    return false;
+  }
 }
 
 export async function refreshCache(): Promise<void> {

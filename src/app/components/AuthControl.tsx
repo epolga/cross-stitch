@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function AuthControl() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -11,43 +11,87 @@ export default function AuthControl() {
   const [registerUsername, setRegisterUsername] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    console.log('AuthControl component mounted, isLoggedIn:', isLoggedIn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('error', (e) => console.error('Global error:', e));
+    return () => window.removeEventListener('error', (e) => console.error('Global error:', e));
+  }, []);
 
   const handleLoginClick = () => {
-    console.log('Opening login modal...');
+    console.log('Login button clicked, opening login modal...');
     setIsLoginModalOpen(true);
-    setIsRegisterModalOpen(false); // Ensure register modal is closed
+    setIsRegisterModalOpen(false);
+    setErrorMessage('');
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login action
-    console.log('Mock login attempt:', { username: loginUsername, password: loginPassword });
-    setIsLoggedIn(true);
-    setIsLoginModalOpen(false);
-    setLoginUsername('');
-    setLoginPassword('');
+    console.log('Form submitted, starting login process');
+    try {
+      console.log('Validating email:', loginUsername);
+      if (!loginUsername.includes('@')) {
+        console.log('Invalid email format');
+        setErrorMessage('Please enter a valid email address');
+        return;
+      }
+
+      console.log('Sending login request to API');
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginUsername, password: loginPassword }),
+      });
+
+      const data = await response.json();
+      console.log('API response:', data);
+
+      if (response.ok && data.success) {
+        console.log('Login successful:', { username: loginUsername });
+        setIsLoggedIn(true);
+        setIsLoginModalOpen(false);
+        setLoginUsername('');
+        setLoginPassword('');
+        setErrorMessage('');
+      } else {
+        console.log('Invalid credentials');
+        setErrorMessage(data.error || 'Invalid email or password');
+      }
+    } catch (error) {
+      console.error('Error during login:', error);
+      setErrorMessage('An error occurred during login. Please try again.');
+    }
   };
 
+  const handleLoginButtonClick = () => {
+    console.log('Login submit button clicked');
+  };
+  
   const handleLogout = () => {
     console.log('Logging out...');
     setIsLoggedIn(false);
   };
 
   const handleRegisterClick = () => {
-    console.log('Opening register modal...');
+    console.log('Register button clicked, opening register modal...');
     setIsRegisterModalOpen(true);
-    setIsLoginModalOpen(false); // Ensure login modal is closed
+    setIsLoginModalOpen(false);
+    setErrorMessage('');
   };
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock registration action
     console.log('Mock registration attempt:', {
       username: registerUsername,
       password: registerPassword,
       email: registerEmail,
     });
-    setIsLoggedIn(true); // Assume registration logs in user
+    setIsLoggedIn(true);
     setIsRegisterModalOpen(false);
     setRegisterUsername('');
     setRegisterPassword('');
@@ -55,24 +99,29 @@ export default function AuthControl() {
   };
 
   const closeLoginModal = () => {
+    console.log('Closing login modal');
     setIsLoginModalOpen(false);
     setLoginUsername('');
     setLoginPassword('');
+    setErrorMessage('');
   };
 
   const closeRegisterModal = () => {
+    console.log('Closing register modal');
     setIsRegisterModalOpen(false);
     setRegisterUsername('');
     setRegisterPassword('');
     setRegisterEmail('');
   };
 
+  console.log('Rendering AuthControl, isLoggedIn:', isLoggedIn, 'isLoginModalOpen:', isLoginModalOpen);
+
   return (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center space-x-2">      
       {isLoggedIn ? (
         <button
           onClick={handleLogout}
-          className="text-gray-500 hover:text-gray-900 text-xl cursor-pointer"
+          className="text-gray-700 hover:text-gray-900 text-xl cursor-pointer pointer-events-auto"
           aria-label="Logout"
         >
           Logout
@@ -81,7 +130,7 @@ export default function AuthControl() {
         <>
           <button
             onClick={handleLoginClick}
-            className="text-gray-500 hover:text-gray-900 text-xl cursor-pointer"
+            className="text-gray-500 hover:text-gray-900 text-xl cursor-pointer pointer-events-auto"
             aria-label="Login"
           >
             Login
@@ -89,7 +138,7 @@ export default function AuthControl() {
           <span className="text-gray-500 text-xl">|</span>
           <button
             onClick={handleRegisterClick}
-            className="text-gray-500 hover:text-gray-900 text-xl cursor-pointer"
+            className="text-gray-500 hover:text-gray-900 text-xl cursor-pointer pointer-events-auto"
             aria-label="Register"
           >
             Register
@@ -117,16 +166,16 @@ export default function AuthControl() {
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
                 <label htmlFor="login-username" className="block text-sm font-medium text-gray-700">
-                  Username
+                  Email
                 </label>
                 <input
                   id="login-username"
-                  type="text"
+                  type="email"
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
                   className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter your username"
-                  aria-label="Username"
+                  placeholder="Enter your email"
+                  aria-label="Email"
                 />
               </div>
               <div>
@@ -143,8 +192,14 @@ export default function AuthControl() {
                   aria-label="Password"
                 />
               </div>
+              {errorMessage && (
+                <p className="text-red-500 text-sm text-center" role="alert">
+                  {errorMessage}
+                </p>
+              )}
               <button
                 type="submit"
+                onClick={handleLoginButtonClick}
                 className="w-full px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
                 aria-label="Login"
               >
@@ -244,7 +299,7 @@ export default function AuthControl() {
             </form>
             <p className="mt-4 text-center text-sm text-gray-600">
               Already have an account?{' '}
-              <button
+             <button
                 onClick={handleLoginClick}
                 className="px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm"
                 aria-label="Login"
