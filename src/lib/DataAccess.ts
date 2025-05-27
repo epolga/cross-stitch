@@ -1,4 +1,4 @@
-import { AttributeValue, DynamoDBClient, QueryCommand, ScanCommand, ScanCommandInput } from "@aws-sdk/client-dynamodb";
+import { AttributeValue, DynamoDBClient, PutItemCommand, QueryCommand, ScanCommand, ScanCommandInput } from "@aws-sdk/client-dynamodb";
 import type { Design, DesignsResponse } from '@/app/types/design';
 import type { Album, AlbumsResponse } from '@/app/types/album';
 
@@ -79,7 +79,7 @@ async function initializeCache(): Promise<void> {
           totalDesigns += Items.length;
         }
 
-        //console.log(`Fetched ${Items?.length || 0} designs, Total designs so far: ${totalDesigns}`);
+        console.log(`Fetched ${Items?.length || 0} designs, Total designs so far: ${totalDesigns}`);
       } while (designLastEvaluatedKey);
 
       // Scan for albums
@@ -118,7 +118,7 @@ async function initializeCache(): Promise<void> {
           totalAlbums += Items.length;
         }
 
-        //console.log(`Fetched ${Items?.length || 0} albums, Total albums so far: ${totalAlbums}`);
+        console.log(`Fetched ${Items?.length || 0} albums, Total albums so far: ${totalAlbums}`);
       } while (albumLastEvaluatedKey);
 
       cacheInitialized = true;
@@ -440,7 +440,6 @@ export async function verifyUser(email: string, password: string): Promise<boole
     console.log('verifyUser called with:', { email, password });
     const userId = `USR#${email}`;
     console.log('Querying DynamoDB with ID:', userId);
-    
     const queryParams = {
       TableName: process.env.DYNAMODB_TABLE_NAME,
       KeyConditionExpression: "ID = :id",
@@ -471,6 +470,31 @@ export async function verifyUser(email: string, password: string): Promise<boole
   } catch (error) {
     console.error(`Error verifying user for ID USR#${email}:`, error);
     return false;
+  }
+}
+
+// Create a new user in DynamoDB
+export async function createUser(email: string, password: string, username: string, subscriptionId: string): Promise<void> {
+  const userId = `USR#${email}`;
+  try {
+    console.log('Creating user:', { email, username, subscriptionId });
+    const putParams = {
+      TableName: process.env.DYNAMODB_TABLE_NAME,
+      Item: {
+        ID: { S: userId },
+        OpenPwd: { S: password },
+        Username: { S: username },
+        SubscriptionId: { S: subscriptionId },
+        CreatedAt: { S: new Date().toISOString() },
+      },
+      ConditionExpression: 'attribute_not_exists(ID)', // Prevent overwrites
+    };
+
+    await dynamoDBClient.send(new PutItemCommand(putParams));
+    console.log('User created successfully:', userId);
+  } catch (error) {
+    console.error(`Error creating user for ID ${userId}:`, error);
+    throw error;
   }
 }
 
