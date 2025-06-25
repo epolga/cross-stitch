@@ -1,27 +1,40 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createUser } from '@/lib/DataAccess';
+import { NextResponse } from 'next/server';
+import { createUser, createTestUser } from '@/lib/DataAccess';
 
-export async function POST(request: NextRequest) {
+// POST handler for subscription confirmation
+export async function POST(request: Request) {
   try {
-    const { subscriptionId, email, password, username } = await request.json();
-    console.log('API: Confirming subscription:', { subscriptionId, email, username });
+    const { email, password, username, subscriptionId } = await request.json();
 
-    if (!subscriptionId || !email || !password || !username) {
+    // Validate request body
+    if (!email || !password || !username || !subscriptionId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Store user in DynamoDB
-    await createUser(email, password, username, subscriptionId);
-    console.log('API: User registered successfully:', email);
+    // Check if request is from localhost
+    const host = request.headers.get('host') || '';
+    const isLocalhost = host.includes('localhost');
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('API: Error confirming subscription:', error);
+    // Call appropriate user creation function
+    if (isLocalhost) {
+      console.log('Request from localhost, creating test user');
+      await createTestUser(email, password, username, subscriptionId);
+    } else {
+      console.log('Request from non-localhost, creating regular user');
+      await createUser(email, password, username, subscriptionId);
+    }
+
     return NextResponse.json(
-      { error: 'Failed to complete registration' },
+      { message: 'User created successfully' },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Error processing subscription confirmation:', error);
+    return NextResponse.json(
+      { error: 'Failed to create user' },
       { status: 500 }
     );
   }

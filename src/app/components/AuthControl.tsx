@@ -24,6 +24,7 @@ export function AuthControl() {
   const [registerEmail, setRegisterEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [planId, setPlanId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     console.log('AuthControl component mounted, isLoggedIn:', isLoggedIn);
@@ -36,10 +37,9 @@ export function AuthControl() {
   }, []);
 
   useEffect(() => {
-    // Debug clientId
     console.log('NEXT_PUBLIC_PAYPAL_CLIENT_ID:', process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || 'Missing');
+    console.log('Running on localhost:', window.location.hostname.includes('localhost'));
 
-    // Fetch subscription plan
     const fetchPlan = async () => {
       try {
         const response = await fetch('/api/subscription/plan', { method: 'POST' });
@@ -138,6 +138,7 @@ export function AuthControl() {
   };
 
   const handlePayPalApprove = async (data: PayPalData) => {
+    setIsProcessing(true);
     try {
       if (!data.subscriptionID) {
         throw new Error('No subscription ID provided');
@@ -150,29 +151,31 @@ export function AuthControl() {
           subscriptionId: data.subscriptionID,
           email: registerEmail,
           password: registerPassword,
-          username: registerUsername,
+          username: registerUsername || registerEmail.split('@')[0],
         }),
       });
 
       const result = await response.json();
       console.log('Confirm API response:', result);
 
-      if (response.ok && result.success) {
-        console.log('Registration completed:', registerEmail);
+      if (response.ok) {
+        console.log('Test user registration completed:', registerEmail);
         setIsLoggedIn(true);
         setIsRegisterModalOpen(false);
         setRegisterUsername('');
         setRegisterPassword('');
         setRegisterEmail('');
         setErrorMessage('');
-        alert('Subscription and registration successful!');
+        alert('Test user registration successful! Welcome!');
       } else {
-        console.log('Registration failed');
-        setErrorMessage(result.error || 'Failed to complete registration');
+        console.log('Registration failed:', result.message || 'Unknown error');
+        setErrorMessage(result.message || 'Failed to complete registration');
       }
     } catch (error) {
       console.error('Error confirming subscription:', error);
-      setErrorMessage('Error completing registration');
+      setErrorMessage('Error completing registration. Please try again.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -345,6 +348,7 @@ export function AuthControl() {
                     className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter your username"
                     aria-label="Username"
+                    disabled={isProcessing}
                   />
                 </div>
                 <div>
@@ -362,6 +366,7 @@ export function AuthControl() {
                     className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter your password"
                     aria-label="Password"
+                    disabled={isProcessing}
                   />
                 </div>
                 <div>
@@ -379,6 +384,7 @@ export function AuthControl() {
                     className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter your email"
                     aria-label="Email"
+                    disabled={isProcessing}
                   />
                 </div>
                 {errorMessage && (
@@ -392,20 +398,23 @@ export function AuthControl() {
                     onApprove={handlePayPalApprove}
                     onError={(err) => {
                       console.error('PayPal error:', err);
-                      setErrorMessage('Failed to process payment');
+                      setErrorMessage('Failed to process payment. Please try again.');
+                      setIsProcessing(false);
                     }}
                     style={{ layout: 'vertical' }}
+                    disabled={isProcessing}
                   />
                 ) : (
                   <p className="text-gray-600 text-sm text-center">Loading payment subscription...</p>
                 )}
               </div>
               <p className="mt-4 text-center text-sm text-gray-600">
-                Don’t have an account?{' '}
+                Already have an account?{' '}
                 <button
                   onClick={handleLoginClick}
                   className="px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm"
                   aria-label="Login"
+                  disabled={isProcessing}
                 >
                   Login
                 </button>

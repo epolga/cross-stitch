@@ -484,16 +484,53 @@ export async function createUser(email: string, password: string, username: stri
         ID: { S: userId },
         OpenPwd: { S: password },
         Username: { S: username },
+        Email: { S: email },
         SubscriptionId: { S: subscriptionId },
         CreatedAt: { S: new Date().toISOString() },
+        NPage: { S: "0" },
+        EntityType: { S: "USER" },
       },
       ConditionExpression: 'attribute_not_exists(ID)', // Prevent overwrites
     };
 
     await dynamoDBClient.send(new PutItemCommand(putParams));
     console.log('User created successfully:', userId);
-  } catch (error) {
-    console.error(`Error creating user for ID ${userId}:`, error);
+  } catch (error: unknown) {
+    const errorDetails = error instanceof Error
+      ? { message: error.message, name: error.name, stack: error.stack }
+      : { message: String(error), name: 'UnknownError', stack: '' };
+    console.error(`Error creating user for ID ${userId}:`, errorDetails);
+    throw error;
+  }
+}
+
+// Create a new test user in DynamoDB
+export async function createTestUser(email: string, password: string, username: string, subscriptionId: string): Promise<void> {
+  const userId = `TST#${email}`;
+  try {
+    console.log('Creating test user:', { email, username, subscriptionId });
+    const putParams = {
+      TableName: process.env.DYNAMODB_TABLE_NAME,
+      Item: {
+        ID: { S: userId },
+        OpenPwd: { S: password },
+        Username: { S: username },
+        Email: { S: email },
+        SubscriptionId: { S: subscriptionId },
+        CreatedAt: { S: new Date().toISOString() },
+        NPage: { S: "0" },
+        EntityType: { S: "USER" },
+      },
+      ConditionExpression: 'attribute_not_exists(ID)', // Prevent overwrites
+    };
+
+    await dynamoDBClient.send(new PutItemCommand(putParams));
+    console.log('Test user created successfully:', userId);
+  } catch (error: unknown) {
+    const errorDetails = error instanceof Error
+      ? { message: error.message, name: error.name, stack: error.stack }
+      : { message: String(error), name: 'UnknownError', stack: '' };
+    console.error(`Error creating test user for ID ${userId}:`, errorDetails);
     throw error;
   }
 }
