@@ -13,6 +13,15 @@ interface PayPalActions {
   };
 }
 
+// Define plan interface
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: string;
+  interval: string;
+  recommended?: boolean;
+}
+
 export function AuthControl() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -23,13 +32,13 @@ export function AuthControl() {
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [planId, setPlanId] = useState<string | null>(null);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    console.log('AuthControl component mounted, isLoggedIn:', isLoggedIn);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    console.log('AuthControl component mounted');
+  }, []); 
 
   useEffect(() => {
     window.addEventListener('error', (e) => console.error('Global error:', e));
@@ -40,23 +49,41 @@ export function AuthControl() {
     console.log('NEXT_PUBLIC_PAYPAL_CLIENT_ID:', process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || 'Missing');
     console.log('Running on localhost:', window.location.hostname.includes('localhost'));
 
-    const fetchPlan = async () => {
+    const fetchPlans = async () => {
       try {
         const response = await fetch('/api/subscription/plan', { method: 'POST' });
         const data = await response.json();
         if (response.ok) {
-          console.log('Fetched plan ID:', data.planId);
-          setPlanId(data.planId);
+          console.log('Fetched plans:', data);
+          // Set plans with IDs and details
+          const fetchedPlans: SubscriptionPlan[] = [
+            {
+              id: data.monthlyPlanId || 'P-XXXMONTHLYXXX',
+              name: 'Monthly Plan',
+              price: '$4.50 / month',
+              interval: 'Monthly',
+              recommended: true,
+            },
+            {
+              id: data.yearlyPlanId || 'P-XXXYEARLYXXX',
+              name: 'Yearly Plan',
+              price: '$27 / year',
+              interval: 'Yearly',
+              recommended: false,
+            },
+          ];
+          setPlans(fetchedPlans);
+          setSelectedPlanId(fetchedPlans[0].id); // Default to monthly plan
         } else {
-          console.error('Failed to fetch plan:', data.error, 'Status:', response.status);
-          setErrorMessage(`Failed to load payment plan: ${data.error}`);
+          console.error('Failed to fetch plans:', data.error, 'Status:', response.status);
+          setErrorMessage(`Failed to load payment plans: ${data.error}`);
         }
       } catch (error) {
-        console.error('Error fetching plan:', error);
-        setErrorMessage('Error loading payment plan. Please try again.');
+        console.error('Error fetching plans:', error);
+        setErrorMessage('Error loading payment plans. Please try again.');
       }
     };
-    fetchPlan();
+    fetchPlans();
   }, []);
 
   const handleLoginClick = () => {
@@ -123,12 +150,12 @@ export function AuthControl() {
   const handlePayPalSubscription = (data: Record<string, unknown>, actions: PayPalActions) => {
     try {
       console.log('PayPal subscription initiated:', data);
-      if (!planId) {
-        throw new Error('No payment plan available');
+      if (!selectedPlanId) {
+        throw new Error('No payment plan selected');
       }
 
       return actions.subscription.create({
-        plan_id: planId,
+        plan_id: selectedPlanId,
       });
     } catch (error) {
       console.error('Error initiating subscription:', error);
@@ -194,6 +221,7 @@ export function AuthControl() {
     setRegisterPassword('');
     setRegisterEmail('');
     setErrorMessage('');
+    setSelectedPlanId(plans[0]?.id || null); // Reset to default plan
   };
 
   console.log('Rendering AuthControl, isLoggedIn:', isLoggedIn, 'isLoginModalOpen:', isLoginModalOpen);
@@ -321,7 +349,7 @@ export function AuthControl() {
             className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50"
             style={{ backgroundColor: 'rgba(17, 24, 39, 0.5)' }}
           >
-            <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+            <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Register</h2>
                 <button
@@ -387,12 +415,42 @@ export function AuthControl() {
                     disabled={isProcessing}
                   />
                 </div>
+                {/* Plan Selection */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">Choose a Subscription Plan</h3>
+                  {plans.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {plans.map((plan) => (
+                        <div
+                          key={plan.id}
+                          className={`relative p-4 border rounded-lg cursor-pointer transition-all ${
+                            selectedPlanId === plan.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-300 hover:border-gray-400'
+                          } ${plan.recommended ? 'border-2 border-blue-500' : ''}`}
+                          onClick={() => setSelectedPlanId(plan.id)}
+                        >
+                          {plan.recommended && (
+                            <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                              Recommended
+                            </span>
+                          )}
+                          <h4 className="text-lg font-semibold">{plan.name}</h4>
+                          <p className="text-xl font-bold text-gray-900">{plan.price}</p>
+                          <p className="text-sm text-gray-600">Billed {plan.interval}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-600 text-sm text-center">Loading payment plans...</p>
+                  )}
+                </div>
                 {errorMessage && (
                   <p className="text-red-500 text-sm text-center" role="alert">
                     {errorMessage}
                   </p>
                 )}
-                {planId ? (
+                {selectedPlanId && (
                   <PayPalButtons
                     createSubscription={handlePayPalSubscription}
                     onApprove={handlePayPalApprove}
@@ -404,8 +462,6 @@ export function AuthControl() {
                     style={{ layout: 'vertical' }}
                     disabled={isProcessing}
                   />
-                ) : (
-                  <p className="text-gray-600 text-sm text-center">Loading payment subscription...</p>
                 )}
               </div>
               <p className="mt-4 text-center text-sm text-gray-600">
