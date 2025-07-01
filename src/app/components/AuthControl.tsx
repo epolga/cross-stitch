@@ -28,17 +28,32 @@ export function AuthControl() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [registerUsername, setRegisterUsername] = useState('');
-  const [registerPassword, setRegisterPassword] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
+  const [confirmEmail, setConfirmEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Validate email format
+  const isValidEmail = (email: string) => email.includes('@') && email.includes('.');
+
+  // Check if form is valid for showing PayPal button
+  const isFormValid =
+    registerEmail.trim() !== '' &&
+    confirmEmail.trim() !== '' &&
+    isValidEmail(registerEmail) &&
+    isValidEmail(confirmEmail) &&
+    registerEmail === confirmEmail &&
+    registerPassword.trim() !== '' &&
+    confirmPassword.trim() !== '' &&
+    registerPassword === confirmPassword;
+
   useEffect(() => {
     console.log('AuthControl component mounted');
-  }, []); 
+  }, []);
 
   useEffect(() => {
     window.addEventListener('error', (e) => console.error('Global error:', e));
@@ -55,7 +70,6 @@ export function AuthControl() {
         const data = await response.json();
         if (response.ok) {
           console.log('Fetched plans:', data);
-          // Set plans with IDs and details
           const fetchedPlans: SubscriptionPlan[] = [
             {
               id: data.monthlyPlanId || 'P-XXXMONTHLYXXX',
@@ -98,7 +112,7 @@ export function AuthControl() {
     console.log('Form submitted, starting login process');
     try {
       console.log('Validating email:', loginUsername);
-      if (!loginUsername.includes('@')) {
+      if (!isValidEmail(loginUsername)) {
         console.log('Invalid email format');
         setErrorMessage('Please enter a valid email address');
         return;
@@ -178,7 +192,7 @@ export function AuthControl() {
           subscriptionId: data.subscriptionID,
           email: registerEmail,
           password: registerPassword,
-          username: registerUsername || registerEmail.split('@')[0],
+          username: registerEmail.split('@')[0], // Derive username from email
         }),
       });
 
@@ -189,9 +203,10 @@ export function AuthControl() {
         console.log('Test user registration completed:', registerEmail);
         setIsLoggedIn(true);
         setIsRegisterModalOpen(false);
-        setRegisterUsername('');
-        setRegisterPassword('');
         setRegisterEmail('');
+        setConfirmEmail('');
+        setRegisterPassword('');
+        setConfirmPassword('');
         setErrorMessage('');
         alert('Test user registration successful! Welcome!');
       } else {
@@ -217,11 +232,56 @@ export function AuthControl() {
   const closeRegisterModal = () => {
     console.log('Closing register modal');
     setIsRegisterModalOpen(false);
-    setRegisterUsername('');
-    setRegisterPassword('');
     setRegisterEmail('');
+    setConfirmEmail('');
+    setRegisterPassword('');
+    setConfirmPassword('');
     setErrorMessage('');
     setSelectedPlanId(plans[0]?.id || null); // Reset to default plan
+  };
+
+  // Validate email match and format
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setRegisterEmail(email);
+    if (!isValidEmail(email)) {
+      setErrorMessage('Please enter a valid email address');
+    } else if (confirmEmail && email !== confirmEmail) {
+      setErrorMessage('Emails do not match');
+    } else if (errorMessage === 'Please enter a valid email address' || errorMessage === 'Emails do not match') {
+      setErrorMessage('');
+    }
+  };
+
+  const handleConfirmEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setConfirmEmail(email);
+    if (!isValidEmail(email)) {
+      setErrorMessage('Please enter a valid email address');
+    } else if (registerEmail && email !== registerEmail) {
+      setErrorMessage('Emails do not match');
+    } else if (errorMessage === 'Please enter a valid email address' || errorMessage === 'Emails do not match') {
+      setErrorMessage('');
+    }
+  };
+
+  // Validate passwords match
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRegisterPassword(e.target.value);
+    if (confirmPassword && e.target.value !== confirmPassword) {
+      setErrorMessage('Passwords do not match');
+    } else if (errorMessage === 'Passwords do not match') {
+      setErrorMessage('');
+    }
+  };
+
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setConfirmPassword(e.target.value);
+    if (registerPassword && e.target.value !== registerPassword) {
+      setErrorMessage('Passwords do not match');
+    } else if (errorMessage === 'Passwords do not match') {
+      setErrorMessage('');
+    }
   };
 
   console.log('Rendering AuthControl, isLoggedIn:', isLoggedIn, 'isLoginModalOpen:', isLoginModalOpen);
@@ -299,6 +359,7 @@ export function AuthControl() {
                     className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter your email"
                     aria-label="Email"
+                    required
                   />
                 </div>
                 <div>
@@ -313,6 +374,7 @@ export function AuthControl() {
                     className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter your password"
                     aria-label="Password"
+                    required
                   />
                 </div>
                 {errorMessage && (
@@ -363,20 +425,40 @@ export function AuthControl() {
               <div className="space-y-4">
                 <div>
                   <label
-                    htmlFor="register-username"
+                    htmlFor="register-email"
                     className="block text-sm font-medium text-gray-700"
                   >
-                    Username
+                    Email
                   </label>
                   <input
-                    id="register-username"
-                    type="text"
-                    value={registerUsername}
-                    onChange={(e) => setRegisterUsername(e.target.value)}
+                    id="register-email"
+                    type="email"
+                    value={registerEmail}
+                    onChange={handleEmailChange}
                     className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter your username"
-                    aria-label="Username"
+                    placeholder="Enter your email"
+                    aria-label="Email"
                     disabled={isProcessing}
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="confirm-email"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Confirm Email
+                  </label>
+                  <input
+                    id="confirm-email"
+                    type="email"
+                    value={confirmEmail}
+                    onChange={handleConfirmEmailChange}
+                    className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Confirm your email"
+                    aria-label="Confirm Email"
+                    disabled={isProcessing}
+                    required
                   />
                 </div>
                 <div>
@@ -390,29 +472,31 @@ export function AuthControl() {
                     id="register-password"
                     type="password"
                     value={registerPassword}
-                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    onChange={handlePasswordChange}
                     className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter your password"
                     aria-label="Password"
                     disabled={isProcessing}
+                    required
                   />
                 </div>
                 <div>
                   <label
-                    htmlFor="register-email"
+                    htmlFor="confirm-password"
                     className="block text-sm font-medium text-gray-700"
                   >
-                    Email
+                    Confirm Password
                   </label>
                   <input
-                    id="register-email"
-                    type="email"
-                    value={registerEmail}
-                    onChange={(e) => setRegisterEmail(e.target.value)}
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={handleConfirmPasswordChange}
                     className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter your email"
-                    aria-label="Email"
+                    placeholder="Confirm your password"
+                    aria-label="Confirm Password"
                     disabled={isProcessing}
+                    required
                   />
                 </div>
                 {/* Plan Selection */}
@@ -450,7 +534,7 @@ export function AuthControl() {
                     {errorMessage}
                   </p>
                 )}
-                {selectedPlanId && (
+                {selectedPlanId && isFormValid && (
                   <PayPalButtons
                     createSubscription={handlePayPalSubscription}
                     onApprove={handlePayPalApprove}
