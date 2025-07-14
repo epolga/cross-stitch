@@ -3,6 +3,11 @@
 import { useState, useEffect } from 'react';
 import { RegisterForm } from './RegisterForm';
 
+// Utility function to check login status globally
+export const isUserLoggedIn = (): boolean => {
+  return sessionStorage.getItem('isLoggedIn') === 'true';
+};
+
 export function AuthControl() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -14,8 +19,11 @@ export function AuthControl() {
   // Validate email format
   const isValidEmail = (email: string) => email.includes('@') && email.includes('.');
 
+  // Initialize login state from sessionStorage
   useEffect(() => {
-    console.log('AuthControl component mounted');
+    const loggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+    setIsLoggedIn(loggedIn);
+    console.log('AuthControl component mounted, isLoggedIn from session:', loggedIn);
   }, []);
 
   useEffect(() => {
@@ -53,6 +61,9 @@ export function AuthControl() {
 
       if (response.ok && data.success) {
         console.log('Login successful:', { username: loginUsername });
+        // Store login state in sessionStorage
+        sessionStorage.setItem('isLoggedIn', 'true');
+        sessionStorage.setItem('userEmail', loginUsername); // Optional: store user email
         setIsLoggedIn(true);
         setIsLoginModalOpen(false);
         setLoginUsername('');
@@ -74,6 +85,9 @@ export function AuthControl() {
 
   const handleLogout = () => {
     console.log('Logging out...');
+    // Clear sessionStorage
+    sessionStorage.removeItem('isLoggedIn');
+    sessionStorage.removeItem('userEmail');
     setIsLoggedIn(false);
   };
 
@@ -93,6 +107,8 @@ export function AuthControl() {
   };
 
   const handleRegisterSuccess = () => {
+    // Store login state in sessionStorage on successful registration
+    sessionStorage.setItem('isLoggedIn', 'true');
     setIsLoggedIn(true);
     setIsRegisterModalOpen(false);
   };

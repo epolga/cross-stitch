@@ -1,4 +1,4 @@
-import { DesignList } from '@/app/components/DesignList';
+import { DesignListWrapper } from '@/app/components/DesignListWrapper';
 import SearchForm from '@/app/components/SearchForm';
 import { fetchFilteredDesigns } from '@/lib/DataAccess';
 import { Suspense } from 'react';
@@ -49,7 +49,7 @@ export default async function Home({ searchParams }: Props) {
         </div>
         <div className="w-full md:flex-1">
           <Suspense fallback={<div>Loading...</div>}>
-            <DesignList
+            <DesignListWrapper
               designs={designs}
               page={nPage}
               totalPages={totalPages}

@@ -12,6 +12,7 @@ interface DesignListProps {
   caption?: string;
   baseUrl?: string;
   className?: string;
+  isLoggedIn?: boolean;
 }
 
 export function DesignList({
@@ -22,9 +23,15 @@ export function DesignList({
   caption,
   baseUrl,
   className,
+  isLoggedIn = false,
 }: DesignListProps) {
   return (
     <div className={`${styles.container} ${className || ''} shadow-md`}>
+      <div className="text-center mb-4">
+        <p className="text-lg font-semibold">
+          {isLoggedIn ? 'Logged in' : 'Logged out'}
+        </p>
+      </div>
       {caption && <h2 className={styles.caption}>{caption}</h2>}
       <div className={styles.pagination}>
         <PaginationControl
@@ -93,4 +100,4 @@ export function DesignList({
       </div>
     </div>
   );
-} 
+}
