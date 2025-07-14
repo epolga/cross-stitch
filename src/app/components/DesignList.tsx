@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import PaginationControl from './PaginationControl';
@@ -12,7 +15,7 @@ interface DesignListProps {
   caption?: string;
   baseUrl?: string;
   className?: string;
-  isLoggedIn?: boolean;
+  isLoggedIn: boolean; // Remove optional to ensure prop is always provided
 }
 
 export function DesignList({
@@ -23,8 +26,16 @@ export function DesignList({
   caption,
   baseUrl,
   className,
-  isLoggedIn = false,
+  isLoggedIn,
 }: DesignListProps) {
+  // Log when isLoggedIn prop changes
+  useEffect(() => {
+    console.log('DesignList: isLoggedIn prop updated to', isLoggedIn);
+  }, [isLoggedIn]);
+
+  // Log on every render to confirm component rendering
+  console.log('DesignList rendering with isLoggedIn:', isLoggedIn);
+
   return (
     <div className={`${styles.container} ${className || ''} shadow-md`}>
       <div className="text-center mb-4">

@@ -57,6 +57,7 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
         pageSize={pageSize}
         caption={albumCaption || `Album ${albumId}`}
         baseUrl={`/albums/${albumId}`}
+        isLoggedIn={false} // Assuming user is logged in for this example
       />
     </div>
   );

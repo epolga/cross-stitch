@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { DesignList } from './DesignList';
+import { isUserLoggedIn } from './AuthControl';
 import type { Design } from '@/app/types/design';
 
 interface DesignListWrapperProps {
@@ -23,25 +24,39 @@ export function DesignListWrapper({
   caption,
   className,
 }: DesignListWrapperProps) {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Initialize to false for SSR
 
   useEffect(() => {
-    // Check authentication status on mount
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/auth/check', {
-          method: 'GET',
-          credentials: 'include',
-        });
-        const data = await response.json();
-        setIsLoggedIn(data.isAuthenticated || false);
-      } catch (error) {
-        console.error('Error checking auth status:', error);
-        setIsLoggedIn(false);
-      }
-    };
+    // Initialize login state (client-side only)
+    if (typeof window !== 'undefined') {
+      setIsLoggedIn(isUserLoggedIn());
+      console.log('DesignListWrapper mounted, isLoggedIn:', isUserLoggedIn());
 
-    checkAuth();
+      // Handle storage events for cross-tab updates
+      const handleStorageChange = (e: StorageEvent) => {
+        console.log('Storage event detected:', e);
+        if (e.key === 'isLoggedIn') {
+          const newLoginState = e.newValue === 'true';
+          setIsLoggedIn(newLoginState);
+          console.log('Storage event: isLoggedIn updated to', newLoginState);
+        }
+      };
+
+      // Handle custom auth state change event for same-tab updates
+      const handleAuthStateChange = () => {
+        const newLoginState = isUserLoggedIn();
+        setIsLoggedIn(newLoginState);
+        console.log('Auth state change event: isLoggedIn updated to', newLoginState);
+      };
+
+      window.addEventListener('storage', handleStorageChange);
+      window.addEventListener('authStateChange', handleAuthStateChange);
+
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('authStateChange', handleAuthStateChange);
+      };
+    }
   }, []);
 
   return (

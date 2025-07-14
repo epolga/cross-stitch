@@ -5,11 +5,24 @@ import { RegisterForm } from './RegisterForm';
 
 // Utility function to check login status globally
 export const isUserLoggedIn = (): boolean => {
-  return sessionStorage.getItem('isLoggedIn') === 'true';
+  // Check if running in a browser environment
+  if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+    return sessionStorage.getItem('isLoggedIn') === 'true';
+  }
+  return false; // Default to false during server-side rendering
+};
+
+// Dispatch custom event for auth state changes
+const dispatchAuthStateChange = () => {
+  if (typeof window !== 'undefined') {
+    const event = new Event('authStateChange');
+    window.dispatchEvent(event);
+    console.log('Dispatched authStateChange event');
+  }
 };
 
 export function AuthControl() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Initialize to false for SSR
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [loginUsername, setLoginUsername] = useState('');
@@ -19,16 +32,18 @@ export function AuthControl() {
   // Validate email format
   const isValidEmail = (email: string) => email.includes('@') && email.includes('.');
 
-  // Initialize login state from sessionStorage
+  // Initialize login state from sessionStorage (client-side only)
   useEffect(() => {
-    const loggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+    const loggedIn = isUserLoggedIn();
     setIsLoggedIn(loggedIn);
     console.log('AuthControl component mounted, isLoggedIn from session:', loggedIn);
   }, []);
 
   useEffect(() => {
-    window.addEventListener('error', (e) => console.error('Global error:', e));
-    return () => window.removeEventListener('error', (e) => console.error('Global error:', e));
+    if (typeof window !== 'undefined') {
+      window.addEventListener('error', (e) => console.error('Global error:', e));
+      return () => window.removeEventListener('error', (e) => console.error('Global error:', e));
+    }
   }, []);
 
   const handleLoginClick = () => {
@@ -62,13 +77,16 @@ export function AuthControl() {
       if (response.ok && data.success) {
         console.log('Login successful:', { username: loginUsername });
         // Store login state in sessionStorage
-        sessionStorage.setItem('isLoggedIn', 'true');
-        sessionStorage.setItem('userEmail', loginUsername); // Optional: store user email
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('isLoggedIn', 'true');
+          sessionStorage.setItem('userEmail', loginUsername); // Optional: store user email
+        }
         setIsLoggedIn(true);
         setIsLoginModalOpen(false);
         setLoginUsername('');
         setLoginPassword('');
         setErrorMessage('');
+        dispatchAuthStateChange(); // Dispatch custom event
       } else {
         console.log('Invalid credentials');
         setErrorMessage(data.error || 'Invalid email or password');
@@ -86,9 +104,12 @@ export function AuthControl() {
   const handleLogout = () => {
     console.log('Logging out...');
     // Clear sessionStorage
-    sessionStorage.removeItem('isLoggedIn');
-    sessionStorage.removeItem('userEmail');
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('isLoggedIn');
+      sessionStorage.removeItem('userEmail');
+    }
     setIsLoggedIn(false);
+    dispatchAuthStateChange(); // Dispatch custom event
   };
 
   const handleRegisterClick = () => {
@@ -108,9 +129,12 @@ export function AuthControl() {
 
   const handleRegisterSuccess = () => {
     // Store login state in sessionStorage on successful registration
-    sessionStorage.setItem('isLoggedIn', 'true');
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('isLoggedIn', 'true');
+    }
     setIsLoggedIn(true);
     setIsRegisterModalOpen(false);
+    dispatchAuthStateChange(); // Dispatch custom event
   };
 
   console.log('Rendering AuthControl, isLoggedIn:', isLoggedIn, 'isLoginModalOpen:', isLoginModalOpen);
