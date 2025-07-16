@@ -15,7 +15,7 @@ interface DesignListProps {
   caption?: string;
   baseUrl?: string;
   className?: string;
-  isLoggedIn: boolean; // Remove optional to ensure prop is always provided
+  isLoggedIn: boolean;
 }
 
 export function DesignList({
@@ -97,6 +97,11 @@ export function DesignList({
                   <p className="text-gray-500">PDF not available {design.DesignID}</p>
                 )}
               </div>
+              {!isLoggedIn && (
+                <div className="w-full mt-2 text-center">
+                  <p className="text-blue-600 hover:underline">Subscribe</p>
+                </div>
+              )}
             </div>
           ))}
         </div>
