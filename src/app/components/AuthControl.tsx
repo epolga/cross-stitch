@@ -46,6 +46,18 @@ export function AuthControl() {
     }
   }, []);
 
+  // Listen for openRegisterModal event
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleOpenRegister = () => {
+        console.log('Received openRegisterModal event');
+        handleRegisterClick();
+      };
+      window.addEventListener('openRegisterModal', handleOpenRegister);
+      return () => window.removeEventListener('openRegisterModal', handleOpenRegister);
+    }
+  }, []);
+
   const handleLoginClick = () => {
     console.log('Login button clicked, opening login modal...');
     setIsLoginModalOpen(true);

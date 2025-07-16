@@ -36,6 +36,14 @@ export function DesignList({
   // Log on every render to confirm component rendering
   console.log('DesignList rendering with isLoggedIn:', isLoggedIn);
 
+  const handleSubscribeClick = () => {
+    if (typeof window !== 'undefined') {
+      const event = new Event('openRegisterModal');
+      window.dispatchEvent(event);
+      console.log('Dispatched openRegisterModal event');
+    }
+  };
+
   return (
     <div className={`${styles.container} ${className || ''} shadow-md`}>
       <div className="text-center mb-4">
@@ -99,7 +107,12 @@ export function DesignList({
               </div>
               {!isLoggedIn && (
                 <div className="w-full mt-2 text-center">
-                  <p className="text-blue-600 hover:underline">Subscribe</p>
+                  <button
+                    onClick={handleSubscribeClick}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Subscribe
+                  </button>
                 </div>
               )}
             </div>
