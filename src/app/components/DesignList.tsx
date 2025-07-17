@@ -94,27 +94,26 @@ export function DesignList({
               </Link>
               <div className="w-full mt-2 text-center">
                 {design.PdfUrl ? (
-                  <a
-                    href={design.PdfUrl}
-                    className="inline-block text-blue-600 hover:underline w-full"
-                    download
-                  >
-                    Download PDF
-                  </a>
+                  isLoggedIn ? (
+                    <a
+                      href={design.PdfUrl}
+                      className="inline-block text-blue-600 hover:underline w-full"
+                      download
+                    >
+                      Download PDF
+                    </a>
+                  ) : (
+                    <button
+                      onClick={handleSubscribeClick}
+                      className="inline-block text-blue-600 hover:underline w-full cursor-pointer"
+                    >
+                      Download PDF
+                    </button>
+                  )
                 ) : (
                   <p className="text-gray-500">PDF not available {design.DesignID}</p>
                 )}
               </div>
-              {!isLoggedIn && (
-                <div className="w-full mt-2 text-center">
-                  <button
-                    onClick={handleSubscribeClick}
-                    className="text-blue-600 hover:underline"
-                  >
-                    Subscribe
-                  </button>
-                </div>
-              )}
             </div>
           ))}
         </div>
