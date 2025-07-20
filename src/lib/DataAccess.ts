@@ -508,7 +508,7 @@ export async function createUser(email: string, password: string, username: stri
 
 // Create a new test user in DynamoDB
 export async function createTestUser(email: string, password: string, username: string, subscriptionId: string): Promise<void> {
-  const userId = `TST#${email}`;
+  const userId = `TST#${email}`+ Date.now();
   try {
     console.log('Creating test user:', { email, username, subscriptionId });
     const putParams = {
