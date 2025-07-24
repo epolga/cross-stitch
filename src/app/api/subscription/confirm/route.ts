@@ -10,7 +10,7 @@ AWS.config.update({
 });
 
 // Initialize SES client
-//const ses = new AWS.SES({ apiVersion: '2010-12-01' });
+const ses = new AWS.SES({ apiVersion: '2010-12-01' });
 
 // POST handler for subscription confirmation
 export async function POST(request: Request) {
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     // Send notification email to admin
     const adminEmail = 'olga.epstein@gmail.com'; // Replace with your admin email address
     const fromEmail = 'ann@cross-stitch-pattern.net'; // Replace with your admin email address
-    /*const params = {
+    const params = {
       Source: fromEmail,
       Destination: {
         ToAddresses: [adminEmail],
@@ -79,9 +79,9 @@ export async function POST(request: Request) {
           },
         },
       },
-    };*/
+    };
     console.log('Sending notification email to admin: ', adminEmail, ' from: ', fromEmail);
- 
+    await ses.sendEmail(params).promise();
 
     return NextResponse.json(
       { message: 'User created successfully' },
