@@ -1,4 +1,6 @@
 branch-defaults:
+  default:
+    environment: cross-stitch-env
   main:
     environment: cross-stitch-env
     group_suffix: null
