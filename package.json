@@ -13,8 +13,10 @@
         "@aws-sdk/lib-dynamodb": "^3.803.0",
         "@fontsource/geist-mono": "^5.2.6",
         "@fontsource/geist-sans": "^5.2.5",
+        "@paypal/paypal-js": "^8.4.2",
         "@paypal/react-paypal-js": "^8.8.3",
         "aws-sdk": "^2.1692.0",
+        "axios": "^1.12.2",
         "next": "15.3.1",
         "react": "^19.0.0",
         "react-dom": "^19.0.0"
