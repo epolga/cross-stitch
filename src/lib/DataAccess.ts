@@ -437,8 +437,6 @@ export async function fetchFilteredDesigns(filters: FilterOptions): Promise<Desi
 // Verify user credentials by email and password
 export async function verifyUser(email: string, password: string): Promise<boolean> {
   try {
-    if (1 === 1) // Temporary bypass for testing
-      return true;
     console.log('verifyUser called with:', { email, password });
     const userId = `USR#${email}`;
     console.log('Querying DynamoDB with ID:', userId);

@@ -129,7 +129,7 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
       console.log('Confirm API response:', result);
 
       if (response.ok) {
-        console.log('Test user registration completed:', registerEmail);
+        console.log('Test user registration completed:', registerEmail, ' password:', registerPassword);
         onRegisterSuccess();
         setRegisterEmail('');
         setConfirmEmail('');
