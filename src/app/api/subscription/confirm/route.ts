@@ -34,17 +34,16 @@ export async function POST(request: Request) {
     // Check if request is from localhost
     const host = request.headers.get('host') || '';
     const isLocalhost = host.includes('localhost');
-    const test = false;
-    if(!test){
+   
       // Call appropriate user creation function
-      if (isLocalhost) {
-        console.log('Request from localhost, creating test user');
-        await createTestUser(email, password, username, subscriptionId);
-      } else {
-        console.log('Request from non-localhost, creating regular user');
-        await createUser(email, password, username, subscriptionId);
-      }
+    if (isLocalhost) {
+      console.log('Request from localhost, creating test user');
+      await createTestUser(email, password, username, subscriptionId);
+    } else {
+      console.log('Request from non-localhost, creating regular user');
+      await createUser(email, password, username, subscriptionId);
     }
+   
     // Send notification email to admin
     const adminEmail = 'olga.epstein@gmail.com'; // Replace with your admin email address
     const fromEmail = 'ann@cross-stitch-pattern.net'; // Replace with your admin email address
