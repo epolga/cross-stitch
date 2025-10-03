@@ -434,6 +434,46 @@ export async function fetchFilteredDesigns(filters: FilterOptions): Promise<Desi
   });
 }
 
+// Retrieve the maximum NPage value for existing users (prefixed with "USR#")
+async function getMaxUserNPage(): Promise<number> {
+  const scanParams: ScanCommandInput = {
+    TableName: process.env.DYNAMODB_TABLE_NAME,
+    FilterExpression: "#et = :et AND begins_with(ID, :prefix)",
+    ExpressionAttributeNames: {
+      "#et": "EntityType",
+    },
+    ExpressionAttributeValues: {
+      ":et": { S: "USER" },
+      ":prefix": { S: "USR#" },
+    },
+  };
+
+  let maxNPage = 0;
+  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+
+  do {
+    if (lastEvaluatedKey) {
+      scanParams.ExclusiveStartKey = lastEvaluatedKey;
+    }
+
+    const { Items, LastEvaluatedKey } = await dynamoDBClient.send(new ScanCommand(scanParams));
+    lastEvaluatedKey = LastEvaluatedKey;
+
+    if (Items && Items.length > 0) {
+      Items.forEach((item) => {
+        if (item.NPage?.S) {
+          const nPageNum = parseInt(item.NPage.S, 10);
+          if (!isNaN(nPageNum) && nPageNum > maxNPage) {
+            maxNPage = nPageNum;
+          }
+        }
+      });
+    }
+  } while (lastEvaluatedKey);
+
+  return maxNPage;
+}
+
 // Verify user credentials by email and password
 export async function verifyUser(email: string, password: string): Promise<boolean> {
   try {
@@ -478,6 +518,8 @@ export async function createUser(email: string, password: string, username: stri
   const userId = `USR#${email}`;
   try {
     console.log('Creating user:', { email, username, subscriptionId });
+    const maxNPage = await getMaxUserNPage();
+    const newNPage = (maxNPage + 1).toString().padStart(5, "0");
     const putParams = {
       TableName: process.env.DYNAMODB_TABLE_NAME,
       Item: {
@@ -487,7 +529,7 @@ export async function createUser(email: string, password: string, username: stri
         Email: { S: email },
         SubscriptionId: { S: subscriptionId },
         CreatedAt: { S: new Date().toISOString() },
-        NPage: { S: "0" },
+        NPage: { S: newNPage },
         EntityType: { S: "USER" },
       },
       ConditionExpression: 'attribute_not_exists(ID)', // Prevent overwrites

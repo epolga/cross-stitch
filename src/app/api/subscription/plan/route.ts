@@ -40,9 +40,7 @@ async function getAccessToken() {
 
   console.log('PAYPAL_CLIENT_ID:', clientId ? 'Present' : 'Missing');
   console.log('PAYPAL_CLIENT_SECRET:', clientSecret ? 'Present' : 'Missing');
-  console.log('PAYPAL_CLIENT_ID:', clientId);
-  console.log('PAYPAL_CLIENT_SECRET:', clientSecret);
-
+  
   if (!clientId || !clientSecret) {
     throw new Error('Missing PayPal credentials');
   }
