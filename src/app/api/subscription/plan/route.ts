@@ -35,16 +35,19 @@ interface PlanDetails {
 
 async function getAccessToken() {
   const clientId = process.env.PAYPAL_CLIENT_ID;
-  const clientSecret = 'EA0imgPyVYHqvqnSthhXXW4DU3P-Qw5tclB3uasvZvGWUuHN7vT_u_qybE7PXWY6vLSvavWVVVZI3CZN'; // Hardcoded as requested
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+  const apiUrl = process.env.PAYPAL_API_URL || 'https://api-m.sandbox.paypal.com';
 
   console.log('PAYPAL_CLIENT_ID:', clientId ? 'Present' : 'Missing');
   console.log('PAYPAL_CLIENT_SECRET:', clientSecret ? 'Present' : 'Missing');
+  console.log('PAYPAL_CLIENT_ID:', clientId);
+  console.log('PAYPAL_CLIENT_SECRET:', clientSecret);
 
   if (!clientId || !clientSecret) {
     throw new Error('Missing PayPal credentials');
   }
 
-  const response = await fetch('https://api-m.sandbox.paypal.com/v1/oauth2/token', {
+  const response = await fetch(`${apiUrl}/v1/oauth2/token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -61,7 +64,8 @@ async function getAccessToken() {
 }
 
 async function getExistingProduct(accessToken: string, productName: string) {
-  const response = await fetch('https://api-m.sandbox.paypal.com/v1/catalogs/products?page_size=100', {
+  const apiUrl = process.env.PAYPAL_API_URL || 'https://api-m.sandbox.paypal.com';
+  const response = await fetch(`${apiUrl}/v1/catalogs/products?page_size=100`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -81,7 +85,8 @@ async function getExistingProduct(accessToken: string, productName: string) {
 }
 
 async function createProduct(accessToken: string, productName: string) {
-  const response = await fetch('https://api-m.sandbox.paypal.com/v1/catalogs/products', {
+  const apiUrl = process.env.PAYPAL_API_URL || 'https://api-m.sandbox.paypal.com';
+  const response = await fetch(`${apiUrl}/v1/catalogs/products`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -105,7 +110,8 @@ async function createProduct(accessToken: string, productName: string) {
 }
 
 async function createPlan(accessToken: string, productId: string, planDetails: PlanDetails) {
-  const response = await fetch('https://api-m.sandbox.paypal.com/v1/billing/plans', {
+  const apiUrl = process.env.PAYPAL_API_URL || 'https://api-m.sandbox.paypal.com';
+  const response = await fetch(`${apiUrl}/v1/billing/plans`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
