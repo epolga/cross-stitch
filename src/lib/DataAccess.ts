@@ -519,7 +519,8 @@ export async function createUser(email: string, password: string, username: stri
   try {
     console.log('Creating user:', { email, username, subscriptionId });
     const maxNPage = await getMaxUserNPage();
-    const newNPage = (maxNPage + 1).toString().padStart(5, "0");
+    const newNPageNum = maxNPage + 1;
+    const newNPage = newNPageNum.toString().padStart(7, "0");
     const putParams = {
       TableName: process.env.DYNAMODB_TABLE_NAME,
       Item: {
@@ -560,7 +561,7 @@ export async function createTestUser(email: string, password: string, username: 
         Email: { S: email },
         SubscriptionId: { S: subscriptionId },
         CreatedAt: { S: new Date().toISOString() },
-        NPage: { S: "0" },
+        NPage: { S: "00000" },
         EntityType: { S: "USER" },
       },
       ConditionExpression: 'attribute_not_exists(ID)', // Prevent overwrites
