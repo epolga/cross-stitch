@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { sendEmailToAdmin } from '@/lib/email-service';  // Added import for email notification
 
 interface PayPalData {
   subscriptionID?: string | null;
@@ -89,6 +90,25 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
     };
     fetchPlans();
   }, []);
+
+  // Added useEffect to send email to admin when the form opens (component mounts)
+  useEffect(() => {
+    const notifyAdmin = async () => {
+      try {
+        await sendEmailToAdmin(
+          'Registration Form Opened',
+          'A user has opened the registration form.',
+          undefined,  // Use default 'from' address
+          false       // Send as plain text; set to true if HTML is preferred
+        );
+        console.log('Admin notified of form opening.');
+      } catch (error) {
+        console.error('Failed to send email notification to admin:', error);
+      }
+    };
+
+    notifyAdmin();
+  }, []);  // Empty dependency array ensures this runs only once on mount
 
   const handlePayPalSubscription = (data: Record<string, unknown>, actions: PayPalActions) => {
     try {
