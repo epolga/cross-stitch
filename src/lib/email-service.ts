@@ -3,10 +3,18 @@
 import AWS from 'aws-sdk';
 
 // Initialize SES client (reuse your existing configuration)
-const ses = new AWS.SES({ apiVersion: '2010-12-01' });
+const ses = new AWS.SES({ apiVersion: '2010-12-01' , region: process.env.AWS_REGION || 'us-east-1'});
 
 // Administrative email for notifications like IP logs (updated to specified address)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'olga.epstein@gmail.com';
+const FROM_EMAIL = process.env.AWS_SES_FROM_EMAIL || 'ann@cross-stitch-pattern.net';
+
+// Configure AWS SDK with credentials from environment variables
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION || 'us-east-1',
+});
 
 /**
  * Sends an email using AWS SES (v2 SDK).
@@ -21,12 +29,7 @@ export async function sendEmail(params: {
   from?: string; // Optional; defaults to verified sender
   isHtml?: boolean; // Optional; defaults to true for HTML body
 }) {
-  const { to, subject, body, from = process.env.AWS_SES_FROM_EMAIL || 'ann@cross-stitch-pattern.net', isHtml = true } = params;
-
-  // Validate required environment variables
-  if (!process.env.AWS_SES_FROM_EMAIL) {
-    throw new Error('AWS_SES_FROM_EMAIL environment variable is required');
-  }
+  const { to, subject, body, from = FROM_EMAIL || 'ann@cross-stitch-pattern.net', isHtml = true } = params;
 
   // Construct the message body conditionally to avoid undefined Data
   const messageBody: AWS.SES.Body = {};
@@ -72,17 +75,18 @@ export async function sendEmail(params: {
  */
  export async function sendEmailToAdmin(
   subject: string,
-  body: string,
-  from?: string, // Optional; defaults to verified sender
+  body: string,  
   isHtml?: boolean // Optional; defaults to true for HTML body
 ) {
     const paramsForSend = {
       to: ADMIN_EMAIL,
       subject,
       body,
-      from,
+      from: FROM_EMAIL,
       isHtml
     };
+          console.log('Sending email to admin with params:', paramsForSend);
+  
   return sendEmail(paramsForSend);
 }
 

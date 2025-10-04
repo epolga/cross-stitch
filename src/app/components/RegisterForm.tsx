@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
-import { sendEmailToAdmin } from '@/lib/email-service';  // Added import for email notification
 
 interface PayPalData {
   subscriptionID?: string | null;
@@ -41,7 +40,7 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
 
   // Validate email format
   const isValidEmail = (email: string) => email.includes('@') && email.includes('.');
-
+  console.log('RegisterForm component created, isOpen:', isOpen);
   // Check if form is valid for showing PayPal button
   const isFormValid =
     registerEmail.trim() !== '' &&
@@ -91,24 +90,22 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
     fetchPlans();
   }, []);
 
-  // Added useEffect to send email to admin when the form opens (component mounts)
   useEffect(() => {
     const notifyAdmin = async () => {
       try {
-        await sendEmailToAdmin(
-          'Registration Form Opened',
-          'A user has opened the registration form.',
-          undefined,  // Use default 'from' address
-          false       // Send as plain text; set to true if HTML is preferred
-        );
-        console.log('Admin notified of form opening.');
+        const response = await fetch('/api/notify-admin', { method: 'POST' });
+        if (response.ok) {
+          console.log('Admin notified of form opening.');
+        } else {
+          throw new Error(`API response not OK: ${response.status}`);
+        }
       } catch (error) {
         console.error('Failed to send email notification to admin:', error);
       }
     };
 
     notifyAdmin();
-  }, []);  // Empty dependency array ensures this runs only once on mount
+  }, []);  // Runs once on mount
 
   const handlePayPalSubscription = (data: Record<string, unknown>, actions: PayPalActions) => {
     try {

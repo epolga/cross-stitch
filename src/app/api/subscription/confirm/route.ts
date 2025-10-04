@@ -40,8 +40,6 @@ export async function POST(request: Request) {
       await createUser(email, password, username, subscriptionId);
     }
 
-    const fromEmail = 'ann@cross-stitch-pattern.net'; // Replace with your admin email address
-
     // Extract user's IP address from headers
     const ip = (request.headers.get('x-forwarded-for')?.split(',')[0].trim()) || 'Unknown';
 
@@ -55,7 +53,7 @@ export async function POST(request: Request) {
     `;
 
     // Send the email and await completion
-    await sendEmailToAdmin('New Subscription Notification', emailBody, fromEmail, true);
+    await sendEmailToAdmin('New Subscription Notification', emailBody, true);
 
     return NextResponse.json(
       { message: 'User created and notification email sent' },
