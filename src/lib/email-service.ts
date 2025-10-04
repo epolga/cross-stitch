@@ -6,7 +6,7 @@ import AWS from 'aws-sdk';
 const ses = new AWS.SES({ apiVersion: '2010-12-01' });
 
 // Administrative email for notifications like IP logs (updated to specified address)
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'Olga.Epstein@gmail.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'olga.epstein@gmail.com';
 
 /**
  * Sends an email using AWS SES (v2 SDK).
@@ -21,7 +21,7 @@ export async function sendEmail(params: {
   from?: string; // Optional; defaults to verified sender
   isHtml?: boolean; // Optional; defaults to true for HTML body
 }) {
-  const { to, subject, body, from = process.env.AWS_SES_FROM_EMAIL || 'no-reply@yourdomain.com', isHtml = true } = params;
+  const { to, subject, body, from = process.env.AWS_SES_FROM_EMAIL || 'ann@cross-stitch-pattern.net', isHtml = true } = params;
 
   // Validate required environment variables
   if (!process.env.AWS_SES_FROM_EMAIL) {

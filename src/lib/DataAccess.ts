@@ -526,7 +526,7 @@ export async function createUser(email: string, password: string, username: stri
       Item: {
         ID: { S: userId },
         OpenPwd: { S: password },
-        Username: { S: username },
+        UserName: { S: username },
         Email: { S: email },
         SubscriptionId: { S: subscriptionId },
         CreatedAt: { S: new Date().toISOString() },
