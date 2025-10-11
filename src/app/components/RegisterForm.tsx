@@ -334,7 +334,7 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
                 htmlFor="receive-updates"
                 className="ml-2 block text-sm text-gray-700"
               >
-                Receive Updates
+                Send me updates on new designs
               </label>
             </div>
             {/* Plan Selection */}
