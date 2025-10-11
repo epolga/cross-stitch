@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
+import Script from 'next/script';
 import { AuthControl } from '@/app/components/AuthControl';
 import './globals.css';
 
@@ -13,6 +14,21 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
   return (
     <html lang="en">
+      <head>
+        {/* Google Analytics Script */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=G-232D0Z4TWB`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-232D0Z4TWB');
+          `}
+        </Script>
+      </head>
       <body className="min-h-screen bg-gray-100 flex flex-col">
         <nav className="bg-white border-b border-gray-200 py-4 shadow-md" aria-label="Main navigation">
           <div className="container mx-auto px-4 flex items-center space-x-2">

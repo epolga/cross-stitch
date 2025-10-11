@@ -33,6 +33,7 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
   const [confirmEmail, setConfirmEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [receiveUpdates, setReceiveUpdates] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
@@ -139,6 +140,7 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
           email: registerEmail,
           password: registerPassword,
           username: registerEmail.split('@')[0], // Derive username from email
+          receiveUpdates: receiveUpdates,
         }),
       });
 
@@ -152,6 +154,7 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
         setConfirmEmail('');
         setRegisterPassword('');
         setConfirmPassword('');
+        setReceiveUpdates(false);
         setErrorMessage('');
         alert('Test user registration successful! Welcome!');
       } else {
@@ -317,6 +320,22 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
                 disabled={isProcessing}
                 required
               />
+            </div>
+            <div className="flex items-center">
+              <input
+                id="receive-updates"
+                type="checkbox"
+                checked={receiveUpdates}
+                onChange={(e) => setReceiveUpdates(e.target.checked)}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                disabled={isProcessing}
+              />
+              <label
+                htmlFor="receive-updates"
+                className="ml-2 block text-sm text-gray-700"
+              >
+                Receive Updates
+              </label>
             </div>
             {/* Plan Selection */}
             <div>

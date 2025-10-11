@@ -1,3 +1,4 @@
+// DataAccess.ts
 import { AttributeValue, DynamoDBClient, PutItemCommand, QueryCommand, ScanCommand, ScanCommandInput } from "@aws-sdk/client-dynamodb";
 import type { Design, DesignsResponse } from '@/app/types/design';
 import type { Album, AlbumsResponse } from '@/app/types/album';
@@ -514,10 +515,10 @@ export async function verifyUser(email: string, password: string): Promise<boole
 }
 
 // Create a new user in DynamoDB
-export async function createUser(email: string, password: string, username: string, subscriptionId: string): Promise<void> {
+export async function createUser(email: string, password: string, username: string, subscriptionId: string, receiveUpdates: boolean): Promise<void> {
   const userId = `USR#${email}`;
   try {
-    console.log('Creating user:', { email, username, subscriptionId });
+    console.log('Creating user:', { email, username, subscriptionId, receiveUpdates });
     const maxNPage = await getMaxUserNPage();
     const newNPageNum = maxNPage + 1;
     const newNPage = newNPageNum.toString().padStart(7, "0");
@@ -529,6 +530,7 @@ export async function createUser(email: string, password: string, username: stri
         UserName: { S: username },
         Email: { S: email },
         SubscriptionId: { S: subscriptionId },
+        ReceiveUpdates: { BOOL: receiveUpdates },
         CreatedAt: { S: new Date().toISOString() },
         NPage: { S: newNPage },
         EntityType: { S: "USER" },
@@ -548,10 +550,10 @@ export async function createUser(email: string, password: string, username: stri
 }
 
 // Create a new test user in DynamoDB
-export async function createTestUser(email: string, password: string, username: string, subscriptionId: string): Promise<void> {
+export async function createTestUser(email: string, password: string, username: string, subscriptionId: string, receiveUpdates: boolean): Promise<void> {
   const userId = `TST#${email}`+ Date.now();
   try {
-    console.log('Creating test user:', { email, username, subscriptionId });
+    console.log('Creating test user:', { email, username, subscriptionId, receiveUpdates });
     const putParams = {
       TableName: process.env.DYNAMODB_TABLE_NAME,
       Item: {
@@ -560,6 +562,7 @@ export async function createTestUser(email: string, password: string, username: 
         Username: { S: username },
         Email: { S: email },
         SubscriptionId: { S: subscriptionId },
+        ReceiveUpdates: { BOOL: receiveUpdates },
         CreatedAt: { S: new Date().toISOString() },
         NPage: { S: "00000" },
         EntityType: { S: "USER" },

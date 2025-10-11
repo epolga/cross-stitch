@@ -3,6 +3,7 @@ import { verifyUser } from '@/lib/DataAccess';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('API: Login request received');
     const { email, password } = await request.json();
     console.log('API: Received login request:', { email });
 
