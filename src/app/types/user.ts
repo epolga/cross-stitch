@@ -6,6 +6,7 @@ export interface User {
   UserName: string;
   DateCreated: string;
   LastLoginDate: string;
+  ReceiveUpdates: boolean
   PayingDate?: string;
   PayedAmount: number;
   IsRecurring: boolean;
