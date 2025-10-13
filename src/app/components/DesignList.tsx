@@ -6,6 +6,7 @@ import Link from 'next/link';
 import PaginationControl from './PaginationControl';
 import styles from './designList.module.css';
 import type { Design } from '@/app/types/design';
+import DownloadPdfLink from './DownloadPdfLink';
 
 interface DesignListProps {
   designs: Design[];
@@ -35,14 +36,6 @@ export function DesignList({
 
   // Log on every render to confirm component rendering
   console.log('DesignList rendering with isLoggedIn:', isLoggedIn);
-
-  const handleSubscribeClick = () => {
-    if (typeof window !== 'undefined') {
-      const event = new Event('openRegisterModal');
-      window.dispatchEvent(event);
-      console.log('Dispatched openRegisterModal event');
-    }
-  };
 
   return (
     <div className={`${styles.container} ${className || ''} shadow-md`}>
@@ -87,29 +80,15 @@ export function DesignList({
                   </div>
                 </div>
               </Link>
+              {/* ✅ Replaced old PDF button logic with the unified DownloadPdfLink */}
               <div className="w-full mt-2 text-center">
-                {design.PdfUrl ? (
-                  isLoggedIn ? (
-                    <a
-                      href={design.PdfUrl}
-                      className="inline-block text-blue-600 hover:underline w-full"
-                      download
-                    >
-                      Download PDF
-                    </a>
-                  ) : (
-                    <button
-                      onClick={handleSubscribeClick}
-                      className="inline-block text-blue-600 hover:underline w-full cursor-pointer"
-                    >
-                      Download PDF
-                    </button>
-                  )
-                ) : (
-                  <p className="text-gray-500">PDF not available {design.DesignID}</p>
-                )}
+                <DownloadPdfLink
+                  pdfUrl={design.PdfUrl}
+                  caption={design.Caption}
+                  className={styles.downloadLink}
+                />
               </div>
-            </div>
+            </div >
           ))}
         </div>
       )}
