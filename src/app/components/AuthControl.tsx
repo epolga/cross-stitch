@@ -6,8 +6,8 @@ import { RegisterForm } from './RegisterForm';
 // Utility function to check login status globally
 export const isUserLoggedIn = (): boolean => {
   // Check if running in a browser environment
-  if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
-    return sessionStorage.getItem('isLoggedIn') === 'true';
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    return localStorage.getItem('isLoggedIn') === 'true';
   }
   return false; // Default to false during server-side rendering
 };
@@ -32,11 +32,11 @@ export function AuthControl() {
   // Validate email format
   const isValidEmail = (email: string) => email.includes('@') && email.includes('.');
 
-  // Initialize login state from sessionStorage (client-side only)
+  // Initialize login state from localStorage (client-side only)
   useEffect(() => {
     const loggedIn = isUserLoggedIn();
     setIsLoggedIn(loggedIn);
-    console.log('AuthControl component mounted, isLoggedIn from session:', loggedIn);
+    console.log('AuthControl component mounted, isLoggedIn from storage:', loggedIn);
   }, []);
 
   useEffect(() => {
@@ -88,10 +88,10 @@ export function AuthControl() {
 
       if (response.ok && data.success) {
         console.log('Login successful:', { username: loginUsername });
-        // Store login state in sessionStorage
+        // Store login state in localStorage
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('isLoggedIn', 'true');
-          sessionStorage.setItem('userEmail', loginUsername); // Optional: store user email
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('userEmail', loginUsername); // Optional: store user email
         }
         setIsLoggedIn(true);
         setIsLoginModalOpen(false);
@@ -115,10 +115,10 @@ export function AuthControl() {
 
   const handleLogout = () => {
     console.log('Logging out...');
-    // Clear sessionStorage
+    // Clear localStorage
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('isLoggedIn');
-      sessionStorage.removeItem('userEmail');
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userEmail');
     }
     setIsLoggedIn(false);
     dispatchAuthStateChange(); // Dispatch custom event
@@ -140,9 +140,9 @@ export function AuthControl() {
   };
 
   const handleRegisterSuccess = () => {
-    // Store login state in sessionStorage on successful registration
+    // Store login state in localStorage on successful registration
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('isLoggedIn', 'true');
     }
     setIsLoggedIn(true);
     setIsRegisterModalOpen(false);
