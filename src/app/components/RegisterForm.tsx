@@ -33,7 +33,7 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
   const [confirmEmail, setConfirmEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [receiveUpdates, setReceiveUpdates] = useState(false);
+  const [receiveUpdates, setReceiveUpdates] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
