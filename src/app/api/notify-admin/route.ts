@@ -1,6 +1,6 @@
 // src/app/api/notify-admin/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmailToAdmin } from '@/lib/email-service';  // Adjust path if necessary
+import { sendEmailToAdmin } from '@/lib/email-service'; 
 
 export async function POST(req: NextRequest) {
   try {

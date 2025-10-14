@@ -1,5 +1,4 @@
 import axios from 'axios';
-//import { verify } from 'crypto';
 
 export async function POST(req) {
   try {
@@ -25,9 +24,9 @@ export async function POST(req) {
       });
     }
 
-    // Obtain PayPal access token
+    // Obtain PayPal access token (production endpoint)
     const authResponse = await axios.post(
-      'https://api-m.sandbox.paypal.com/v1/oauth2/token',
+      'https://api-m.paypal.com/v1/oauth2/token',
       'grant_type=client_credentials',
       {
         headers: {
@@ -47,12 +46,12 @@ export async function POST(req) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-
+    console.log('All request headers:', Object.fromEntries(headers));
     console.log('PayPal access token obtained successfully');
     console.log('certUrl:', certUrl);
     
-    // Verify webhook signature
-    const verifyUrl = 'https://api-m.sandbox.paypal.com/v1/notifications/verify-webhook-signature';
+    // Verify webhook signature (production endpoint)
+    const verifyUrl = 'https://api-m.paypal.com/v1/notifications/verify-webhook-signature';
     const verifyPayload = {
       auth_algo: authAlgo,
       cert_url: certUrl,
@@ -70,14 +69,36 @@ export async function POST(req) {
       },
     });
 
+    const protocol = headers.get('x-forwarded-proto') || 'https';
+    const host = headers.get('host');
+    const baseUrl = `${protocol}://${host}`;
+
+    const notifyAdmin = async () => {
+      try {
+        const response = await fetch(`${baseUrl}/api/notify-admin`, { method: 'POST' });
+        if (response.ok) {
+          console.log('Admin notified of webhook received.');
+        } else {
+          throw new Error(`API response not OK: ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Failed to send email notification to admin:', error);
+      }
+    };
+
     if (verifyResponse.status !== 200) {
-       await sendEmailToAdmin('Webhook Notification', 'Webhook signature verification failed:', verifyResponse.data, true);
-    } else {
-        await sendEmailToAdmin('Webhook Notification', 'New webhook event received:', verifyResponse.data, true);
+      console.error('Webhook verification API call failed with status:', verifyResponse.status);
+      await notifyAdmin();
+      return new Response(JSON.stringify({ error: 'Webhook verification failed' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
-    if (false && verifyResponse.data.verification_status !== 'SUCCESS') {
+    await notifyAdmin();
+    if (verifyResponse.data.verification_status !== 'SUCCESS') {
       console.log('verifyResponse.data:', verifyResponse.data);
       console.error('Webhook signature verification failed:', verifyResponse.data);
+      await notifyAdmin();
       return new Response(JSON.stringify({ error: 'Invalid webhook signature' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
