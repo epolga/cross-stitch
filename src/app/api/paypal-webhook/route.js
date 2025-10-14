@@ -1,4 +1,5 @@
 import axios from 'axios';
+//import { verify } from 'crypto';
 
 export async function POST(req) {
   try {
@@ -69,6 +70,11 @@ export async function POST(req) {
       },
     });
 
+    if (verifyResponse.status !== 200) {
+       await sendEmailToAdmin('Webhook Notification', 'Webhook signature verification failed:', verifyResponse.data, true);
+    } else {
+        await sendEmailToAdmin('Webhook Notification', 'New webhook event received:', verifyResponse.data, true);
+    }
     if (false && verifyResponse.data.verification_status !== 'SUCCESS') {
       console.log('verifyResponse.data:', verifyResponse.data);
       console.error('Webhook signature verification failed:', verifyResponse.data);
