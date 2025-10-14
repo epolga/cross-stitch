@@ -435,6 +435,18 @@ export async function fetchFilteredDesigns(filters: FilterOptions): Promise<Desi
   });
 }
 
+export async function fetchAllDesigns(): Promise<Design[]> {
+  return withCache(async () => {
+    try {
+      const allDesigns = Array.from(designCache.values());
+      return allDesigns;
+    } catch (error) {
+      console.error("Error fetching filtered designs:", error);
+      throw error;
+    }
+  });
+}
+
 // Retrieve the maximum NPage value for existing users (prefixed with "USR#")
 async function getMaxUserNPage(): Promise<number> {
   const scanParams: ScanCommandInput = {

@@ -7,11 +7,21 @@
 // If your total URLs exceed 50,000 in the future, consider splitting into an index with subsidiary sitemaps via additional routes.
 // The base URL is now derived dynamically from the incoming request headers for flexibility across environments.
 
-import { NextResponse } from 'next/server';
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { Readable } from 'stream';
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
-import { getAllAlbumCaptions, getAllDesignsFiltered } from '@/lib/DataAccess';
+import { getAllAlbumCaptions, fetchAllDesigns } from '@/lib/DataAccess';
+import { Design } from '../types/design';
+
+// Use fetchFilteredDesigns below:
+// const designsResponse = await fetchFilteredDesigns({}, '', 1, 5000);
+
+// Define AWS error interface to avoid using 'any'
+interface AwsError extends Error {
+  $metadata?: {
+    httpStatusCode?: number;
+  };
+}
 
 // Initialize S3 client (credentials managed via environment variables or IAM role)
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
@@ -39,8 +49,14 @@ async function generateAndUploadSitemap(baseUrl: string) {
   }));
 
   // Fetch design URLs (set pageSize large enough to retrieve all in one call)
-  const designsResponse = await getAllDesignsFiltered({}, '', 1, 5000);
-  const designs = designsResponse.designs || [];
+  let designs : Design[] = [];
+  try {
+    designs = await fetchAllDesigns();
+  } catch (error) {
+    console.error('Error fetching designs:', error);
+     
+  }
+
   const designUrls = designs.map(design => ({
     url: `/designs/${design.DesignID}`,
     changefreq: 'monthly',
@@ -81,7 +97,8 @@ async function getSitemap(baseUrl: string) {
       Key: S3_KEY,
     }));
 
-    const generatedAt = parseInt(headResponse.Metadata['generated-at'], 10);
+    const generatedAtStr = headResponse.Metadata?.['generated-at'];
+    const generatedAt = generatedAtStr ? parseInt(generatedAtStr, 10) : 0;
     const ageSeconds = (Date.now() - generatedAt) / 1000;
 
     if (ageSeconds < CACHE_TTL_SECONDS) {
@@ -90,10 +107,13 @@ async function getSitemap(baseUrl: string) {
         Bucket: S3_BUCKET,
         Key: S3_KEY,
       }));
+      if (!getResponse.Body) {
+        throw new Error('No body in S3 response');
+      }
       return await getResponse.Body.transformToString();
     }
-  } catch (error) {
-    if (error.name !== 'NotFound' && error.$metadata?.httpStatusCode !== 404) {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name !== 'NotFound' && (error as AwsError).$metadata?.httpStatusCode !== 404) {
       console.error('S3 error:', error);
     }
   }
