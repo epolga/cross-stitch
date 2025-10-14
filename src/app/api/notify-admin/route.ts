@@ -13,8 +13,10 @@ export async function POST(req: NextRequest) {
 
     if (body && body.subject && body.message) {
       // Use provided subject and message for custom notification
+      console.log('Sending custom admin notification with subject:', body.subject);
       await sendEmailToAdmin(body.subject, body.message, false);
     } else {
+      console.log('Sending default admin notification for registration form opened');
       // Default behavior: Notification for registration form opened
       // Extract the client's IP from headers (handles proxies like Vercel or Cloudflare)
       const xForwardedFor = req.headers.get('x-forwarded-for');

@@ -29,8 +29,8 @@ export async function sendEmail(params: {
   from?: string; // Optional; defaults to verified sender
   isHtml?: boolean; // Optional; defaults to true for HTML body
 }) {
-  const { to, subject, body, from = FROM_EMAIL || 'ann@cross-stitch-pattern.net', isHtml = true } = params;
 
+  const { to, subject, body, from = FROM_EMAIL || 'ann@cross-stitch-pattern.net', isHtml = true } = params;
   // Construct the message body conditionally to avoid undefined Data
   const messageBody: AWS.SES.Body = {};
   if (isHtml) {
