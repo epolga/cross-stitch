@@ -48,6 +48,13 @@ export async function POST(req) {
         console.error('Failed to send email notification to admin:', error);
       }
     };
+const now = new Date();
+const timeString = now.toTimeString().substring(0, 8);
+    const bodyMessage =
+    `Received PayPal webhook event: ${eventType}\n${JSON.stringify(body, null, 2)}\nHeaders: ${JSON.stringify(Object.fromEntries(headers), null, 2)} \nSimulated: ${isSimulated} Time: ${timeString}`;
+
+    const eventType = body.event_type;
+    await notifyAdmin('Webhook received', bodyMessage);
 
     let verifyResponse;
     if (!isSimulated) {
@@ -119,12 +126,9 @@ export async function POST(req) {
       await notifyAdmin('Simulated Webhook Received', 'A simulated PayPal webhook event has been received for testing purposes.');
     }
 
-    const eventType = body.event_type;
-    await notifyAdmin('Webhook received', `Received PayPal webhook event: ${eventType}`);
-    // Process the webhook event
-   
     console.log(`Received PayPal webhook event: ${eventType}`, body);
-
+    // Process the webhook event
+/*
     // Handle specific event types
     if (eventType === 'PAYMENT.CAPTURE.COMPLETED') {
       const paymentId = body.resource.id;
@@ -136,7 +140,7 @@ export async function POST(req) {
       console.log(`Order approved: ID=${orderId}`);
       // Add your business logic here
     }
-
+*/
     // Respond with 2xx status to acknowledge receipt
     return new Response(JSON.stringify({ status: 'success' }), {
       status: 200,

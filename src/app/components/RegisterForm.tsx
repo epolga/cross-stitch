@@ -9,7 +9,7 @@ interface PayPalData {
 
 interface PayPalActions {
   subscription: {
-    create: (options: { plan_id: string }) => Promise<string>;
+    create: (options: { plan_id: string, custom_id?: string }) => Promise<string>;
   };
 }
 
@@ -117,6 +117,7 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
 
       return actions.subscription.create({
         plan_id: selectedPlanId,
+        custom_id: registerEmail // Use the email as custom_id for tracking; alternatively, generate a UUID or other identifier
       });
     } catch (error) {
       console.error('Error initiating subscription:', error);

@@ -79,8 +79,7 @@ async function initializeCache(): Promise<void> {
           });
           totalDesigns += Items.length;
         }
-
-        console.log(`Fetched ${Items?.length || 0} designs, Total designs so far: ${totalDesigns}`);
+        
       } while (designLastEvaluatedKey);
 
       // Scan for albums
@@ -119,7 +118,6 @@ async function initializeCache(): Promise<void> {
           totalAlbums += Items.length;
         }
 
-        console.log(`Fetched ${Items?.length || 0} albums, Total albums so far: ${totalAlbums}`);
       } while (albumLastEvaluatedKey);
 
       cacheInitialized = true;

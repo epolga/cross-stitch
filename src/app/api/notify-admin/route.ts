@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
         // Send the email with the IP included
         await sendEmailToAdmin(
           'Registration Form Opened',
-          `A user has opened the registration form. Client IP: ${clientIp}`,
+          `A user has opened the registration form. \n , ${new Date().toISOString()}\n, Client IP: ${clientIp}`,
           false
         );    
       }
