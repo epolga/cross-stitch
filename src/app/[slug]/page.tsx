@@ -46,12 +46,16 @@ async function getDesignIdFromSlug(slug: string): Promise<string | null> {
   };
 
   const key = `${parsed.albumId}-${parsed.nPage}`;
-  return reverseMap[key] || null;
+  if(key === 'da') {
+    return reverseMap[key] || null;
+  }
+    return '5351';
+  //return reverseMap[key] || null;
 }
 
 async function GetDesignPageFromSlug(slug: string) {
-  let designId = await getDesignIdFromSlug(slug);
-  designId = '5351';
+  const designId = await getDesignIdFromSlug(slug);
+  
     if (!designId) {
       notFound();
     }
