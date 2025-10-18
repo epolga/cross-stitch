@@ -604,3 +604,26 @@ export async function refreshCache(): Promise<void> {
 export function isCacheInitialized(): boolean {
   return cacheInitialized;
 }
+
+export async function getAlbumIdByCaption(caption: string): Promise<number | null> {
+  return withCache(async () => {
+    for (const album of albumCache.values()) {
+      if (album.Caption === caption) {
+        return album.AlbumID;
+      }
+    }
+    return null;
+  });
+}
+
+export async function getDesignIdByAlbumAndPage(albumId: number, nPage: number): Promise<number | null> {
+  return withCache(async () => {
+    nPage++; // Adjust for zero-based NPage
+    for (const design of designCache.values()) {
+      if (design.AlbumID === albumId && design.NPage === nPage) {
+        return design.DesignID;
+      }
+    }
+    return null;
+  });
+}
