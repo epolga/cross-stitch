@@ -274,6 +274,21 @@ export async function getDesignById(designId: number): Promise<Design | undefine
     }
   });
 }
+export async function getDesignPhotoUrlById(designId: number): Promise<string | undefined | null> {
+  return withCache(async () => {
+    try {
+      const design = designCache.get(designId);
+      if (!design) {
+        console.warn(`No design found for DesignID ${designId} in cache`);
+        return null;
+      }
+      return design.ImageUrl;
+    } catch (error) {
+      console.error(`Error fetching design for DesignID ${designId}:`, error);
+      return null;
+    }
+  });
+}
 
 export async function getDesigns(pageSize: number, nPage: number): Promise<DesignsResponse> {
   return withCache(async () => {

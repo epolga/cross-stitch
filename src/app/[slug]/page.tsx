@@ -18,7 +18,7 @@ function parseSlugForDesign(slug: string): { caption: string; albumId: number; n
   }
   return { caption, albumId, nPage };
 }
-
+// Helper to parse album caption from slug (e.g., 'nature-45-Charts.aspx')
 async function getAlbumCaptionFromSlug(slug: string): Promise<string | null> {
  const parts = slug.split('-');
  if (parts.length < 3 || parts[parts.length - 1] !== 'Charts.aspx') {
@@ -27,8 +27,6 @@ async function getAlbumCaptionFromSlug(slug: string): Promise<string | null> {
   const albumCaption = parts[parts.length - 2]
   return albumCaption;
 }
-
-
 
 // Function to map parsed slug to designID using albumID and nPage
 async function getDesignIdFromSlug(slug: string): Promise<string | null> {
@@ -53,7 +51,7 @@ async function GetDesignPageFromSlug(slug: string) {
     return <DesignPage params={Promise.resolve({ designId: designId })} />;
  }
 
- async function GeAlbumsPageFromSlug() {
+ async function GetAlbumsPageFromSlug() {
     return <AlbumsPage />;
  }
 
@@ -72,7 +70,6 @@ async function GetDesignPageFromSlug(slug: string) {
       }
 
       // Render the imported AlbumDesignsPage component, passing simulated params
-
       return <AlbumDesignsPage params={Promise.resolve({ albumId: albumId.toString() })} searchParams={Promise.resolve(searchParams)} />;
  }
 
@@ -85,11 +82,10 @@ export default async function SlugPage({ params, searchParams }: {
   if(resolvedParams.slug.endsWith('-Free-Design.aspx')) {
     return GetDesignPageFromSlug(resolvedParams.slug);
     } else if(resolvedParams.slug === 'XStitch-Charts.aspx'){
-    return GeAlbumsPageFromSlug();
+    return GetAlbumsPageFromSlug();
 }     else if (resolvedParams.slug.endsWith('-Charts.aspx')) {
     return GetAlbumDesignsPageFromSlug(resolvedParams.slug, resolvedSearchParams);
-  } else{
+  } else {
     notFound();
   }
-  //return <DesignPage params={Promise.resolve({ designId: designId })} />;
 }
