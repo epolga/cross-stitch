@@ -35,12 +35,12 @@ export async function middleware(request: NextRequest) {
   console.log("Middleware processing request for pathname:", pathname);
 
   const map = await getDesignAlbumMap();
-  if (pathname.endsWith('Design.jpg')) {
+  if (pathname.endsWith('-Free-Design.jpg')) {
     // Match paths like /photos/<design>/<number>.jpg
     const pathParts = pathname.split('-').filter(Boolean);
     console.log("Parsed path parts:", pathParts);
-    if (pathParts.length >= 4 && pathname.endsWith('Design.jpg')) {
-      const designStr = pathParts[pathParts.length - 3];
+    if (pathParts.length >= 5) {
+      const designStr = pathParts[pathParts.length - 4];
       console.log("designStr:", designStr);
       const design = parseInt(designStr);
       const number = 4; // Assuming '4' is fixed as per original logic

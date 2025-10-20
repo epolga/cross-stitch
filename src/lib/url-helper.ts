@@ -16,5 +16,5 @@ export function CreateImageUrl(
   DesignId: number, 
 ): string {
     const formattedCaption = Caption.replace(/\s+/g, '-');
-    return `/${formattedCaption}-${DesignId}-S-Design.jpg`;
+    return `/${formattedCaption}-${DesignId}-S-Free-Design.jpg`;
 } 
