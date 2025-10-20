@@ -7,6 +7,7 @@ import PaginationControl from './PaginationControl';
 import styles from './designList.module.css';
 import type { Design } from '@/app/types/design';
 import DownloadPdfLink from './DownloadPdfLink';
+import { CreateDesignUrl, CreateImageUrl } from '@/lib/url-helper';
 
 interface DesignListProps {
   designs: Design[];
@@ -57,12 +58,12 @@ export function DesignList({
               key={`${design.AlbumID}-${design.DesignID}`}
               className={styles.card}
             >
-              <Link href={`/designs/${design.DesignID}`}>
+              <Link href={CreateDesignUrl(design.Caption, design.AlbumID, design.NPage)} className="no-underline">
                 <div className="text-center">
                   {design.ImageUrl ? (
                     <div className="w-[100px] h-[100px] mx-auto flex items-center justify-center">
                       <Image
-                        src={design.ImageUrl}
+                        src={CreateImageUrl(design.Caption, design.DesignID)}
                         alt={design.Caption}
                         width={100}
                         height={100}
