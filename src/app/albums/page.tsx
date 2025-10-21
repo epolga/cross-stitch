@@ -29,15 +29,18 @@ export default async function AlbumsPage() {
       <h1 className="text-3xl font-bold mb-6 text-center">Cross-Stitch Patterns Catalog</h1>
       <h2 className="text-2xl mb-8 text-center">to embroider in your leisure time</h2>
       <div className="overflow-hidden">
-        {albums.map((album) => (
-          <Link key={album.albumId} href={`/albums/${album.albumId}`}>
-            <div className="m-[1px] p-1 float-left border border-gray-300 rounded-lg shadow hover:shadow-lg min-w-[100px] w-[15%] h-[40px]">
-              <div className="text-center">
-                <h3 className="text-sm font-semibold truncate">{album.Caption}</h3>
+        {albums.map((album) => {
+          const slug = album.Caption.replace(/\s+/g, '-');
+          return (
+            <Link key={album.Caption} href={`/Free-${slug}-Charts.aspx`} className="no-underline">
+              <div className="m-[1px] p-1 float-left border border-gray-300 rounded-lg shadow hover:shadow-lg min-w-[100px] w-[15%] h-[40px]">
+                <div className="text-center">
+                  <h3 className="text-sm font-semibold truncate">{album.Caption}</h3>
+                </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

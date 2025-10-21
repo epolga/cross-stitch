@@ -21,10 +21,10 @@ function parseSlugForDesign(slug: string): { caption: string; albumId: number; n
 // Helper to parse album caption from slug (e.g., 'nature-45-Charts.aspx')
 async function getAlbumCaptionFromSlug(slug: string): Promise<string | null> {
  const parts = slug.split('-');
- if (parts.length < 3 || parts[parts.length - 1] !== 'Charts.aspx') {
+ if (parts.length < 3 || parts[0] !== 'Free' || parts[parts.length - 1] !== 'Charts.aspx') {
     return null;
   }
-  const albumCaption = parts[parts.length - 2]
+  const albumCaption = parts.slice(1, parts.length - 1).join(' ');
   return albumCaption;
 }
 
