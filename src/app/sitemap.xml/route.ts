@@ -13,14 +13,15 @@ import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from 
 import { getAllAlbumCaptions, fetchAllDesigns } from '@/lib/DataAccess';
 import { Design } from '../types/design';
 
-// Use fetchFilteredDesigns below:
-// const designsResponse = await fetchFilteredDesigns({}, '', 1, 5000);
-
 // Define AWS error interface to avoid using 'any'
 interface AwsError extends Error {
   $metadata?: {
     httpStatusCode?: number;
   };
+}
+
+function isAwsError(error: unknown): error is AwsError {
+  return error instanceof Error && '$metadata' in error;
 }
 
 // Initialize S3 client (credentials managed via environment variables or IAM role)
@@ -36,16 +37,17 @@ async function generateAndUploadSitemap(baseUrl: string) {
   // Static URLs
   const staticUrls = [
     { url: '/', changefreq: 'weekly', priority: 1.0, lastmod: new Date().toISOString() },
-    { url: '/albums', changefreq: 'daily', priority: 0.8, lastmod: new Date().toISOString() },
+    { url: '/XStitch-Charts.aspx', changefreq: 'daily', priority: 0.8, lastmod: new Date().toISOString() },
   ];
 
   // Fetch album URLs
   const albums = (await getAllAlbumCaptions()) || [];
+
   const albumUrls = albums.map(album => ({
-    url: `/albums/${album.albumId}`,
+    url: `/Free-${album.Caption.replace(/\s+/g, '-')}-Charts.aspx`,
     changefreq: 'monthly',
     priority: 0.7,
-    lastmod: new Date().toISOString(), // Use actual lastModified if added to your data model
+    lastmod: new Date().toISOString(),
   }));
 
   // Fetch design URLs (set pageSize large enough to retrieve all in one call)
@@ -58,10 +60,10 @@ async function generateAndUploadSitemap(baseUrl: string) {
   }
 
   const designUrls = designs.map(design => ({
-    url: `/designs/${design.DesignID}`,
+    url: `/${design.Caption.replace(/\s+/g, '-')}-${design.AlbumID}-${design.NPage}-Free-Design.aspx`,
     changefreq: 'monthly',
     priority: 0.6,
-    lastmod: new Date().toISOString(), // Use actual lastModified if added to your data model
+    lastmod: new Date().toISOString(),
   }));
 
   // Create sitemap stream (single file since total URLs are manageable)
@@ -100,7 +102,7 @@ async function getSitemap(baseUrl: string) {
     const generatedAtStr = headResponse.Metadata?.['generated-at'];
     const generatedAt = generatedAtStr ? parseInt(generatedAtStr, 10) : 0;
     const ageSeconds = (Date.now() - generatedAt) / 1000;
-
+    
     if (ageSeconds < CACHE_TTL_SECONDS) {
       // Fetch from S3
       const getResponse = await s3Client.send(new GetObjectCommand({
@@ -113,7 +115,7 @@ async function getSitemap(baseUrl: string) {
       return await getResponse.Body.transformToString();
     }
   } catch (error: unknown) {
-    if (error instanceof Error && error.name !== 'NotFound' && (error as AwsError).$metadata?.httpStatusCode !== 404) {
+    if (error instanceof Error && error.name !== 'NoSuchKey' && (isAwsError(error) ? error.$metadata?.httpStatusCode !== 404 : true)) {
       console.error('S3 error:', error);
     }
   }
@@ -124,11 +126,26 @@ async function getSitemap(baseUrl: string) {
 
 // Route handler for GET /sitemap.xml
 export async function GET(request: Request) {
+  const requiredEnvVars = [
+    "AWS_REGION",
+    "S3_BUCKET_NAME",
+  ];
+  const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
+  if (missingVars.length > 0) {
+    console.error(`Missing environment variables: ${missingVars.join(", ")}`);
+    return new Response(
+      `<?xml version="1.0" encoding="UTF-8"?>
+ <error>Missing environment variables: ${missingVars.join(", ")}</error>`,
+      {
+        status: 500,
+        headers: { "Content-Type": "text/xml" },
+      }
+    );
+  }
   try {
     const host = request.headers.get('host') || 'www.cross-stitch-pattern.net';
-const protocol = (host.includes('localhost') ? 'http' : request.headers.get('x-forwarded-proto') || 'https');
-const baseUrl = `${protocol}://${host}`;
-
+    const protocol = (host.includes('localhost') ? 'http' : request.headers.get('x-forwarded-proto') || 'https');
+    const baseUrl = `${protocol}://${host}`;
     const xml = await getSitemap(baseUrl);
     return new Response(xml, {
       status: 200,

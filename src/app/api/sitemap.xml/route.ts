@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { getAllAlbumCaptions, fetchAllDesigns } from "@/lib/DataAccess";
 
 // Force SSR to prevent static generation
 export const dynamic = 'force-dynamic';
@@ -9,6 +9,7 @@ export async function GET() {
         "DYNAMODB_TABLE_NAME",
         "AWS_REGION",
     ];
+    console.log("Generating sitemap.xml");
     const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
     if (missingVars.length > 0) {
         console.error(`Missing environment variables: ${missingVars.join(", ")}`);
@@ -22,27 +23,10 @@ export async function GET() {
         );
     }
 
-    const dynamoDBClient = new DynamoDBClient({
-        region: process.env.AWS_REGION,
-        credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
-            ? {
-                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-                sessionToken: process.env.AWS_SESSION_TOKEN || undefined,
-            }
-            : undefined,
-    });
-
     try {
-        const { Items } = await dynamoDBClient.send(
-            new ScanCommand({
-                TableName: process.env.DYNAMODB_TABLE_NAME,
-            })
-        );
+        const designs = await fetchAllDesigns() || [];
 
-        const designs = Items?.map((item) => ({
-            DesignID: item.DesignID.N,
-        })) || [];
+        const albums = await getAllAlbumCaptions() || [];
 
         const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
       <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -52,11 +36,29 @@ export async function GET() {
           <changefreq>daily</changefreq>
           <priority>1.0</priority>
         </url>
+        <url>
+          <loc>https://cross-stitch.us-east-1.elasticbeanstalk.com/XStitch-Charts.aspx</loc>
+          <lastmod>${new Date().toISOString()}</lastmod>
+          <changefreq>daily</changefreq>
+          <priority>0.9</priority>
+        </url>
+        ${albums
+            .map(
+                (album) => `
+          <url>
+            <loc>https://cross-stitch.us-east-1.elasticbeanstalk.com/Free-${album.Caption.replace(/\s+/g, '-')}-Charts.aspx</loc>
+            <lastmod>${new Date().toISOString()}</lastmod>
+            <changefreq>weekly</changefreq>
+            <priority>0.8</priority>
+          </url>
+        `
+            )
+            .join("")}
         ${designs
             .map(
                 (design) => `
           <url>
-            <loc>https://cross-stitch.us-east-1.elasticbeanstalk.com/design/${design.DesignID}</loc>
+            <loc>https://cross-stitch.us-east-1.elasticbeanstalk.com/designs/${design.DesignID}</loc>
             <lastmod>${new Date().toISOString()}</lastmod>
             <changefreq>weekly</changefreq>
             <priority>0.8</priority>
