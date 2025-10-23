@@ -40,6 +40,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               To the thematic catalog
             </Link>
             <span className="text-gray-500 text-xl">»</span>
+            <Link href="/exercises" className="text-gray-700 hover:text-gray-900 text-xl">
+              Exercises for cross-stitchers
+            </Link>
+            <span className="text-gray-500 text-xl">»</span>
             <div className="ml-auto">
               <AuthControl />
             </div>
