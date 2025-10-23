@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     } catch {
       // No body provided or invalid JSON; proceed to default behavior
     }
-
+    console.log("Notify admin called with body:", body);
     if (body && body.subject && body.message) {
       // Use provided subject and message for custom notification
       console.log('Sending custom admin notification with subject:', body.subject);
@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
       const clientIp = xForwardedFor
         ? xForwardedFor.split(',')[0].trim()  // Take the first IP in the chain (client's original IP)
         : req.headers.get('x-real-ip') || 'Unknown';  // Fallback for direct or other headers
+      console.log("Client IP detected as:", clientIp);
       if (!clientIp.startsWith('66.249.')) { // Ignore Googlebot IPs      
         // Send the email with the IP included
         await sendEmailToAdmin(

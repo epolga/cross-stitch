@@ -7,7 +7,7 @@ import PaginationControl from './PaginationControl';
 import styles from './designList.module.css';
 import type { Design } from '@/app/types/design';
 import DownloadPdfLink from './DownloadPdfLink';
-import { CreateDesignUrl, CreateImageUrl } from '@/lib/url-helper';
+import { CreateDesignUrl } from '@/lib/url-helper';
 
 interface DesignListProps {
   designs: Design[];
@@ -63,7 +63,7 @@ export function DesignList({
                   {design.ImageUrl ? (
                     <div className="w-[100px] h-[100px] mx-auto flex items-center justify-center">
                       <Image
-                        src={CreateImageUrl(design.Caption, design.DesignID)}
+                        src={design.ImageUrl}
                         alt={design.Caption}
                         width={100}
                         height={100}

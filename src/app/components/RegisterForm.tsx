@@ -92,21 +92,24 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
   }, []);
 
   useEffect(() => {
-    const notifyAdmin = async () => {
-      try {
-        const response = await fetch('/api/notify-admin', { method: 'POST' });
-        if (response.ok) {
-          console.log('Admin notified of form opening.');
-        } else {
-          throw new Error(`API response not OK: ${response.status}`);
+    console.log('RegisterForm isOpen changed:', isOpen);
+    if (isOpen) {
+      const notifyAdmin = async () => {
+        try {
+          const response = await fetch('/api/notify-admin', { method: 'POST' });
+          if (response.ok) {
+            console.log('Admin notified of form opening.');
+          } else {
+            throw new Error(`API response not OK: ${response.status}`);
+          }
+        } catch (error) {
+          console.error('Failed to send email notification to admin:', error);
         }
-      } catch (error) {
-        console.error('Failed to send email notification to admin:', error);
-      }
-    };
-
-    notifyAdmin();
-  }, []);  // Runs once on mount
+      };
+      
+      notifyAdmin();
+    }
+  }, [isOpen]);  // Runs when isOpen changes
 
   const handlePayPalSubscription = (data: Record<string, unknown>, actions: PayPalActions) => {
     try {

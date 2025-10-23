@@ -60,7 +60,7 @@ async function generateAndUploadSitemap(baseUrl: string) {
   }
 
   const designUrls = designs.map(design => ({
-    url: `/${design.Caption.replace(/\s+/g, '-')}-${design.AlbumID}-${design.NPage}-Free-Design.aspx`,
+    url: `/${design.Caption.replace(/\s+/g, '-')}-${design.AlbumID}-${design.NPage-1}-Free-Design.aspx`,
     changefreq: 'monthly',
     priority: 0.6,
     lastmod: new Date().toISOString(),
