@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDesigns } from '@/lib/DataAccess';
+import { getDesigns } from '@/lib/data-access';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

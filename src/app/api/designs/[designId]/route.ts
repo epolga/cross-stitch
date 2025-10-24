@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDesignById } from '@/lib/DataAccess';
+import { getDesignById } from '@/lib/data-access';
 export async function GET(request: Request, { params }: { params: Promise<{ designId: string }> }) {
   const { designId } = await params;
 

@@ -1,6 +1,6 @@
 // route.ts
 import { NextResponse } from 'next/server';
-import { createUser, createTestUser } from '@/lib/DataAccess';
+import { createUser, createTestUser } from '@/lib/data-access';
 import { sendEmailToAdmin } from '@/lib/email-service';
 
 import AWS from 'aws-sdk';

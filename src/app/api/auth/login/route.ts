@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyUser } from '@/lib/DataAccess';
+import { verifyUser } from '@/lib/data-access';
 
 export async function POST(request: NextRequest) {
   try {

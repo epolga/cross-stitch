@@ -1,6 +1,6 @@
 import { DesignListWrapper } from '@/app/components/DesignListWrapper';
 import SearchForm from '@/app/components/SearchForm';
-import { fetchFilteredDesigns } from '@/lib/DataAccess';
+import { fetchFilteredDesigns } from '@/lib/data-access';
 import { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic';

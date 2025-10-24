@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
-import Link from 'next/link';
 import Script from 'next/script';
-import { AuthControl } from '@/app/components/AuthControl';
+import ClientNav from './components/ClientNav';
 import './globals.css';
 
 export const metadata = {
@@ -30,25 +29,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </Script>
       </head>
       <body className="min-h-screen bg-gray-100 flex flex-col">
-        <nav className="bg-white border-b border-gray-200 py-4 shadow-md" aria-label="Main navigation">
-          <div className="container mx-auto px-4 flex items-center space-x-2">
-            <Link href="/" className="text-gray-700 hover:text-gray-900 text-xl">
-              Home
-            </Link>
-            <span className="text-gray-500 text-xl">»</span>
-            <Link href="/albums" className="text-gray-700 hover:text-gray-900 text-xl">
-              To the thematic catalog
-            </Link>
-            <span className="text-gray-500 text-xl">»</span>
-            <Link href="/exercises" className="text-gray-700 hover:text-gray-900 text-xl">
-              Exercises for cross-stitchers
-            </Link>
-            <span className="text-gray-500 text-xl">»</span>
-            <div className="ml-auto">
-              <AuthControl />
-            </div>
-          </div>
-        </nav>
+        <ClientNav />
         <main className="flex-grow">{children}</main>
         <footer className="bg-white border-t border-gray-200 py-6 px-4 shadow-md text-center text-gray-700 text-sm" aria-label="Site footer">
           <div className="container mx-auto">

@@ -10,7 +10,7 @@
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { Readable } from 'stream';
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
-import { getAllAlbumCaptions, fetchAllDesigns } from '@/lib/DataAccess';
+import { getAllAlbumCaptions, fetchAllDesigns } from '@/lib/data-access';
 import { Design } from '../types/design';
 
 // Define AWS error interface to avoid using 'any'
@@ -38,6 +38,10 @@ async function generateAndUploadSitemap(baseUrl: string) {
   const staticUrls = [
     { url: '/', changefreq: 'weekly', priority: 1.0, lastmod: new Date().toISOString() },
     { url: '/XStitch-Charts.aspx', changefreq: 'daily', priority: 0.8, lastmod: new Date().toISOString() },
+    { url: '/EmbroideryHistory.aspx', changefreq: 'monthly', priority: 0.5, lastmod: new Date().toISOString() },
+    { url: '/WhyCrossStitch', changefreq: 'monthly', priority: 0.5, lastmod: new Date().toISOString() },
+    { url: '/Article070409.aspx', changefreq: 'monthly', priority: 0.5, lastmod: new Date().toISOString() },
+    { url: '/exercises', changefreq: 'monthly', priority: 0.5, lastmod: new Date().toISOString() },
   ];
 
   // Fetch album URLs

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDesignPhotoUrlById } from '@/lib/DataAccess'; // Adjust path if needed
+import { getDesignPhotoUrlById } from '@/lib/data-access'; // Adjust path if needed
 
 // Helper to parse image slug (e.g., '104-5351-4.jpg')
 function parseSlugForImage(slug: string): { designId: string } | null {

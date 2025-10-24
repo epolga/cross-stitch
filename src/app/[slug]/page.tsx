@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import DesignPage from '../designs/[designId]/page'; // Adjust path if needed
 import AlbumDesignsPage from '../albums/[albumId]/page'; // Adjust path if needed
 import AlbumsPage from '../albums/page'; // Adjust path if needed
-import { getAlbumIdByCaption, getDesignIdByAlbumAndPage } from '@/lib/DataAccess'; // Adjust path if needed
+import { getAlbumIdByCaption, getDesignIdByAlbumAndPage } from '@/lib/data-access'; // Adjust path if needed
 
 // Helper to parse slug (e.g., 'lion-37-114-Free-Design.aspx')
 function parseSlugForDesign(slug: string): { caption: string; albumId: number; nPage: number } | null {
