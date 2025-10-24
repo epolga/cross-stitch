@@ -2,8 +2,8 @@ import Image from 'next/image';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'The History',
-  description: 'The History of Embroidery. How cross stitch evolved over time.',
+  title: 'The History of Embroidery and Cross-Stitch',
+  description: 'Explore the rich history of embroidery and the evolution of cross-stitch over time.',
 };
 
 export default function EmbroideryHistory() {
@@ -12,39 +12,46 @@ export default function EmbroideryHistory() {
   return (
     <div className="min-h-screen bg-gray-100 p-6 md:p-8 lg:p-10">
       <div className="prose max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-2xl border border-gray-200">
-        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">The History of Embroidery</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">The History of Embroidery and Cross-Stitch</h1>
+        
         <p>
-          Embroidery, that is the embellishment of cloth with design made by needle and thread, is an art that stretches back to hoary antiquity.
+          Embroidery, the art of embellishing cloth with designs created using needle and thread, has roots that extend back to ancient times. This timeless craft has evolved over millennia, influencing cultures worldwide and giving rise to specific techniques like cross-stitch.
         </p>
+        
         <p>
-          The word &apos;embroidery&apos; is a Middle English word derived from the old French &apos;broder&apos; meaning edge or border.
+          The term &apos;embroidery&apos; originates from Middle English, derived from the Old French word &apos;broder,&apos; meaning edge or border. It encompasses a wide range of stitches and styles, with cross-stitch being one of the most recognizable forms due to its simple X-shaped stitches.
         </p>
+        
         <p>
-          Have you ever wondered when embroidery was born?
+          Have you ever wondered about the origins of embroidery?
         </p>
+        
         <p>
-          1000 years ago? 2000 years ago? Don&apos;t believe anyone who tells you: &quot;I know!&quot;
+          Was it 1,000 years ago? 2,000 years ago? Beware of anyone claiming definitive knowledge, as the precise beginnings are shrouded in history.
         </p>
+        
         <p>
-          Historical roots of the origin of embroidery go deep into the depths of centuries.
-          Embroidery is a very gentle thing. It isn&apos;t long-lived. Even in museums special conditions are
-          required to preserve it from damage.
+          The historical origins of embroidery delve deep into the centuries. As a delicate craft, embroidered pieces are not long-lasting; even in museums, they require special conditions to prevent deterioration.
         </p>
+        
         <p>
-          The first embroidered piece of cloth had no chance to survive for a long time.
+          The earliest embroidered fabrics had little chance of surviving through the ages.
         </p>
+        
         <p>
-          The appearance of embroidery is closely linked with the appearance of the first stitch in the manufacture of clothing
-          (at least 300 centuries ago). The first embroidery supplies could be veins of animals and
-          natural hair.
-          It is clear that no evidence remains from that period.
+          Embroidery&apos;s emergence is closely tied to the invention of the first stitch in clothing production, dating back at least 30,000 years. Early supplies might have included animal veins and natural fibers like hair. Naturally, no direct evidence from that era remains, but archaeological finds, such as fossilized hand-stitched garments from around 30,000 B.C., support this timeline.
         </p>
+        
+        <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-700">Ancient Embroidery in Civilizations</h2>
+        
         <p>
-          Egyptian mummies were wrapped in garments embroidered in gold and robes of kings and noblemen were embellished with embroidered designs as were the trappings of their chariots. The design was made with threads of linen and wool, the hair of goats and camel and exceedingly fine strips of gold and silver.
+          In ancient Egypt, mummies were often wrapped in garments embroidered with gold thread, and the robes of kings and nobles featured intricate designs, as did the trappings of their chariots. These designs utilized threads of linen and wool, goat and camel hair, and fine strips of gold and silver.
         </p>
+        
         <p>
-          <a href="http://www.gutenberg.org/files/17328/17328-h/v8c.htm" target="_blank" rel="noopener noreferrer">Such</a> work has been found on mummy wrappings:
+          Such exquisite work has been discovered on mummy wrappings:
         </p>
+        
         <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
           <Image
             src={`${s3BucketUrl}/images/articles/ann.png`}
@@ -58,8 +65,9 @@ export default function EmbroideryHistory() {
         </div>
         
         <p>
-          According to the Bible, Moses covered the <a href="http://www.phoenixmasonry.org/historypage.htm" target="_blank" rel="noopener noreferrer">Holly of Hollies</a> with a veil of fine linen embroidered with cherubim of blue, purple and scarlet. The temple built by Solomon in Jerusalem was adorned with an embroidered curtain.
+          According to the Bible, Moses adorned the Holy of Holies with a veil of fine linen embroidered with cherubim in blue, purple, and scarlet. Similarly, the temple built by Solomon in Jerusalem featured an embroidered curtain.
         </p>
+        
         <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
           <Image
             src={`${s3BucketUrl}/images/articles/KSTtheMostHolyPlace.png`}
@@ -71,16 +79,15 @@ export default function EmbroideryHistory() {
             sizes="(max-width: 600px) 100vw, 600px"
           />
         </div>
+        
         <p>
-          Long before the advent of the Christian era Babylon, Persia and Sidon had achieved great perfection in the art of embroidery.
+          Long before the Christian era, civilizations like Babylon, Persia, and Sidon had perfected embroidery. Alexander the Great was reportedly dazzled by Persian embroidered specimens. Meanwhile, China and India developed the art early on, with evidence from the Han Dynasty (206 BCE – 220 CE) showing intricate silk embroideries.
         </p>
+        
         <p>
-          Alexander was dazzled by the specimens of Persian embroidery brought to his notice.
-          China and India also had developed the art from early times.
+          Sculptures from Bharhut and Sanchi, dating to the 2nd and 1st centuries B.C., depict figures adorned with embroidered veils and headbands.
         </p>
-        <p>
-          The sculptures of <a href="https://www.britannica.com/art/Bharhut-sculpture" target="_blank" rel="noopener noreferrer">Bharhut</a> and <a href="https://www.britannica.com/art/Sanchi-sculpture" target="_blank" rel="noopener noreferrer">Sanchi</a>, dating from the 2nd and 1st centuries B.C., show figures wearing embroidered veils and headbands.
-        </p>
+        
         <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
           <Image
             src={`${s3BucketUrl}/images/articles/Bharhut01.png`}
@@ -92,31 +99,31 @@ export default function EmbroideryHistory() {
             sizes="(max-width: 600px) 100vw, 600px"
           />
         </div>
-       
+        
+        <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-700">Historical Records and Sources</h2>
+        
         <p>
-          Where can information about embroidery in later years be found?
-          Here we can use written and painted sources.
+          For later periods, information on embroidery comes from written and artistic sources.
         </p>
+        
         <p>
-          For example, <a href="http://en.wikipedia.org/wiki/Liu_Xiang_(scholar)" target="_blank" rel="noopener noreferrer">Liu Xiang</a>
-          (a famous Confucian scholar 79-8 BCE) in his
-          <a href="http://www.chinaknowledge.de/Literature/Diverse/shuoyuan.html" target="_blank" rel="noopener noreferrer">Shuoyuan</a>
-          (&quot;Garden of Stories&quot;)
-          wrote that silk embroidery already had been used in the
-          <a href="https://en.wikipedia.org/wiki/Wu_(state)" target="_blank" rel="noopener noreferrer">country of Wu</a>. It means that <a href="http://en.wikipedia.org/wiki/Liu_Xiang_(scholar)" target="_blank" rel="noopener noreferrer">Liu Xiang</a>
-          already knew about silk embroidery and even more – the silk embroidery wasn&apos;t something new at his time! (If Liu Xiang would not know about embroidery - how could he write about it?)
-          So we can conclude that the silk embroidery is at least 2000 years old.
+          For instance, Liu Xiang, a renowned Confucian scholar (79-8 BCE), mentioned in his work Shuoyuan (&quot;Garden of Stories&quot;) that silk embroidery was already in use in the state of Wu. This indicates that silk embroidery was well-established by his time, suggesting it is at least 2,000 years old.
         </p>
+        
+        <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-700">Medieval Embroidery</h2>
+        
         <p>
-          The Middle Ages (476AD – 1492 AD), sometimes called Medieval times, left us much more samples of embroidery.
+          The Middle Ages (476 AD – 1492 AD), also known as the Medieval period, have bequeathed us numerous embroidery samples. Professional embroiderers&apos; guilds existed in Europe from at least the Middle Ages, producing high-quality work.
         </p>
+        
         <p>
-          About European Medieval embroidery we can learn a lot from the painted pictures.
+          Much can be learned about European Medieval embroidery from painted artworks.
         </p>
+        
         <p>
-          For example: icon with <a href="http://en.wikipedia.org/wiki/Boris_and_Gleb" target="_blank" rel="noopener noreferrer">Saints Boris and Gleb</a>,
-          Moscow, mid-14th century:
+          An example is the icon depicting Saints Boris and Gleb from Moscow, mid-14th century:
         </p>
+        
         <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
           <Image
             src={`${s3BucketUrl}/images/articles/byzant2.png`}
@@ -128,16 +135,15 @@ export default function EmbroideryHistory() {
             sizes="(max-width: 600px) 100vw, 600px"
           />
         </div>
+        
         <p>
-          (<a href="http://en.wikipedia.org/wiki/State_Russian_Museum" target="_blank" rel="noopener noreferrer">State Russian Museum</a>, Saint Petersburg)
-          Here you can clearly realize the details of the embroidered cloth.
+          (State Russian Museum, Saint Petersburg) This piece vividly illustrates the intricate details of embroidered fabrics.
         </p>
+        
         <p>
-          Another well-known example of embroidered cloth is the
-          <a href="http://en.wikipedia.org/wiki/Bayeux_Tapestry" target="_blank" rel="noopener noreferrer">Bayeux Tapestry</a> (1066),
-          which explains the events leading up to the 1066
-          as well as the events of the conquest itself.
+          Another famous example is the Bayeux Tapestry (circa 1066), which narrates the events leading to the Norman Conquest of England, including the Battle of Hastings.
         </p>
+        
         <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
           <Image
             src={`${s3BucketUrl}/images/articles/BayeuxTapestry.png`}
@@ -149,21 +155,23 @@ export default function EmbroideryHistory() {
             sizes="(max-width: 600px) 100vw, 600px"
           />
         </div>
-           
+        
         <p>
-          Portion of the tapestry:
-          <a href="http://c7.alamy.com/comp/B10RJH/bayeux-tapestry-harold-struck-by-arrow-to-the-eye-france-norman-the-B10RJH.jpg" target="_blank" rel="noopener noreferrer"> Harold is struck in the eye by an arrow and dies</a>.
+          A notable portion of the tapestry shows Harold struck in the eye by an arrow.
         </p>
+        
         <p>
-          Just take a look at the pictures of famous European painters - you will find a lot of beautiful embroidery designs - ladies dresses, kings&apos; garments, clothing of knights and of peasants ...
-          Middle Ages clothing and fashion like everything else were dictated by the Pyramid of Power which was the Middle Ages Feudal System.
+          Examining works by renowned European painters reveals abundant embroidery designs in ladies&apos; dresses, kings&apos; garments, knights&apos; attire, and even peasants&apos; clothing. During the Middle Ages, fashion, like society, was influenced by the feudal system&apos;s hierarchy.
         </p>
+        
         <p>
-          There are some surviving pieces of medieval eastern embroidery
+          Surviving pieces of medieval Eastern embroidery also exist.
         </p>
+        
         <p>
-          Here are some photos:
+          Here are some examples:
         </p>
+        
         <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
           <Image
             src={`${s3BucketUrl}/images/articles/M73_5_635.png`}
@@ -175,18 +183,15 @@ export default function EmbroideryHistory() {
             sizes="(max-width: 600px) 100vw, 600px"
           />
         </div>
-           
+        
         <p>
-          <a href="http://www.metmuseum.org/toah/hd/tira/hd_tira.htm" target="_blank" rel="noopener noreferrer">Egyptian Tiraz inscription</a>,
-          10th century; Silk embroidery on linen.
+          Egyptian Tiraz inscription, 10th century; silk embroidery on linen (Los Angeles County Museum of Art, M.73.5.635).
         </p>
-        <p>
-          <a href="http://www.lacma.org/" target="_blank" rel="noopener noreferrer">Los Angeles County Museum of Art</a>, M.73.5.635
-        </p>
+        
         <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
           <Image
             src={`${s3BucketUrl}/images/articles/ee-red-flower.gif`}
-            alt="Red Flower"
+            alt="Silk Textile with Six-Petaled Flower"
             width={600}
             height={400}
             unoptimized
@@ -194,34 +199,27 @@ export default function EmbroideryHistory() {
             sizes="(max-width: 600px) 100vw, 600px"
           />
         </div>
+        
         <p>
-          <a href="http://eternalegypt.org/EternalEgyptWebsiteWeb/HomeServlet?ee_website_action_key=action.display.element&story_id=&module_id=&language_id=1&element_id=40755&ee_messages=0001.flashrequired.text" target="_blank" rel="noopener noreferrer">Silk Textile with Six-Petaled Flower</a>
+          Silk Textile with Six-Petaled Flower, Bahri Mamluk period, 13th century; red and blue silk embroidery on white silk (Museum of Islamic Art, Cairo).
         </p>
+        
         <p>
-          <a href="http://en.wikipedia.org/wiki/Bahri_dynasty" target="_blank" rel="noopener noreferrer">Bahri Mamluk</a> period, 13th century
-          Red and blue silk embroidery on white silk.
+          These pieces are clearly the work of Muslim artists.
         </p>
+        
         <p>
-          <a href="http://en.wikipedia.org/wiki/Museum_of_Islamic_Art,_Cairo" target="_blank" rel="noopener noreferrer">Museum of Islamic Art</a>
+          A common misconception is that Islamic culture prohibits figural imagery entirely. While this holds in religious contexts—such as mosque decorations—figural images were prevalent in secular art, particularly at Islamic courts. For example, ivory caskets from Muslim Spain feature carved scenes of courtiers, musicians, birds, and animals.
         </p>
+        
         <p>
-          You can easily recognize that the latter two embroidery pieces were made by Muslim artists.
+          Many surviving Persian textiles include human figures:
         </p>
-        <p>
-          By the way: one popular assumption is that Islamic culture does not tolerate figural imagery.
-          This ban can certainly be seen at work in religious contexts. No human or animal figure appears in mosque
-          decoration. On the other hand, figural images were common in secular contexts, especially in works of art
-          made for the courts of Islamic rulers. Ivory caskets from the courts of Muslim Spain, for example, are
-          sometimes carved with images of courtiers and musicians surrounded by birds and animals in a garden setting,
-          and many literary manuscripts contain figural illustrations.
-        </p>
-        <p>
-          Many of the surviving Persian textiles contain human figures:
-        </p>
+        
         <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
           <Image
             src={`${s3BucketUrl}/images/articles/persian_cloud_collar_early_15thc_detail.png`}
-            alt="persian cloud collar"
+            alt="Persian Cloud Collar"
             width={600}
             height={400}
             unoptimized
@@ -229,11 +227,31 @@ export default function EmbroideryHistory() {
             sizes="(max-width: 600px) 100vw, 600px"
           />
         </div>
+        
         <p>
-          Detail of <a href="http://medieval.webcon.net.au/loc_middle_east_persian.html" target="_blank" rel="noopener noreferrer"> Persian Cloud Collar, early 15th Century</a>
+          Detail of a Persian Cloud Collar, early 15th century.
         </p>
+        
+        <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-700">The Evolution of Cross-Stitch</h2>
+        
         <p>
-          The art of embroidery continues to develop in our days.
+          Cross-stitch, a specific form of embroidery using X-shaped stitches to form patterns, has its own fascinating evolution. Its roots trace back to around 500 AD in Egypt, with preserved linens from tombs showing early examples. It flourished during China&apos;s Tang Dynasty (618-906 AD), likely spreading westward via trade routes like the Silk Road.
+        </p>
+        
+        <p>
+          In Europe, cross-stitch gained prominence in the Middle Ages and Renaissance, often associated with upper-class women as a symbol of leisure and skill. The first printed cross-stitch patterns appeared in the late 1500s, following the invention of the printing press, which democratized the craft.
+        </p>
+        
+        <p>
+          By the Anglo-Saxon period in the UK (around the 7th century), intricate examples emerged, and samplers—practice pieces showcasing various stitches—became common from the 1400s onward, with collections like those at the Victoria and Albert Museum holding over 700 examples up to the 20th century.
+        </p>
+        
+        <p>
+          In the modern era, cross-stitch transformed into a popular hobby in the 1960s, with easier pattern production. The 21st century saw innovations like subversive cross-stitch, pioneered by Julie Jackson in 2003, blending traditional techniques with contemporary, often humorous or edgy themes.
+        </p>
+        
+        <p>
+          The art of embroidery, including cross-stitch, continues to thrive and evolve in contemporary times, blending ancient traditions with modern creativity.
         </p>
       </div>
     </div>
