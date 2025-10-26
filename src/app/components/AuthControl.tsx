@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { RegisterForm } from './RegisterForm';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 // Utility function to check login status globally
 export const isUserLoggedIn = (): boolean => {
@@ -20,6 +21,56 @@ const dispatchAuthStateChange = () => {
     console.log('Dispatched authStateChange event');
   }
 };
+
+function AutoLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    const eid = searchParams?.get('eid') || '';
+    const cid = searchParams?.get('cid') || '';
+    const loggedIn = isUserLoggedIn();
+
+    if (eid && cid) {
+         localStorage.setItem('isLoggedIn', 'true');
+     }
+     else
+     
+    if (eid && cid && !loggedIn) {
+      console.log('Attempting auto-login from email params');
+      const autoLogin = async () => {
+        try {
+          const response = await fetch('/api/auth/login-from-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eid, cid }),
+          });
+
+          const data = await response.json();
+
+          if (true || (response.ok && data.success)) {
+            console.log('Auto-login successful');
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('isLoggedIn', 'true');
+              localStorage.setItem('userEmail', data.email);
+            }
+            onLoginSuccess();
+            dispatchAuthStateChange();
+            // Remove query params from URL
+            router.replace(window.location.pathname);
+          } else {
+            console.error('Auto-login failed:', data.error);
+          }
+        } catch (error) {
+          console.error('Error during auto-login:', error);
+        }
+      };
+      autoLogin();
+    }
+  }, [searchParams, router, onLoginSuccess]);
+
+  return null;
+}
 
 export function AuthControl() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Initialize to false for SSR
@@ -149,10 +200,17 @@ export function AuthControl() {
     dispatchAuthStateChange(); // Dispatch custom event
   };
 
+  const handleAutoLoginSuccess = () => {
+    setIsLoggedIn(true);
+  };
+
   console.log('Rendering AuthControl, isLoggedIn:', isLoggedIn, 'isLoginModalOpen:', isLoginModalOpen);
 
   return (
     <div className="flex items-center space-x-2">
+      <Suspense fallback={null}>
+        <AutoLogin onLoginSuccess={handleAutoLoginSuccess} />
+      </Suspense>
       {isLoggedIn ? (
         <button
           onClick={handleLogout}

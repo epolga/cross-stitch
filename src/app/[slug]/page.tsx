@@ -3,6 +3,8 @@ import DesignPage from '../designs/[designId]/page'; // Adjust path if needed
 import AlbumDesignsPage from '../albums/[albumId]/page'; // Adjust path if needed
 import AlbumsPage from '../albums/page'; // Adjust path if needed
 import { getAlbumIdByCaption, getDesignIdByAlbumAndPage } from '@/lib/data-access'; // Adjust path if needed
+import { sendEmailToAdmin } from '@/lib/email-service'; // Import the email service
+import { headers } from 'next/headers';
 
 // Helper to parse slug (e.g., 'lion-37-114-Free-Design.aspx')
 function parseSlugForDesign(slug: string): { caption: string; albumId: number; nPage: number } | null {
@@ -79,6 +81,25 @@ export default async function SlugPage({ params, searchParams }: {
 }) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
+
+  // Check for eid and cid in searchParams and send notification email if present
+  const eid = typeof resolvedSearchParams.eid === 'string' ? resolvedSearchParams.eid : Array.isArray(resolvedSearchParams.eid) ? resolvedSearchParams.eid[0] : undefined;
+  const cid = typeof resolvedSearchParams.cid === 'string' ? resolvedSearchParams.cid : Array.isArray(resolvedSearchParams.cid) ? resolvedSearchParams.cid[0] : undefined;
+
+  if (eid && cid) {
+    const headersList = await headers();
+    const ip = headersList.get('x-forwarded-for')?.split(',')[0].trim() || headersList.get('x-real-ip') || 'unknown';
+
+    const subject = 'Notification: Access from Email';
+    const body = `A user accessed the page "${resolvedParams.slug}" from an email link with parameters:\n- eid: ${eid}\n- cid: ${cid}\n- IP Address: ${ip}`;
+    try {
+      await sendEmailToAdmin(subject, body, false); // Send as plain text
+      console.log('Notification email sent to admin successfully.');
+    } catch (error) {
+      console.error('Failed to send notification email to admin:', error);
+    }
+  }
+
   if(resolvedParams.slug.endsWith('-Free-Design.aspx')) {
     return GetDesignPageFromSlug(resolvedParams.slug);
     } else if(resolvedParams.slug === 'XStitch-Charts.aspx'){
