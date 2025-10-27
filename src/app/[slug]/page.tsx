@@ -9,7 +9,7 @@ import { headers } from 'next/headers';
 // Helper to parse slug (e.g., 'lion-37-114-Free-Design.aspx')
 function parseSlugForDesign(slug: string): { caption: string; albumId: number; nPage: number } | null {
   const parts = slug.split('-');
-  if (parts.length < 4 || parts[parts.length - 2] !== 'Free' || parts[parts.length - 1] !== 'Design.aspx') {
+  if (parts.length < 4 || parts[parts.length - 2].toLowerCase() !== 'free' || parts[parts.length - 1].toLowerCase() !== 'design.aspx') {
     return null;
   }
   const nPage = parseInt(parts[parts.length - 3], 10);
@@ -23,7 +23,7 @@ function parseSlugForDesign(slug: string): { caption: string; albumId: number; n
 // Helper to parse album caption from slug (e.g., 'nature-45-Charts.aspx')
 async function getAlbumCaptionFromSlug(slug: string): Promise<string | null> {
  const parts = slug.split('-');
- if (parts.length < 3 || parts[0] !== 'Free' || parts[parts.length - 1] !== 'Charts.aspx') {
+ if (parts.length < 3 || parts[0].toLowerCase() !== 'free' || parts[parts.length - 1].toLowerCase() !== 'charts.aspx') {
     return null;
   }
   const albumCaption = parts.slice(1, parts.length - 1).join(' ');
@@ -100,11 +100,11 @@ export default async function SlugPage({ params, searchParams }: {
     }
   }
 
-  if(resolvedParams.slug.endsWith('-Free-Design.aspx')) {
+  if(resolvedParams.slug.toLowerCase().endsWith('-free-design.aspx')) {
     return GetDesignPageFromSlug(resolvedParams.slug);
-    } else if(resolvedParams.slug === 'XStitch-Charts.aspx'){
+    } else if(resolvedParams.slug.toLowerCase() === 'xstitch-charts.aspx'){
     return GetAlbumsPageFromSlug();
-}     else if (resolvedParams.slug.endsWith('-Charts.aspx')) {
+}     else if (resolvedParams.slug.toLowerCase().endsWith('-charts.aspx')) {
     return GetAlbumDesignsPageFromSlug(resolvedParams.slug, resolvedSearchParams);
   } else {
     notFound();
