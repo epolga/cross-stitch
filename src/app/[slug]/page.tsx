@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
-import DesignPage from '../designs/[designId]/page'; // Adjust path if needed
+import type { Metadata } from 'next';
+import DesignPage, { generateMetadata as generateDesignMetadata } from '../designs/[designId]/page'; // Adjust path if needed
 import AlbumDesignsPage from '../albums/[albumId]/page'; // Adjust path if needed
 import AlbumsPage from '../albums/page'; // Adjust path if needed
 import { getAlbumIdByCaption, getDesignIdByAlbumAndPage } from '@/lib/data-access'; // Adjust path if needed
@@ -74,6 +75,43 @@ async function GetDesignPageFromSlug(slug: string) {
       // Render the imported AlbumDesignsPage component, passing simulated params
       return <AlbumDesignsPage params={Promise.resolve({ albumId: albumId.toString() })} searchParams={Promise.resolve(searchParams)} />;
  }
+
+export async function generateMetadata({ params }: { 
+  params: Promise<{ slug: string }>; 
+}): Promise<Metadata> {
+  const resolvedParams = await params;
+
+  if(resolvedParams.slug.toLowerCase().endsWith('-free-design.aspx')) {
+    const designId = await getDesignIdFromSlug(resolvedParams.slug);
+    if (designId) {
+      return generateDesignMetadata({ params: Promise.resolve({ designId }) });
+    }
+  } else if(resolvedParams.slug.toLowerCase() === 'xstitch-charts.aspx'){
+    // Add metadata for albums page if needed
+    return {
+      title: 'Albums',
+      description: 'Browse cross-stitch albums',
+    };
+  } else if (resolvedParams.slug.toLowerCase().endsWith('-charts.aspx')) {
+    const albumCaption = await getAlbumCaptionFromSlug(resolvedParams.slug);
+    if (albumCaption) {
+      const albumId = await getAlbumIdByCaption(albumCaption);
+      if (albumId) {
+        // If AlbumDesignsPage has its own generateMetadata, import and call it here similarly
+        return {
+          title: `${albumCaption} Designs`,
+          description: `Explore designs in the ${albumCaption} album`,
+        };
+      }
+    }
+  }
+
+  // Default metadata
+  return {
+    title: 'Page Not Found',
+    description: 'The requested page could not be found',
+  };
+}
 
 export default async function SlugPage({ params, searchParams }: { 
   params: Promise<{ slug: string }>; 
