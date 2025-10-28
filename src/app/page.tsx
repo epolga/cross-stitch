@@ -2,11 +2,86 @@ import { DesignListWrapper } from '@/app/components/DesignListWrapper';
 import SearchForm from '@/app/components/SearchForm';
 import { fetchFilteredDesigns } from '@/lib/data-access';
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
 interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const resolvedSearchParams = await searchParams;
+  const nPage = parseInt(resolvedSearchParams?.nPage?.toString() || '1', 10);
+  const pageSize = parseInt(resolvedSearchParams?.pageSize?.toString() || '20', 10);
+  const searchText = resolvedSearchParams?.searchText?.toString() || '';
+
+  const filters = {
+    widthFrom: parseInt(resolvedSearchParams?.widthFrom?.toString() || '0', 10),
+    widthTo: parseInt(resolvedSearchParams?.widthTo?.toString() || '10000', 10),
+    heightFrom: parseInt(resolvedSearchParams?.heightFrom?.toString() || '0', 10),
+    heightTo: parseInt(resolvedSearchParams?.heightTo?.toString() || '10000', 10),
+    ncolorsFrom: parseInt(resolvedSearchParams?.ncolorsFrom?.toString() || '0', 10),
+    ncolorsTo: parseInt(resolvedSearchParams?.ncolorsTo?.toString() || '10000', 10),
+    nPage,
+    pageSize,
+    searchText,
+  };
+
+  let designs;
+  try {
+    ({ designs } = await fetchFilteredDesigns(filters));
+  } catch (error) {
+    console.error('Error fetching designs for metadata:', error);
+    return {
+      title: 'Cross Stitch Designs',
+      description: 'Explore thousands of cross-stitch designs with downloadable PDFs',
+    };
+  }
+
+  const ogImage = designs[0]?.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
+  const canonicalUrl = 'https://cross-stitch-pattern.net/';
+  const title = searchText ? `Search Results for "${searchText}" - Cross Stitch Designs` : 'Cross Stitch Designs';
+  const description = searchText 
+    ? `Search results for "${searchText}". Explore thousands of cross-stitch designs with downloadable PDFs.` 
+    : 'Explore thousands of cross-stitch designs with downloadable PDFs.';
+
+  return {
+    title,
+    description,
+    keywords: 'cross stitch, designs, patterns, PDF, embroidery',
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    robots: 'index, follow',
+    openGraph: {
+      title,
+      description,
+      images: ogImage,
+      url: canonicalUrl,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ogImage,
+    },
+    other: {
+      'application/ld+json': JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Cross Stitch Pattern",
+        "description": description,
+        "url": canonicalUrl,
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": `${canonicalUrl}?searchText={search_term_string}`,
+          "query-input": "required name=search_term_string"
+        }
+      }),
+    },
+  };
 }
 
 export default async function Home({ searchParams }: Props) {
