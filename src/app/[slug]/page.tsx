@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import DesignPage, { generateMetadata as generateDesignMetadata } from '../designs/[designId]/page'; // Adjust path if needed
-import AlbumDesignsPage from '../albums/[albumId]/page'; // Adjust path if needed
+import AlbumDesignsPage, { generateMetadata as generateAlbumMetadata } from '../albums/[albumId]/page'; // Adjust path if needed
 import AlbumsPage from '../albums/page'; // Adjust path if needed
 import { getAlbumIdByCaption, getDesignIdByAlbumAndPage } from '@/lib/data-access'; // Adjust path if needed
 import { sendEmailToAdmin } from '@/lib/email-service'; // Import the email service
@@ -76,10 +76,12 @@ async function GetDesignPageFromSlug(slug: string) {
       return <AlbumDesignsPage params={Promise.resolve({ albumId: albumId.toString() })} searchParams={Promise.resolve(searchParams)} />;
  }
 
-export async function generateMetadata({ params }: { 
+export async function generateMetadata({ params, searchParams }: { 
   params: Promise<{ slug: string }>; 
+  searchParams: Promise<Record<string, string | string[] | undefined>>; 
 }): Promise<Metadata> {
   const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
 
   if(resolvedParams.slug.toLowerCase().endsWith('-free-design.aspx')) {
     const designId = await getDesignIdFromSlug(resolvedParams.slug);
@@ -97,11 +99,7 @@ export async function generateMetadata({ params }: {
     if (albumCaption) {
       const albumId = await getAlbumIdByCaption(albumCaption);
       if (albumId) {
-        // If AlbumDesignsPage has its own generateMetadata, import and call it here similarly
-        return {
-          title: `${albumCaption} Designs`,
-          description: `Explore designs in the ${albumCaption} album`,
-        };
+        return generateAlbumMetadata({ params: Promise.resolve({ albumId: albumId.toString() }), searchParams: Promise.resolve(resolvedSearchParams) });
       }
     }
   }
