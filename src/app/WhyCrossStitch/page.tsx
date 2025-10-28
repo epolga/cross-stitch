@@ -43,7 +43,7 @@ export default function WhyCrossStitch() {
           </p>
           <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
             <Image
-              src="https://miro.medium.com/0*_dPH4xEVE1eYr2Ff.jpg"
+              src="https://cross-stitch-designs.s3.us-east-1.amazonaws.com/images/articles/cross-stitch-miro.jpg"
               alt="Person engaged in cross-stitch activity"
               width={600}
               height={600}
@@ -65,7 +65,7 @@ export default function WhyCrossStitch() {
           </p>
           <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
             <Image
-              src="https://cdn.shopify.com/s/files/1/0851/0800/files/cross-stitch-benefits-beginners_600x600.jpg?v=1674656210"
+              src="https://cross-stitch-designs.s3.us-east-1.amazonaws.com/images/articles/cross-stitch-spot.jpg"
               alt="Cross-stitch setup demonstrating relaxation benefits"
               width={600}
               height={600}
@@ -87,7 +87,7 @@ export default function WhyCrossStitch() {
           </p>
           <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
             <Image
-              src="https://www.diamondartclub.com/cdn/shop/articles/crossstitch-set_1024x1024.jpg?v=1612234440"
+              src="https://cross-stitch-designs.s3.us-east-1.amazonaws.com/images/articles/openart-image_cross-stitch.jpg"              
               alt="Close-up of cross-stitch process"
               width={1024}
               height={1024}
@@ -109,7 +109,7 @@ export default function WhyCrossStitch() {
           </p>
           <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
             <Image
-              src="http://theartofstitch.com/cdn/shop/articles/blog_image_981aa18e-e6e2-41fc-9d8f-f72e5e5113aa.jpg?v=1752919387"
+              src="https://cross-stitch-designs.s3.us-east-1.amazonaws.com/images/articles/hand-labor-2943250_960_720.jpg"
               alt="Colorful cross-stitch design"
               width={1800}
               height={1000}
@@ -131,7 +131,7 @@ export default function WhyCrossStitch() {
           </p>
           <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
             <Image
-              src="https://www.caterpillarcrossstitch.com/cdn/shop/articles/jessica-mae-childrens-cross-stitch_9aa0831c-5e35-472f-b47d-1d5dad5dce6d_800x.jpg?v=1750848118"
+              src="https://cross-stitch-designs.s3.us-east-1.amazonaws.com/images/articles/cross-stitch-girl.jpg"
               alt="Young person engaged in cross-stitch"
               width={1024}
               height={683}
@@ -175,7 +175,7 @@ export default function WhyCrossStitch() {
           </p>
           <div className="w-full max-w-[600px] mx-auto my-6 rounded-lg shadow-md overflow-hidden border border-gray-300">
             <Image
-              src="https://fabricflair.com/product_images/uploaded_images/il-1588xn.2252105128-rxs4.jpg"
+              src="https://cross-stitch-designs.s3.us-east-1.amazonaws.com/images/articles/cross-stitch-completed.jpg"
               alt="Completed cross-stitch artwork"
               width={1549}
               height={1469}
