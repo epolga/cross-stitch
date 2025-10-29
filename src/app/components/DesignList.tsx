@@ -84,12 +84,11 @@ export function DesignList({
               {/* ✅ Replaced old PDF button logic with the unified DownloadPdfLink */}
               <div className="w-full mt-2 text-center">
                 <DownloadPdfLink
-                  pdfUrl={design.PdfUrl}
-                  caption={design.Caption}
+                  design ={design}
                   className={styles.downloadLink}
-                />
+                 />
               </div>
-            </div >
+            </div>
           ))}
         </div>
       )}

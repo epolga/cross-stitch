@@ -92,8 +92,7 @@ export default async function DesignPage({ params }: Props) {
 
           {/* TOP download control (gated) */}
           <DownloadPdfLink
-            pdfUrl={design.PdfUrl}
-            caption={design.Caption}
+            design={design}
             className="inline-block text-blue-600 hover:underline mb-4"
           />
 
@@ -118,8 +117,7 @@ export default async function DesignPage({ params }: Props) {
 
           {/* BOTTOM download control (gated) */}
           <DownloadPdfLink
-            pdfUrl={design.PdfUrl}
-            caption={design.Caption}
+            design={design}
             className="inline-block text-blue-600 hover:underline"
           />
         </div>
