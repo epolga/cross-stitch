@@ -114,6 +114,13 @@ export default async function DesignPage({ params }: Props) {
           )}
 
           <p className="text-gray-700 mb-4">{design.Description || 'No description available'}</p>
+         <div className="text-gray-700 mb-4 text-xs">
+          {(design.Notes || 'No notes available')
+          .split('<br />')
+          .map((line, index) => (
+            <p key={index}>{line.trim()}</p>
+          ))}
+          </div>
 
           {/* BOTTOM download control (gated) */}
           <DownloadPdfLink
