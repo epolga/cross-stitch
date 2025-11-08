@@ -2,6 +2,7 @@ import Image from 'next/image';
 import type { Design } from '@/app/types/design';
 import DownloadPdfLink from '@/app/components/DownloadPdfLink';
 import type { Metadata } from 'next';
+import { CreateDesignUrl } from '@/lib/url-helper';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,7 @@ console.log("Generating metadata for designId:", designId);
     };
   }
 
-  const canonicalUrl = `https://cross-stitch-pattern.net/designs/${designId}`;
+  const canonicalUrl = `https://cross-stitch-pattern.net/${await CreateDesignUrl(design)}`;
   const ogImage = design.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
 
   return {

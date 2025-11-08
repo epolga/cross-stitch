@@ -58,7 +58,7 @@ export function DesignList({
               key={`${design.AlbumID}-${design.DesignID}`}
               className={styles.card}
             >
-              <Link href={CreateDesignUrl(design.Caption, design.AlbumID, design.NPage)} className="no-underline">
+              <Link href={CreateDesignUrl(design)} className="no-underline">
                 <div className="text-center">
                   {design.ImageUrl ? (
                     <div className="w-[100px] h-[100px] mx-auto flex items-center justify-center">

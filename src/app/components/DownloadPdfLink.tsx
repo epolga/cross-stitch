@@ -56,7 +56,7 @@ export default function DownloadPdfLink({ design, className }: Props) {
           const response = await fetch('/api/notify-admin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ subject: `Design Download: ${design.Caption}`, message: `User downloaded design ${baseUrl}/${CreateDesignUrl(design.Caption, design.AlbumID, design.NPage)}` })
+            body: JSON.stringify({ subject: `Design Download: ${design.Caption}`, message: `User downloaded design ${baseUrl}/${CreateDesignUrl(design)}` })
           });
           if (response.ok) {
             console.log('Admin notified of design download.');

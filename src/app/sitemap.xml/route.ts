@@ -12,6 +12,7 @@ import { Readable } from 'stream';
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getAllAlbumCaptions, fetchAllDesigns } from '@/lib/data-access';
 import { Design } from '../types/design';
+import { CreateAlbumUrl, CreateDesignUrl } from '@/lib/url-helper';
 
 // Define AWS error interface to avoid using 'any'
 interface AwsError extends Error {
@@ -48,11 +49,11 @@ async function generateAndUploadSitemap(baseUrl: string) {
   const albums = (await getAllAlbumCaptions()) || [];
 
   const albumUrls = albums.map(album => ({
-    url: `/Free-${album.Caption.replace(/\s+/g, '-')}-Charts.aspx`,
+    url: `/${CreateAlbumUrl(album.albumId)}`,
     changefreq: 'monthly',
     priority: 0.7,
     lastmod: new Date().toISOString(),
-  }));
+  }));  
 
   // Fetch design URLs (set pageSize large enough to retrieve all in one call)
   let designs : Design[] = [];
@@ -64,7 +65,7 @@ async function generateAndUploadSitemap(baseUrl: string) {
   }
 
   const designUrls = designs.map(design => ({
-    url: `/${design.Caption.replace(/\s+/g, '-')}-${design.AlbumID}-${design.NPage-1}-Free-Design.aspx`,
+    url: `/${CreateDesignUrl(design)}`,
     changefreq: 'monthly',
     priority: 0.6,
     lastmod: new Date().toISOString(),
