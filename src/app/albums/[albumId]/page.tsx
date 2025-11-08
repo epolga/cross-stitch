@@ -36,7 +36,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
   const { albumCaption, designs } = designsResponse;
   const ogImage = designs[0]?.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
-  const canonicalUrl = `https://cross-stitch-pattern.net${await CreateAlbumUrl(parseInt(albumId, 10))}`;
+  const canonicalUrl = `https://cross-stitch-pattern.net${await CreateAlbumUrl(albumCaption ? albumCaption : '')}`;
   const title = `Designs in ${albumCaption || `Album ${albumId}`}`;
   const description = `Explore cross-stitch designs in album ${albumCaption || albumId}. Downloadable PDF patterns available.`;
 

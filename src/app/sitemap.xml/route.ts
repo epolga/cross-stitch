@@ -49,12 +49,13 @@ async function generateAndUploadSitemap(baseUrl: string) {
   const albums = (await getAllAlbumCaptions()) || [];
 
   const albumUrls = albums.map(album => ({
-    url: `/${CreateAlbumUrl(album.albumId)}`,
+    url: `/${CreateAlbumUrl(album.Caption)}`,
     changefreq: 'monthly',
-    priority: 0.7,
+    priority: 0.6,
     lastmod: new Date().toISOString(),
-  }));  
+  }));
 
+   
   // Fetch design URLs (set pageSize large enough to retrieve all in one call)
   let designs : Design[] = [];
   try {
@@ -74,7 +75,7 @@ async function generateAndUploadSitemap(baseUrl: string) {
   // Create sitemap stream (single file since total URLs are manageable)
   const smStream = new SitemapStream({ hostname: baseUrl });
   staticUrls.forEach(url => smStream.write(url));
-  albumUrls.forEach(url => smStream.write(url));
+  albumUrls.forEach(url =>  smStream.write(url));
   designUrls.forEach(url => smStream.write(url));
   smStream.end();
 

@@ -1,7 +1,6 @@
 // src/lib/UrlHelper.ts
 
 import { Design } from "@/app/types/design";
-import { getAlbumCaption } from "./data-access";
 
 // Helper to create design URL based on Caption, AlbumId, and NPage
 export function CreateDesignUrl(
@@ -21,11 +20,10 @@ export function CreateImageUrl(
 } 
 
 // Helper to create album URL based on AlbumId
-export async function CreateAlbumUrl(
-  AlbumId: number
-): Promise<string> {
-  const albumCaption: string | undefined = await getAlbumCaption(AlbumId); // Fetch album caption based on AlbumId
-  const formattedCaption = albumCaption?.replace(/\s+/g, '-');
-  return `/Free-${formattedCaption}-Charts.aspx`;
+export function CreateAlbumUrl(
+  Caption:string)
+  : string{
+  const formattedCaption = Caption?.replace(/\s+/g, '-');
+  return `Free-${formattedCaption}-Charts.aspx`;
 }
     
