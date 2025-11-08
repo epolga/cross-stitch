@@ -27,6 +27,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             gtag('config', 'G-232D0Z4TWB');
           `}
         </Script>
+        {/* Google AdSense Script */}
+        <Script
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8273546332414099"
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className="min-h-screen bg-gray-100 flex flex-col">
         <ClientNav />
