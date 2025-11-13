@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { RegisterForm } from './RegisterForm';
+import { RegisterOnlyDialog } from './RegisterOnlyDialog';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 // Utility function to check login status globally
@@ -14,7 +15,7 @@ export const isUserLoggedIn = (): boolean => {
 };
 
 // Dispatch custom event for auth state changes
-const dispatchAuthStateChange = () => {
+const dispatchAuthStateChange = (): void => {
   if (typeof window !== 'undefined') {
     const event = new Event('authStateChange');
     window.dispatchEvent(event);
@@ -32,13 +33,10 @@ function AutoLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     const loggedIn = isUserLoggedIn();
 
     if (eid && cid) {
-         localStorage.setItem('isLoggedIn', 'true');
-     }
-     else
-     
-    if (eid && cid && !loggedIn) {
+      localStorage.setItem('isLoggedIn', 'true');
+    } else if (eid && cid && !loggedIn) {
       console.log('Attempting auto-login from email params');
-      const autoLogin = async () => {
+      const autoLogin = async (): Promise<void> => {
         try {
           const response = await fetch('/api/auth/login-from-email', {
             method: 'POST',
@@ -46,26 +44,26 @@ function AutoLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
             body: JSON.stringify({ eid, cid }),
           });
 
-          const data = await response.json();
+          const data: { success?: boolean; email?: string } = await response.json();
 
           if (true || (response.ok && data.success)) {
             console.log('Auto-login successful');
             if (typeof window !== 'undefined') {
               localStorage.setItem('isLoggedIn', 'true');
-              localStorage.setItem('userEmail', data.email);
+              localStorage.setItem('userEmail', data.email ?? '');
             }
             onLoginSuccess();
             dispatchAuthStateChange();
             // Remove query params from URL
             router.replace(window.location.pathname);
           } else {
-            console.error('Auto-login failed:', data.error);
+            console.error('Auto-login failed:', (data as unknown) as Record<string, unknown>);
           }
         } catch (error) {
           console.error('Error during auto-login:', error);
         }
       };
-      autoLogin();
+      void autoLogin();
     }
   }, [searchParams, router, onLoginSuccess]);
 
@@ -73,15 +71,16 @@ function AutoLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
 }
 
 export function AuthControl() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Initialize to false for SSR
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isRegisterOnlyOpen, setIsRegisterOnlyOpen] = useState(false);
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
   // Validate email format
-  const isValidEmail = (email: string) => email.includes('@') && email.includes('.');
+  const isValidEmail = (email: string): boolean => email.includes('@') && email.includes('.');
 
   // Initialize login state from localStorage (client-side only)
   useEffect(() => {
@@ -92,31 +91,45 @@ export function AuthControl() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      window.addEventListener('error', (e) => console.error('Global error:', e));
-      return () => window.removeEventListener('error', (e) => console.error('Global error:', e));
+      const handler = (e: ErrorEvent) => console.error('Global error:', e);
+      window.addEventListener('error', handler);
+      return () => window.removeEventListener('error', handler);
     }
   }, []);
 
-  // Listen for openRegisterModal event
+  // Listen for openPayPalModal (existing) → open PayPal dialog (RegisterForm)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const handleOpenRegister = () => {
-        console.log('Received openRegisterModal event');
-        handleRegisterClick();
+      const handleOpenPayPal = () => {
+        console.log('Received openPayPalModal event');
+        handleRegisterClick(); // open existing dialog with PayPal logic
       };
-      window.addEventListener('openRegisterModal', handleOpenRegister);
-      return () => window.removeEventListener('openRegisterModal', handleOpenRegister);
+      window.addEventListener('openPayPalModal', handleOpenPayPal as EventListener);
+      return () => window.removeEventListener('openPayPalModal', handleOpenPayPal as EventListener);
     }
   }, []);
 
-  const handleLoginClick = () => {
+  // NEW: Listen for openRegisterModal → open RegisterOnlyDialog (asks first name + email)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleOpenRegisterOnly = () => {
+        console.log('Received openRegister event');
+        setIsRegisterOnlyOpen(true);
+      };
+      window.addEventListener('openRegisterModal', handleOpenRegisterOnly as EventListener);
+      return () => window.removeEventListener('openRegisterModal', handleOpenRegisterOnly as EventListener);
+    }
+  }, []);
+
+  const handleLoginClick = (): void => {
     console.log('Login button clicked, opening login modal...');
     setIsLoginModalOpen(true);
     setIsRegisterModalOpen(false);
+    setIsRegisterOnlyOpen(false);
     setErrorMessage('');
   };
 
-  const handleLoginSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     console.log('Form submitted, starting login process');
     try {
@@ -134,7 +147,7 @@ export function AuthControl() {
         body: JSON.stringify({ email: loginUsername, password: loginPassword }),
       });
 
-      const data = await response.json();
+      const data: { success?: boolean; error?: string } = await response.json();
       console.log('API response:', data);
 
       if (response.ok && data.success) {
@@ -142,7 +155,7 @@ export function AuthControl() {
         // Store login state in localStorage
         if (typeof window !== 'undefined') {
           localStorage.setItem('isLoggedIn', 'true');
-          localStorage.setItem('userEmail', loginUsername); // Optional: store user email
+          localStorage.setItem('userEmail', loginUsername);
         }
         setIsLoggedIn(true);
         setIsLoginModalOpen(false);
@@ -160,11 +173,11 @@ export function AuthControl() {
     }
   };
 
-  const handleLoginButtonClick = () => {
+  const handleLoginButtonClick = (): void => {
     console.log('Login submit button clicked');
   };
 
-  const handleLogout = () => {
+  const handleLogout = (): void => {
     console.log('Logging out...');
     // Clear localStorage
     if (typeof window !== 'undefined') {
@@ -175,14 +188,15 @@ export function AuthControl() {
     dispatchAuthStateChange(); // Dispatch custom event
   };
 
-  const handleRegisterClick = () => {
+  const handleRegisterClick = (): void => {
     console.log('Register button clicked, opening register modal...');
     setIsRegisterModalOpen(true);
     setIsLoginModalOpen(false);
+    setIsRegisterOnlyOpen(false);
     setErrorMessage('');
   };
 
-  const closeLoginModal = () => {
+  const closeLoginModal = (): void => {
     console.log('Closing login modal');
     setIsLoginModalOpen(false);
     setLoginUsername('');
@@ -190,17 +204,18 @@ export function AuthControl() {
     setErrorMessage('');
   };
 
-  const handleRegisterSuccess = () => {
+  const handleRegisterSuccess = (): void => {
     // Store login state in localStorage on successful registration
     if (typeof window !== 'undefined') {
       localStorage.setItem('isLoggedIn', 'true');
     }
     setIsLoggedIn(true);
     setIsRegisterModalOpen(false);
+    setIsRegisterOnlyOpen(false);
     dispatchAuthStateChange(); // Dispatch custom event
   };
 
-  const handleAutoLoginSuccess = () => {
+  const handleAutoLoginSuccess = (): void => {
     setIsLoggedIn(true);
   };
 
@@ -211,6 +226,7 @@ export function AuthControl() {
       <Suspense fallback={null}>
         <AutoLogin onLoginSuccess={handleAutoLoginSuccess} />
       </Suspense>
+
       {isLoggedIn ? (
         <button
           onClick={handleLogout}
@@ -315,12 +331,19 @@ export function AuthControl() {
         </div>
       )}
 
-      {/* Register Modal */}
+      {/* Existing PayPal/Register modal */}
       <RegisterForm
         isOpen={isRegisterModalOpen}
         onClose={() => setIsRegisterModalOpen(false)}
         onLoginClick={handleLoginClick}
         onRegisterSuccess={handleRegisterSuccess}
+      />
+
+      {/* NEW: lightweight register-only dialog */}
+      <RegisterOnlyDialog
+        isOpen={isRegisterOnlyOpen}
+        onClose={() => setIsRegisterOnlyOpen(false)}
+        onSuccess={handleRegisterSuccess}
       />
     </div>
   );

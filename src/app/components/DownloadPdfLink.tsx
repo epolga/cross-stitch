@@ -1,85 +1,113 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { isUserLoggedIn } from './AuthControl';
 import { Design } from '../types/design';
-import { CreateDesignUrl } from '@/lib/url-helper';
+//import { CreateDesignUrl } from '@/lib/url-helper';
+
 type Props = {
   design: Design;
   className?: string;
 };
 
+type DownloadMode = 'free' | 'register' | 'paid';
+
 export default function DownloadPdfLink({ design, className }: Props) {
   const [loggedIn, setLoggedIn] = useState(false);
 
-  // keep state in sync across same-tab + cross-tab changes
-  useEffect(() => {
-    setLoggedIn(isUserLoggedIn());
+  // Read mode from environment variable at build time
+  const mode: DownloadMode = useMemo(() => {
+    const raw = (process.env.NEXT_PUBLIC_DOWNLOAD_MODE || '').toLowerCase()
+      .trim();
+    console.log('DownloadPdfLink mode:', raw);
+    if (raw === 'free' || raw === 'register' || raw === 'paid') return raw;
+    // Default mode: requires registration if not logged in
+    return 'register';
+  }, []);
 
+  // Keep auth state updated across same-tab and cross-tab
+  useEffect(() => {
     const onAuthChange = () => setLoggedIn(isUserLoggedIn());
     const onStorage = (e: StorageEvent) => {
-      if (e.key === 'isLoggedIn') setLoggedIn(e.newValue === 'true');
+      if (e.key === 'isLoggedIn') setLoggedIn(isUserLoggedIn());
     };
 
-    window.addEventListener('authStateChange', onAuthChange);
+    setLoggedIn(isUserLoggedIn());
+    window.addEventListener('authStateChange', onAuthChange as EventListener);
     window.addEventListener('storage', onStorage);
+
     return () => {
-      window.removeEventListener('authStateChange', onAuthChange);
+      window.removeEventListener('authStateChange', onAuthChange as EventListener);
       window.removeEventListener('storage', onStorage);
     };
   }, []);
 
+  // Dispatch event to open registration modal
   const openRegister = useCallback(() => {
     const evt = new Event('openRegisterModal');
     window.dispatchEvent(evt);
   }, []);
 
-  if (! design || !design.PdfUrl) {
-    return <p className="text-gray-500 mb-4">PDF not available</p>;
+  // Dispatch event to open PayPal modal (handled elsewhere)
+  const openPayPal = useCallback(() => {
+    const evt = new CustomEvent('openPayPalModal', { detail: { design } });
+    window.dispatchEvent(evt);
+  }, [design]);
+
+  if (!design || !design.PdfUrl) {
+    return <p className="text-gray-500">PDF is not available for this design.</p>;
+    
+  }  console.log(`DownloadPdfLink: register mode = ${mode}, loggedIn = ${loggedIn}`);
+ 
+
+  // ===== MODES =====
+  // 1) Free download for everyone
+  if (mode === 'free') {
+    return (
+      <a
+        href={design.PdfUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className ?? 'inline-block text-blue-600 hover:underline'}
+        aria-label="Download PDF"
+      >
+        Download PDF
+      </a>
+    );
   }
 
-  return loggedIn || 2===2 ? (
-    <a
-      href={design.PdfUrl}
-      className={className ?? 'inline-block text-blue-600 hover:underline'}
-      download
-      aria-label={`Download PDF for ${design.Caption}`}
-      onClick={async () => {
-        
-      const baseUrl = 'https://www.cross-stitch-pattern.net';
-     
-      const notifyAdmin = async () => {
-        try {
-          console.log('Design PDF download initiated for', design.Caption); 
-           
+  // 2) Registration required: show register modal if not logged in
+  
+  if (mode === 'register') {
+     return loggedIn ? (
+      <a
+        href={design.PdfUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className ?? 'inline-block text-blue-600 hover:underline'}
+        aria-label="Download PDF"
+      >
+        Download PDF
+      </a>
+    ) : (
+      <button
+        onClick={openRegister}
+        className={className ?? 'inline-block text-blue-600 hover:underline'}
+        aria-label="Open register form"
+        type="button"
+      >
+        Download PDF
+      </button>
+    );
+  }
 
-          const response = await fetch('/api/notify-admin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ subject: `Design Download: ${design.Caption}`, message: `User downloaded design ${baseUrl}/${CreateDesignUrl(design)}` })
-          });
-          if (response.ok) {
-            console.log('Admin notified of design download.');
-          } else {
-            throw new Error(`API response not OK: ${response.status}`);
-          }
-        } catch (error) {
-          console.error('Failed to send email notification to admin:', error);
-        }
-      };
-      
-      notifyAdmin();
-    }}
-    >
-    
-      Download PDF
-    </a>
-    
-  ) : (
+  // 3) Paid mode: open PayPal modal
+  return (
     <button
-      onClick={openRegister}
+      onClick={openPayPal}
       className={className ?? 'inline-block text-blue-600 hover:underline'}
-      aria-label="Open register form"
+      aria-label="Open PayPal checkout"
+      type="button"
     >
       Download PDF
     </button>

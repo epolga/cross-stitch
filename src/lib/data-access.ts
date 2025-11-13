@@ -642,3 +642,33 @@ export async function getDesignIdByAlbumAndPage(albumId: number, nPage: number):
     return null;
   });
 }
+
+// ===== Mock registration persistence (replace with real DynamoDB later) =====
+
+/** Payload for a new user created via the "register-only" dialog */
+export type NewUserRegistration = {
+  email: string;
+  firstName: string;
+  password: string;
+};
+
+/**
+ * Mock function that pretends to save a new user to DynamoDB.
+ * Replace this with AWS SDK v3 calls to DynamoDB when ready.
+ */
+export async function saveUserMock(
+  user: NewUserRegistration
+): Promise<{ userId: string }> {
+  // Simulate network/DB latency
+  await new Promise((r) => setTimeout(r, 200));
+
+  // Server log to verify payload during development
+  console.log('[data-access] saveUserMock:', {
+    email: user.email,
+    firstName: user.firstName,
+    passwordLength: user.password?.length ?? 0,
+  });
+
+  // Return a mock ID
+  return { userId: `mock-${Date.now()}` };
+}

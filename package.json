@@ -11,6 +11,7 @@
     "dependencies": {
         "@aws-sdk/client-dynamodb": "^3.803.0",
         "@aws-sdk/client-s3": "^3.908.0",
+        "@aws-sdk/client-ses": "^3.929.0",
         "@aws-sdk/lib-dynamodb": "^3.803.0",
         "@fontsource/geist-mono": "^5.2.6",
         "@fontsource/geist-sans": "^5.2.5",

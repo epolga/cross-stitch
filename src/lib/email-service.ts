@@ -1,92 +1,60 @@
-// File: src/app/lib/emailservice.ts
+// File: src/lib/email-service.ts
+// SES with AWS SDK v3, strict types, no ESLint errors.
 
-import AWS from 'aws-sdk';
+import {
+  SESClient,
+  SendEmailCommand,
+  SendEmailCommandInput,
+} from '@aws-sdk/client-ses';
 
-// Initialize SES client (reuse your existing configuration)
-const ses = new AWS.SES({ apiVersion: '2010-12-01' , region: process.env.AWS_REGION || 'us-east-1'});
-
-// Administrative email for notifications like IP logs (updated to specified address)
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'olga.epstein@gmail.com';
+const REGION = process.env.AWS_REGION || 'us-east-1';
 const FROM_EMAIL = process.env.AWS_SES_FROM_EMAIL || 'ann@cross-stitch-pattern.net';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'olga.epstein@gmail.com';
 
-// Configure AWS SDK with credentials from environment variables
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION || 'us-east-1',
+const sesClient = new SESClient({
+  region: REGION,
+  credentials:
+    process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+      ? {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        }
+      : undefined,
 });
 
-/**
- * Sends an email using AWS SES (v2 SDK).
- * @param params - Email parameters including recipient, subject, and body.
- * @returns A promise that resolves to the message ID if successful.
- * @throws Error if sending fails.
- */
-export async function sendEmail(params: {
+/** Send an email via SES. If html === true, body is HTML; otherwise plain text. */
+export async function sendEmail({
+  to,
+  subject,
+  body,
+  html = true,
+  from = FROM_EMAIL,
+}: {
   to: string;
   subject: string;
   body: string;
-  from?: string; // Optional; defaults to verified sender
-  isHtml?: boolean; // Optional; defaults to true for HTML body
-}) {
-
-  const { to, subject, body, from = FROM_EMAIL || 'ann@cross-stitch-pattern.net', isHtml = true } = params;
-  // Construct the message body conditionally to avoid undefined Data
-  const messageBody: AWS.SES.Body = {};
-  if (isHtml) {
-    messageBody.Html = {
-      Data: body,
-      Charset: 'UTF-8',
-    };
-  } else {
-    messageBody.Text = {
-      Data: body,
-      Charset: 'UTF-8',
-    };
-  }
-
-  const paramsForSend: AWS.SES.SendEmailRequest = {
+  html?: boolean;
+  from?: string;
+}): Promise<void> {
+  const input: SendEmailCommandInput = {
     Source: from,
-    Destination: {
-      ToAddresses: [to],
-    },
+    Destination: { ToAddresses: [to] },
     Message: {
-      Subject: {
-        Data: subject,
-        Charset: 'UTF-8',
-      },
-      Body: messageBody,
+      Subject: { Data: subject, Charset: 'UTF-8' },
+      Body: html
+        ? { Html: { Data: body, Charset: 'UTF-8' } }
+        : { Text: { Data: body, Charset: 'UTF-8' } },
     },
   };
 
-  try {
-    const response = await ses.sendEmail(paramsForSend).promise();
-    console.log('Email sent successfully. Message ID:', response.MessageId);
-    return response.MessageId;
-  } catch (error) {
-    console.error('Error sending email via SES:', error);
-    throw new Error(`Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
+  await sesClient.send(new SendEmailCommand(input));
 }
 
- 
-/**
- * Convenience function to send email to admin..
- */
- export async function sendEmailToAdmin(
+/** Convenience wrapper to email the admin. */
+export async function sendEmailToAdmin(
   subject: string,
-  body: string,  
-  isHtml?: boolean // Optional; defaults to true for HTML body
-) {
-    const paramsForSend = {
-      to: ADMIN_EMAIL,
-      subject,
-      body,
-      from: FROM_EMAIL,
-      isHtml
-    };
-          console.log('Sending email to admin with params:', paramsForSend);
-  
-  return sendEmail(paramsForSend);
+  body: string,
+  html: boolean = true
+): Promise<void> {
+  await sendEmail({ to: ADMIN_EMAIL, subject, body, html });
 }
-
