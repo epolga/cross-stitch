@@ -56,7 +56,7 @@ function AutoLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
             // Remove query params from URL
             router.replace(window.location.pathname);
           } else {
-            console.error('Auto-login failed:', (data as unknown) as Record<string, unknown>);
+            console.error('Auto-login failed:', data as unknown as Record<string, unknown>);
           }
         } catch (error) {
           console.error('Error during auto-login:', error);
@@ -82,15 +82,20 @@ export function AuthControl() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false); // RegisterForm (PayPal)
-  const [isRegisterOnlyOpen, setIsRegisterOnlyOpen] = useState(false);   // RegisterOnlyDialog
+  const [isRegisterOnlyOpen, setIsRegisterOnlyOpen] = useState(false); // RegisterOnlyDialog
+
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  const [isForgotMode, setIsForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
+
   const mode: DownloadMode = useMemo(() => resolveDownloadMode(), []);
 
-  // Validate email format
-  const isValidEmail = (email: string): boolean => email.includes('@') && email.includes('.');
+  const isValidEmail = (email: string): boolean =>
+    email.includes('@') && email.includes('.');
 
   // Initialize login state from localStorage (client-side only)
   useEffect(() => {
@@ -99,7 +104,7 @@ export function AuthControl() {
     console.log('AuthControl component mounted, isLoggedIn from storage:', loggedIn);
   }, []);
 
-  // Global error logger (как было у вас)
+  // Global error logger
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const handler = (e: ErrorEvent) => console.error('Global error:', e);
@@ -138,7 +143,10 @@ export function AuthControl() {
       };
       window.addEventListener('openRegisterModal', handleOpenRegisterOnly as EventListener);
       return () =>
-        window.removeEventListener('openRegisterModal', handleOpenRegisterOnly as EventListener);
+        window.removeEventListener(
+          'openRegisterModal',
+          handleOpenRegisterOnly as EventListener,
+        );
     }
   }, [mode]);
 
@@ -148,20 +156,23 @@ export function AuthControl() {
     setIsRegisterModalOpen(false);
     setIsRegisterOnlyOpen(false);
     setErrorMessage('');
+    setForgotMessage('');
+    setIsForgotMode(false);
+    setForgotEmail('');
   };
 
   const handleLoginSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     console.log('Form submitted, starting login process');
+
     try {
-      console.log('Validating email:', loginUsername);
       if (!isValidEmail(loginUsername)) {
         console.log('Invalid email format');
         setErrorMessage('Please enter a valid email address');
+        setForgotMessage('');
         return;
       }
 
-      console.log('Sending login request to API');
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,14 +193,61 @@ export function AuthControl() {
         setLoginUsername('');
         setLoginPassword('');
         setErrorMessage('');
+        setForgotMessage('');
+        setIsForgotMode(false);
         dispatchAuthStateChange();
       } else {
         console.log('Invalid credentials');
         setErrorMessage(data.error || 'Invalid email or password');
+        setForgotMessage('');
       }
     } catch (error) {
       console.error('Error during login:', error);
       setErrorMessage('An error occurred during login. Please try again.');
+      setForgotMessage('');
+    }
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault();
+    console.log('Submitting forgot password form');
+
+    setErrorMessage('');
+    setForgotMessage('');
+
+    if (!isValidEmail(forgotEmail)) {
+      setErrorMessage('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      // ✅ FIX: используем правильный API-роут для отправки письма
+      const response = await fetch('/api/auth/request-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+
+      const data: { ok?: boolean; message?: string; error?: string } | null = await response
+        .json()
+        .catch(() => null);
+
+      if (response.ok) {
+        setForgotMessage(
+          data?.message ||
+            'If this email is registered, a reset link has been sent.',
+        );
+        setErrorMessage('');
+      } else {
+        setErrorMessage(data?.error || 'Failed to send reset link. Please try again.');
+        setForgotMessage('');
+      }
+    } catch (error) {
+      console.error('Error during password reset request:', error);
+      setErrorMessage(
+        'An error occurred while requesting a reset link. Please try again.',
+      );
+      setForgotMessage('');
     }
   };
 
@@ -206,6 +264,7 @@ export function AuthControl() {
   const handleRegisterClick = (): void => {
     console.log('Register button clicked, opening register modal...');
     setErrorMessage('');
+    setForgotMessage('');
     setIsLoginModalOpen(false);
 
     if (mode === 'register') {
@@ -227,6 +286,9 @@ export function AuthControl() {
     setLoginUsername('');
     setLoginPassword('');
     setErrorMessage('');
+    setForgotMessage('');
+    setIsForgotMode(false);
+    setForgotEmail('');
   };
 
   const handleRegisterSuccess = (): void => {
@@ -291,7 +353,7 @@ export function AuthControl() {
         </>
       )}
 
-      {/* Login Modal */}
+      {/* Login / Forgot Password Modal */}
       {isLoginModalOpen && (
         <div
           className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50"
@@ -299,7 +361,9 @@ export function AuthControl() {
         >
           <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Login</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {isForgotMode ? 'Reset password' : 'Login'}
+              </h2>
               <button
                 onClick={closeLoginModal}
                 className="text-gray-500 hover:text-gray-700 text-xl"
@@ -308,56 +372,127 @@ export function AuthControl() {
                 ×
               </button>
             </div>
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="login-username"
-                  className="block text-sm font-medium text-gray-700"
+
+            {!isForgotMode ? (
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="login-username"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Email
+                  </label>
+                  <input
+                    id="login-username"
+                    type="email"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                    className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter your email"
+                    aria-label="Email"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="login-password"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Password
+                  </label>
+                  <input
+                    id="login-password"
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter your password"
+                    aria-label="Password"
+                    required
+                  />
+                </div>
+                {errorMessage && (
+                  <p className="text-red-500 text-sm text-center" role="alert">
+                    {errorMessage}
+                  </p>
+                )}
+                {forgotMessage && (
+                  <p className="text-green-600 text-sm text-center" role="status">
+                    {forgotMessage}
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  className="w-full px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+                  aria-label="Login"
                 >
-                  Email
-                </label>
-                <input
-                  id="login-username"
-                  type="email"
-                  value={loginUsername}
-                  onChange={(e) => setLoginUsername(e.target.value)}
-                  className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter your email"
-                  aria-label="Email"
-                  required
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="login-password"
-                  className="block text-sm font-medium text-gray-700"
+                  Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotMode(true);
+                    setForgotEmail(loginUsername || '');
+                    setErrorMessage('');
+                    setForgotMessage('');
+                  }}
+                  className="mt-2 text-sm text-gray-500 hover:text-gray-700 underline"
                 >
-                  Password
-                </label>
-                <input
-                  id="login-password"
-                  type="password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter your password"
-                  aria-label="Password"
-                  required
-                />
-              </div>
-              {errorMessage && (
-                <p className="text-red-500 text-sm text-center" role="alert">
-                  {errorMessage}
+                  Forgot password?
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleForgotSubmit} className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Enter your email and we will send you a password reset link.
                 </p>
-              )}
-              <button
-                type="submit"
-                className="w-full px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
-                aria-label="Login"
-              >
-                Login
-              </button>
-            </form>
+                <div>
+                  <label
+                    htmlFor="forgot-email"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Email
+                  </label>
+                  <input
+                    id="forgot-email"
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter your email"
+                    aria-label="Email"
+                    required
+                  />
+                </div>
+                {errorMessage && (
+                  <p className="text-red-500 text-sm text-center" role="alert">
+                    {errorMessage}
+                  </p>
+                )}
+                {forgotMessage && (
+                  <p className="text-green-600 text-sm text-center" role="status">
+                    {forgotMessage}
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  className="w-full px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+                >
+                  Send reset link
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotMode(false);
+                    setErrorMessage('');
+                    setForgotMessage('');
+                  }}
+                  className="mt-2 text-sm text-gray-500 hover:text-gray-700 underline"
+                >
+                  Back to login
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}
