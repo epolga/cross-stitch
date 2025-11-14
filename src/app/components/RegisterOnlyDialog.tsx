@@ -1,4 +1,3 @@
-// src/app/components/RegisterOnlyDialog.tsx
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
@@ -16,6 +15,7 @@ export function RegisterOnlyDialog({
 }: RegisterOnlyDialogProps) {
   const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
+  const [confirmEmail, setConfirmEmail] = useState(''); // ← added
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
 
@@ -31,19 +31,36 @@ export function RegisterOnlyDialog({
 
   const firstNameOk = firstName.trim().length > 0;
   const emailOk = isValidEmail(email);
+  const confirmEmailOk = isValidEmail(confirmEmail); // ← added
+  const emailsMatch =
+    email.length > 0 && confirmEmail.length > 0 && email === confirmEmail; // ← added
   const passwordOk = password.length >= PASSWORD_MIN_LENGTH;
   const passwordsMatch =
     password.length > 0 && password === password2;
 
   const formValid = useMemo(
-    () => firstNameOk && emailOk && passwordOk && passwordsMatch,
-    [firstNameOk, emailOk, passwordOk, passwordsMatch],
+    () =>
+      firstNameOk &&
+      emailOk &&
+      confirmEmailOk &&   // ← added
+      emailsMatch &&      // ← added
+      passwordOk &&
+      passwordsMatch,
+    [
+      firstNameOk,
+      emailOk,
+      confirmEmailOk, // ← added
+      emailsMatch,     // ← added
+      passwordOk,
+      passwordsMatch
+    ],
   );
 
   useEffect(() => {
     if (isOpen) {
       setFirstName('');
       setEmail('');
+      setConfirmEmail(''); // ← added
       setPassword('');
       setPassword2('');
       setSubmitting(false);
@@ -119,10 +136,8 @@ export function RegisterOnlyDialog({
 
         {!done ? (
           <>
-            <label
-              className="mb-1 block text-sm font-medium"
-              htmlFor="reg-firstname"
-            >
+            {/* First Name */}
+            <label className="mb-1 block text-sm font-medium" htmlFor="reg-firstname">
               First name
             </label>
             <input
@@ -135,10 +150,8 @@ export function RegisterOnlyDialog({
               aria-invalid={!firstNameOk}
             />
 
-            <label
-              className="mb-1 block text-sm font-medium"
-              htmlFor="reg-email"
-            >
+            {/* Email */}
+            <label className="mb-1 block text-sm font-medium" htmlFor="reg-email">
               Email
             </label>
             <input
@@ -156,10 +169,27 @@ export function RegisterOnlyDialog({
               </p>
             )}
 
-            <label
-              className="mt-4 mb-1 block text-sm font-medium"
-              htmlFor="reg-password"
-            >
+            {/* Confirm Email — added */}
+            <label className="mt-4 mb-1 block text-sm font-medium" htmlFor="reg-email2">
+              Confirm email
+            </label>
+            <input
+              id="reg-email2"
+              value={confirmEmail}
+              onChange={(event) => setConfirmEmail(event.target.value)}
+              type="email"
+              className="w-full rounded-md border px-3 py-2"
+              placeholder="Re-enter your email"
+              aria-invalid={confirmEmail.length > 0 && !emailsMatch}
+            />
+            {confirmEmail.length > 0 && !emailsMatch && (
+              <p className="mt-1 text-xs text-red-600">
+                Emails do not match.
+              </p>
+            )}
+
+            {/* Password */}
+            <label className="mt-4 mb-1 block text-sm font-medium" htmlFor="reg-password">
               Password
             </label>
             <input
@@ -173,15 +203,12 @@ export function RegisterOnlyDialog({
             />
             {password.length > 0 && !passwordOk && (
               <p className="mt-1 text-xs text-red-600">
-                Password must be at least {PASSWORD_MIN_LENGTH} characters
-                long.
+                Password must be at least {PASSWORD_MIN_LENGTH} characters long.
               </p>
             )}
 
-            <label
-              className="mt-4 mb-1 block text-sm font-medium"
-              htmlFor="reg-password2"
-            >
+            {/* Confirm Password */}
+            <label className="mt-4 mb-1 block text-sm font-medium" htmlFor="reg-password2">
               Re-enter password
             </label>
             <input
