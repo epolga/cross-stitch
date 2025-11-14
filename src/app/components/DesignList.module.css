@@ -36,3 +36,17 @@
 .pagination {
   margin: 1.5rem 0;
 }
+
+/* Mobile: make each card at least ~40% of the viewport width */
+@media (max-width: 767px) {
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem; /* you can adjust spacing if needed */
+  }
+
+  .card {
+    flex: 1 1 40vw; /* min ≈ 40% of screen width */
+    max-width: 100%;
+  }
+}
