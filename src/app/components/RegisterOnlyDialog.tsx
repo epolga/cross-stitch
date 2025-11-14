@@ -15,7 +15,7 @@ export function RegisterOnlyDialog({
 }: RegisterOnlyDialogProps) {
   const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
-  const [confirmEmail, setConfirmEmail] = useState(''); // ← added
+  const [confirmEmail, setConfirmEmail] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
 
@@ -31,36 +31,27 @@ export function RegisterOnlyDialog({
 
   const firstNameOk = firstName.trim().length > 0;
   const emailOk = isValidEmail(email);
-  const confirmEmailOk = isValidEmail(confirmEmail); // ← added
-  const emailsMatch =
-    email.length > 0 && confirmEmail.length > 0 && email === confirmEmail; // ← added
+  const confirmEmailOk = isValidEmail(confirmEmail);
+  const emailsMatch = email.length > 0 && confirmEmail.length > 0 && email === confirmEmail;
   const passwordOk = password.length >= PASSWORD_MIN_LENGTH;
-  const passwordsMatch =
-    password.length > 0 && password === password2;
+  const passwordsMatch = password.length > 0 && password === password2;
 
   const formValid = useMemo(
     () =>
       firstNameOk &&
       emailOk &&
-      confirmEmailOk &&   // ← added
-      emailsMatch &&      // ← added
+      confirmEmailOk &&
+      emailsMatch &&
       passwordOk &&
       passwordsMatch,
-    [
-      firstNameOk,
-      emailOk,
-      confirmEmailOk, // ← added
-      emailsMatch,     // ← added
-      passwordOk,
-      passwordsMatch
-    ],
+    [firstNameOk, emailOk, confirmEmailOk, emailsMatch, passwordOk, passwordsMatch]
   );
 
   useEffect(() => {
     if (isOpen) {
       setFirstName('');
       setEmail('');
-      setConfirmEmail(''); // ← added
+      setConfirmEmail('');
       setPassword('');
       setPassword2('');
       setSubmitting(false);
@@ -70,9 +61,7 @@ export function RegisterOnlyDialog({
   }, [isOpen]);
 
   const handleSubmit = useCallback(async (): Promise<void> => {
-    if (!formValid || submitting) {
-      return;
-    }
+    if (!formValid || submitting) return;
 
     setSubmitting(true);
     setError(null);
@@ -107,8 +96,7 @@ export function RegisterOnlyDialog({
       setDone(true);
       onSuccess?.({ email, firstName });
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Network error';
+      const message = err instanceof Error ? err.message : 'Network error';
       setError(message);
     } finally {
       setSubmitting(false);
@@ -118,128 +106,145 @@ export function RegisterOnlyDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-[90%] max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="mb-2 text-xl font-semibold">Register to download</h2>
-        <p className="mb-4 text-sm text-gray-600">
-          Enter your first name, email, and choose a password to continue.
-        </p>
-
-        {error && (
-          <div
-            className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-700"
-            role="alert"
+    <div
+      className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50"
+      style={{ backgroundColor: 'rgba(17, 24, 39, 0.5)' }}
+    >
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Register</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 text-xl"
+            aria-label="Close modal"
           >
-            {error}
-          </div>
-        )}
+            ×
+          </button>
+        </div>
 
         {!done ? (
           <>
-            {/* First Name */}
-            <label className="mb-1 block text-sm font-medium" htmlFor="reg-firstname">
-              First name
-            </label>
-            <input
-              id="reg-firstname"
-              value={firstName}
-              onChange={(event) => setFirstName(event.target.value)}
-              type="text"
-              className="mb-3 w-full rounded-md border px-3 py-2"
-              placeholder="Anna"
-              aria-invalid={!firstNameOk}
-            />
+            <p className="mb-4 text-sm text-gray-600">
+              Enter your name, email, and password to continue.
+            </p>
 
-            {/* Email */}
-            <label className="mb-1 block text-sm font-medium" htmlFor="reg-email">
-              Email
-            </label>
-            <input
-              id="reg-email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              type="email"
-              className="w-full rounded-md border px-3 py-2"
-              placeholder="you@example.com"
-              aria-invalid={email.length > 0 && !emailOk}
-            />
-            {email.length > 0 && !emailOk && (
-              <p className="mt-1 text-xs text-red-600">
-                Please enter a valid email address.
+            {error && (
+              <p className="mb-3 text-sm text-red-500 text-center" role="alert">
+                {error}
               </p>
             )}
 
-            {/* Confirm Email — added */}
-            <label className="mt-4 mb-1 block text-sm font-medium" htmlFor="reg-email2">
-              Confirm email
-            </label>
-            <input
-              id="reg-email2"
-              value={confirmEmail}
-              onChange={(event) => setConfirmEmail(event.target.value)}
-              type="email"
-              className="w-full rounded-md border px-3 py-2"
-              placeholder="Re-enter your email"
-              aria-invalid={confirmEmail.length > 0 && !emailsMatch}
-            />
-            {confirmEmail.length > 0 && !emailsMatch && (
-              <p className="mt-1 text-xs text-red-600">
-                Emails do not match.
-              </p>
-            )}
+            <div className="space-y-4">
 
-            {/* Password */}
-            <label className="mt-4 mb-1 block text-sm font-medium" htmlFor="reg-password">
-              Password
-            </label>
-            <input
-              id="reg-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              type="password"
-              className="w-full rounded-md border px-3 py-2"
-              placeholder={`At least ${PASSWORD_MIN_LENGTH} characters`}
-              aria-invalid={password.length > 0 && !passwordOk}
-            />
-            {password.length > 0 && !passwordOk && (
-              <p className="mt-1 text-xs text-red-600">
-                Password must be at least {PASSWORD_MIN_LENGTH} characters long.
-              </p>
-            )}
+              {/* First name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  First name
+                </label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="Anna"
+                  disabled={submitting}
+                />
+                {!firstNameOk && firstName.length > 0 && (
+                  <p className="text-xs text-red-600 mt-1">First name is required.</p>
+                )}
+              </div>
 
-            {/* Confirm Password */}
-            <label className="mt-4 mb-1 block text-sm font-medium" htmlFor="reg-password2">
-              Re-enter password
-            </label>
-            <input
-              id="reg-password2"
-              value={password2}
-              onChange={(event) => setPassword2(event.target.value)}
-              type="password"
-              className="w-full rounded-md border px-3 py-2"
-              placeholder="Re-enter your password"
-              aria-invalid={password2.length > 0 && !passwordsMatch}
-            />
-            {password2.length > 0 && !passwordsMatch && (
-              <p className="mt-1 text-xs text-red-600">
-                Passwords do not match.
-              </p>
-            )}
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="you@example.com"
+                  disabled={submitting}
+                />
+                {email.length > 0 && !emailOk && (
+                  <p className="text-xs text-red-600 mt-1">Please enter a valid email.</p>
+                )}
+              </div>
 
-            <div className="mt-5 flex items-center gap-3">
+              {/* Confirm email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Confirm email
+                </label>
+                <input
+                  type="email"
+                  value={confirmEmail}
+                  onChange={(e) => setConfirmEmail(e.target.value)}
+                  className="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="Repeat your email"
+                  disabled={submitting}
+                />
+                {confirmEmail.length > 0 && !emailsMatch && (
+                  <p className="text-xs text-red-600 mt-1">Emails do not match.</p>
+                )}
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="At least 6 characters"
+                  disabled={submitting}
+                />
+                {password.length > 0 && !passwordOk && (
+                  <p className="text-xs text-red-600 mt-1">
+                    Password must be at least {PASSWORD_MIN_LENGTH} characters long.
+                  </p>
+                )}
+              </div>
+
+              {/* Confirm password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Confirm password
+                </label>
+                <input
+                  type="password"
+                  value={password2}
+                  onChange={(e) => setPassword2(e.target.value)}
+                  className="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="Repeat your password"
+                  disabled={submitting}
+                />
+                {password2.length > 0 && !passwordsMatch && (
+                  <p className="text-xs text-red-600 mt-1">Passwords do not match.</p>
+                )}
+              </div>
+
+            </div>
+
+            <div className="mt-6 flex items-center gap-3">
               <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={!formValid || submitting}
-                className="rounded-md bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
-                aria-disabled={!formValid || submitting}
+                className="rounded-md bg-gray-500 px-4 py-2 text-white hover:bg-gray-600 disabled:opacity-50"
               >
                 {submitting ? 'Saving…' : 'Register'}
               </button>
+
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-md px-4 py-2 text-gray-700"
+                className="rounded-md px-4 py-2 text-gray-700 hover:text-gray-900"
+                disabled={submitting}
               >
                 Cancel
               </button>
@@ -248,12 +253,13 @@ export function RegisterOnlyDialog({
         ) : (
           <>
             <div className="mb-4 rounded-md bg-green-50 p-3 text-green-700">
-              Registration saved. You can now download the PDF.
+              Registration completed. You can now download the PDF.
             </div>
+
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md bg-blue-600 px-4 py-2 text-white"
+              className="rounded-md bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
             >
               Close
             </button>

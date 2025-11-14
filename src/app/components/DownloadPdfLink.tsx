@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { isUserLoggedIn } from './AuthControl';
+import { isUserLoggedIn, resolveDownloadMode, DownloadMode } from './AuthControl';
 import { Design } from '../types/design';
 //import { CreateDesignUrl } from '@/lib/url-helper';
 
@@ -10,20 +10,10 @@ type Props = {
   className?: string;
 };
 
-type DownloadMode = 'free' | 'register' | 'paid';
-
 export default function DownloadPdfLink({ design, className }: Props) {
   const [loggedIn, setLoggedIn] = useState(false);
 
-  // Read mode from environment variable at build time
-  const mode: DownloadMode = useMemo(() => {
-    const raw = (process.env.NEXT_PUBLIC_DOWNLOAD_MODE || '').toLowerCase()
-      .trim();
-    console.log('DownloadPdfLink mode:', raw);
-    if (raw === 'free' || raw === 'register' || raw === 'paid') return raw;
-    // Default mode: requires registration if not logged in
-    return 'register';
-  }, []);
+  const mode: DownloadMode = useMemo(() => resolveDownloadMode(), []);
 
   // Keep auth state updated across same-tab and cross-tab
   useEffect(() => {
@@ -56,11 +46,12 @@ export default function DownloadPdfLink({ design, className }: Props) {
 
   if (!design || !design.PdfUrl) {
     return <p className="text-gray-500">PDF is not available for this design.</p>;
-    
-  }  console.log(`DownloadPdfLink: register mode = ${mode}, loggedIn = ${loggedIn}`);
- 
+  }
+
+  console.log(`DownloadPdfLink: mode = ${mode}, loggedIn = ${loggedIn}`);
 
   // ===== MODES =====
+
   // 1) Free download for everyone
   if (mode === 'free') {
     return (
@@ -77,9 +68,8 @@ export default function DownloadPdfLink({ design, className }: Props) {
   }
 
   // 2) Registration required: show register modal if not logged in
-  
   if (mode === 'register') {
-     return loggedIn ? (
+    return loggedIn ? (
       <a
         href={design.PdfUrl}
         target="_blank"

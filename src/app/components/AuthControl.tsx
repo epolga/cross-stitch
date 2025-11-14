@@ -1,17 +1,16 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { RegisterForm } from './RegisterForm';
 import { RegisterOnlyDialog } from './RegisterOnlyDialog';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 // Utility function to check login status globally
 export const isUserLoggedIn = (): boolean => {
-  // Check if running in a browser environment
   if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     return localStorage.getItem('isLoggedIn') === 'true';
   }
-  return false; // Default to false during server-side rendering
+  return false;
 };
 
 // Dispatch custom event for auth state changes
@@ -70,14 +69,25 @@ function AutoLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   return null;
 }
 
+export type DownloadMode = 'free' | 'register' | 'paid';
+
+export const resolveDownloadMode = (): DownloadMode => {
+  const raw = (process.env.NEXT_PUBLIC_DOWNLOAD_MODE || '').toLowerCase().trim();
+  console.log('resolveDownloadMode:', raw);
+  if (raw === 'free' || raw === 'register' || raw === 'paid') return raw;
+  return 'register';
+};
+
 export function AuthControl() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-  const [isRegisterOnlyOpen, setIsRegisterOnlyOpen] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false); // RegisterForm (PayPal)
+  const [isRegisterOnlyOpen, setIsRegisterOnlyOpen] = useState(false);   // RegisterOnlyDialog
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+
+  const mode: DownloadMode = useMemo(() => resolveDownloadMode(), []);
 
   // Validate email format
   const isValidEmail = (email: string): boolean => email.includes('@') && email.includes('.');
@@ -89,6 +99,7 @@ export function AuthControl() {
     console.log('AuthControl component mounted, isLoggedIn from storage:', loggedIn);
   }, []);
 
+  // Global error logger (как было у вас)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const handler = (e: ErrorEvent) => console.error('Global error:', e);
@@ -97,29 +108,39 @@ export function AuthControl() {
     }
   }, []);
 
-  // Listen for openPayPalModal (existing) → open PayPal dialog (RegisterForm)
+  // Listen for openPayPalModal → open PayPal dialog (RegisterForm) in paid mode
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const handleOpenPayPal = () => {
         console.log('Received openPayPalModal event');
-        handleRegisterClick(); // open existing dialog with PayPal logic
+        if (mode === 'paid') {
+          setIsRegisterModalOpen(true);
+          setIsRegisterOnlyOpen(false);
+          setIsLoginModalOpen(false);
+        }
       };
       window.addEventListener('openPayPalModal', handleOpenPayPal as EventListener);
-      return () => window.removeEventListener('openPayPalModal', handleOpenPayPal as EventListener);
+      return () =>
+        window.removeEventListener('openPayPalModal', handleOpenPayPal as EventListener);
     }
-  }, []);
+  }, [mode]);
 
-  // NEW: Listen for openRegisterModal → open RegisterOnlyDialog (asks first name + email)
+  // Listen for openRegisterModal → open RegisterOnlyDialog (register mode)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const handleOpenRegisterOnly = () => {
         console.log('Received openRegister event');
-        setIsRegisterOnlyOpen(true);
+        if (mode === 'register') {
+          setIsRegisterOnlyOpen(true);
+          setIsRegisterModalOpen(false);
+          setIsLoginModalOpen(false);
+        }
       };
       window.addEventListener('openRegisterModal', handleOpenRegisterOnly as EventListener);
-      return () => window.removeEventListener('openRegisterModal', handleOpenRegisterOnly as EventListener);
+      return () =>
+        window.removeEventListener('openRegisterModal', handleOpenRegisterOnly as EventListener);
     }
-  }, []);
+  }, [mode]);
 
   const handleLoginClick = (): void => {
     console.log('Login button clicked, opening login modal...');
@@ -152,7 +173,6 @@ export function AuthControl() {
 
       if (response.ok && data.success) {
         console.log('Login successful:', { username: loginUsername });
-        // Store login state in localStorage
         if (typeof window !== 'undefined') {
           localStorage.setItem('isLoggedIn', 'true');
           localStorage.setItem('userEmail', loginUsername);
@@ -162,7 +182,7 @@ export function AuthControl() {
         setLoginUsername('');
         setLoginPassword('');
         setErrorMessage('');
-        dispatchAuthStateChange(); // Dispatch custom event
+        dispatchAuthStateChange();
       } else {
         console.log('Invalid credentials');
         setErrorMessage(data.error || 'Invalid email or password');
@@ -173,27 +193,32 @@ export function AuthControl() {
     }
   };
 
-  const handleLoginButtonClick = (): void => {
-    console.log('Login submit button clicked');
-  };
-
   const handleLogout = (): void => {
     console.log('Logging out...');
-    // Clear localStorage
     if (typeof window !== 'undefined') {
       localStorage.removeItem('isLoggedIn');
       localStorage.removeItem('userEmail');
     }
     setIsLoggedIn(false);
-    dispatchAuthStateChange(); // Dispatch custom event
+    dispatchAuthStateChange();
   };
 
   const handleRegisterClick = (): void => {
     console.log('Register button clicked, opening register modal...');
-    setIsRegisterModalOpen(true);
-    setIsLoginModalOpen(false);
-    setIsRegisterOnlyOpen(false);
     setErrorMessage('');
+    setIsLoginModalOpen(false);
+
+    if (mode === 'register') {
+      setIsRegisterOnlyOpen(true);
+      setIsRegisterModalOpen(false);
+      return;
+    }
+
+    if (mode === 'paid') {
+      setIsRegisterModalOpen(true);
+      setIsRegisterOnlyOpen(false);
+      return;
+    }
   };
 
   const closeLoginModal = (): void => {
@@ -205,21 +230,32 @@ export function AuthControl() {
   };
 
   const handleRegisterSuccess = (): void => {
-    // Store login state in localStorage on successful registration
     if (typeof window !== 'undefined') {
       localStorage.setItem('isLoggedIn', 'true');
     }
     setIsLoggedIn(true);
     setIsRegisterModalOpen(false);
     setIsRegisterOnlyOpen(false);
-    dispatchAuthStateChange(); // Dispatch custom event
+    dispatchAuthStateChange();
   };
 
   const handleAutoLoginSuccess = (): void => {
     setIsLoggedIn(true);
   };
 
-  console.log('Rendering AuthControl, isLoggedIn:', isLoggedIn, 'isLoginModalOpen:', isLoginModalOpen);
+  console.log(
+    'Rendering AuthControl, isLoggedIn:',
+    isLoggedIn,
+    'isLoginModalOpen:',
+    isLoginModalOpen,
+    'mode:',
+    mode,
+  );
+
+  // free-режим: вообще не показываем AuthControl
+  if (mode === 'free') {
+    return null;
+  }
 
   return (
     <div className="flex items-center space-x-2">
@@ -274,7 +310,10 @@ export function AuthControl() {
             </div>
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
-                <label htmlFor="login-username" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="login-username"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Email
                 </label>
                 <input
@@ -289,7 +328,10 @@ export function AuthControl() {
                 />
               </div>
               <div>
-                <label htmlFor="login-password" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="login-password"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Password
                 </label>
                 <input
@@ -310,28 +352,17 @@ export function AuthControl() {
               )}
               <button
                 type="submit"
-                onClick={handleLoginButtonClick}
                 className="w-full px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
                 aria-label="Login"
               >
                 Login
               </button>
             </form>
-            <p className="mt-4 text-center text-sm text-gray-600">
-              Don’t have an account?{' '}
-              <button
-                onClick={handleRegisterClick}
-                className="px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm"
-                aria-label="Register"
-              >
-                Register
-              </button>
-            </p>
           </div>
         </div>
       )}
 
-      {/* Existing PayPal/Register modal */}
+      {/* PayPal / full registration modal */}
       <RegisterForm
         isOpen={isRegisterModalOpen}
         onClose={() => setIsRegisterModalOpen(false)}
@@ -339,7 +370,7 @@ export function AuthControl() {
         onRegisterSuccess={handleRegisterSuccess}
       />
 
-      {/* NEW: lightweight register-only dialog */}
+      {/* Register-only dialog */}
       <RegisterOnlyDialog
         isOpen={isRegisterOnlyOpen}
         onClose={() => setIsRegisterOnlyOpen(false)}

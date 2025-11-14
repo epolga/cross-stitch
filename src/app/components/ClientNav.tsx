@@ -8,7 +8,10 @@ export default function ClientNav() {
   const [isArticlesOpen, setIsArticlesOpen] = useState(false);
 
   return (
-    <nav className="bg-white border-b border-gray-200 py-4 shadow-md" aria-label="Main navigation">
+    <nav
+      className="bg-white border-b border-gray-200 py-4 shadow-md"
+      aria-label="Main navigation"
+    >
       <div className="container mx-auto px-4 flex items-center space-x-2">
         <Link href="/" className="text-gray-700 hover:text-gray-900 text-xl">
           Home
@@ -26,7 +29,10 @@ export default function ClientNav() {
             Articles
           </button>
           {isArticlesOpen && (
-            <div  style={{ width: '256px' }} className="absolute left-0 mt-2 w-128 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+            <div
+              style={{ width: '256px' }}
+              className="absolute left-0 mt-2 w-128 bg-white border border-gray-200 rounded-md shadow-lg z-10"
+            >
               <Link
                 href="/EmbroideryHistory.aspx"
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
@@ -42,8 +48,8 @@ export default function ClientNav() {
               >
                 Why Cross-Stitch?
               </Link>
-             <hr />
-               <Link
+              <hr />
+              <Link
                 href="/Article070409.aspx"
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
                 onClick={() => setIsArticlesOpen(false)}
@@ -51,7 +57,7 @@ export default function ClientNav() {
                 Men and Cross-Stitch
               </Link>
               <hr />
-               <Link
+              <Link
                 href="/exercises"
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
                 onClick={() => setIsArticlesOpen(false)}
