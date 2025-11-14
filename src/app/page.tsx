@@ -119,7 +119,7 @@ export default async function Home({ searchParams }: Props) {
   return (
     <div className="p-4">
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="w-full md:w-48">
+        <div className="hidden md:block md:w-48 w-full">
           <SearchForm />
         </div>
         <div className="w-full md:flex-1">
