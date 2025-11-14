@@ -1,5 +1,12 @@
 // DataAccess.ts
-import { AttributeValue, DynamoDBClient, PutItemCommand, QueryCommand, ScanCommand, ScanCommandInput } from "@aws-sdk/client-dynamodb";
+import {
+  AttributeValue,
+  DynamoDBClient,
+  PutItemCommand,
+  QueryCommand,
+  ScanCommand,
+  ScanCommandInput,
+} from "@aws-sdk/client-dynamodb";
 import type { Design, DesignsResponse } from '@/app/types/design';
 import type { Album, AlbumsResponse } from '@/app/types/album';
 
@@ -9,6 +16,53 @@ export const dynamic = 'force-dynamic';
 const dynamoDBClient = new DynamoDBClient({
   region: process.env.AWS_REGION,
 });
+
+/**
+ * Helper: check whether a user with given Email and Password exists
+ * in the secondary users table (DDB_USERS_TABLE).
+ */
+async function verifyUserInSecondaryTable(
+  email: string,
+  password: string,
+): Promise<boolean> {
+  const tableName = process.env.DDB_USERS_TABLE;
+  if (!tableName) {
+    console.warn('DDB_USERS_TABLE is not set. Skipping secondary table check.');
+    return false;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  try {
+    console.log('Checking secondary users table:', tableName, { email });
+
+    // 1) Filter only by password (cheap, selective)
+    const scanParams: ScanCommandInput = {
+      TableName: tableName,
+      FilterExpression: '#password = :pwd',
+      ExpressionAttributeNames: { '#password': 'Password' },
+      ExpressionAttributeValues: { ':pwd': { S: password } },
+    };
+
+    const { Items } = await dynamoDBClient.send(new ScanCommand(scanParams));
+    if (!Items || Items.length === 0) {
+      return false;
+    }
+
+    // 2) Email MUST be matched case-insensitively here in code
+    for (const item of Items) {
+      const dbEmail = item.Email?.S?.trim().toLowerCase();
+      if (dbEmail === normalizedEmail) {
+        console.log('User found in secondary table (case-insensitive match)');
+        return true;
+      }
+    }
+
+    return false;
+  } catch (err) {
+    console.error('Error checking secondary table:', err);
+    return false;  }
+}
 
 // In-memory caches for designs and albums
 const designCache: Map<number, Design> = new Map();
@@ -79,7 +133,7 @@ async function initializeCache(): Promise<void> {
           });
           totalDesigns += Items.length;
         }
-        
+
       } while (designLastEvaluatedKey);
 
       // Scan for albums
@@ -274,6 +328,7 @@ export async function getDesignById(designId: number): Promise<Design | undefine
     }
   });
 }
+
 export async function getDesignPhotoUrlById(designId: number): Promise<string | undefined | null> {
   return withCache(async () => {
     try {
@@ -505,7 +560,7 @@ export async function verifyUser(email: string, password: string): Promise<boole
   try {
     console.log('verifyUser called with:', { email, password });
     const userId = `USR#${email}`;
-    console.log('Querying DynamoDB with ID:', userId);
+    console.log('Querying primary DynamoDB table with ID:', userId);
     const queryParams = {
       TableName: process.env.DYNAMODB_TABLE_NAME,
       KeyConditionExpression: "ID = :id",
@@ -516,13 +571,23 @@ export async function verifyUser(email: string, password: string): Promise<boole
     };
 
     const { Items } = await dynamoDBClient.send(new QueryCommand(queryParams));
-    console.log('DynamoDB query result:', Items);
+    console.log('Primary table query result:', Items);
 
+    // Not found in primary table → check secondary table
     if (!Items || Items.length === 0) {
-      console.log(`No user found for ID ${userId}`);
+      console.log(`No user found for ID ${userId} in primary table, checking DDB_USERS_TABLE...`);
+
+      const secondaryMatch = await verifyUserInSecondaryTable(email, password);
+      if (secondaryMatch) {
+        console.log('User validated via secondary users table');
+        return true;
+      }
+
+      console.log('User not found in secondary users table either');
       return false;
     }
 
+    // Found in primary table → use original password logic
     const storedPassword = Items[0].OpenPwd?.S;
     console.log('Stored password:', storedPassword);
     if (!storedPassword) {
@@ -576,7 +641,7 @@ export async function createUser(email: string, password: string, username: stri
 
 // Create a new test user in DynamoDB
 export async function createTestUser(email: string, password: string, username: string, subscriptionId: string, receiveUpdates: boolean): Promise<void> {
-  const userId = `TST#${email}`+ Date.now();
+  const userId = `TST#${email}` + Date.now();
   try {
     console.log('Creating test user:', { email, username, subscriptionId, receiveUpdates });
     const putParams = {
