@@ -65,7 +65,7 @@ export default function SearchForm() {
         onSubmit={handleSubmit}
         className={`${
           isOpen ? 'block' : 'hidden'
-        } md:block mb-4 p-4 bg-gray-100 rounded shadow min-w-0 fixed md:static top-0 left-0 w-full md:w-auto h-auto z-50 md:z-auto`}
+        } md:block mb-4 p-4 bg-gray-200 text-black rounded shadow min-w-0 fixed md:static top-0 left-0 w-full md:w-auto h-auto z-50 md:z-auto`}
       >
         {/* Close Button (visible on mobile when form is open) */}
         <button

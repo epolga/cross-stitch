@@ -18,7 +18,7 @@ export default function ClientNav() {
         </Link>
         <span className="text-gray-500 text-xl">»</span>
         <Link href="/albums" className="text-gray-700 hover:text-gray-900 text-xl">
-          To the thematic catalog
+          Thematic catalog
         </Link>
         <span className="text-gray-500 text-xl">»</span>
         <div className="relative">
