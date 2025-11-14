@@ -1,29 +1,48 @@
+// src/app/api/register-only/route.ts
 import { NextResponse } from 'next/server';
-import { saveUserMock } from '@/lib/data-access';
+import {
+  saveUserToDynamoDB,
+  EmailExistsError,
+  type NewUserRegistration,
+} from '@/lib/users';
 
-interface RegisterRequest {
-  email: string;
-  firstName: string;
-  password: string;
-}
+type RegisterRequest = NewUserRegistration;
 
-export async function POST(req: Request): Promise<NextResponse> {
+export async function POST(req: Request): Promise<Response> {
   try {
-    const body: RegisterRequest = await req.json();
-    const { email, firstName, password } = body;
+    const body = (await req.json()) as Partial<RegisterRequest>;
 
-    // Validate payload
-    if (!email || !firstName || !password) {
-      return new NextResponse('Invalid payload', { status: 400 });
+    if (!body.email || !body.firstName || !body.password) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 },
+      );
     }
 
-    // Call mock persistence
-    const result = await saveUserMock({ email, firstName, password });
+    const result = await saveUserToDynamoDB({
+      email: body.email,
+      firstName: body.firstName,
+      password: body.password,
+    });
 
-    return NextResponse.json({ ok: true, userId: result.userId });
-  } catch (e: unknown) {
+    return NextResponse.json(
+      { ok: true, userId: result.userId },
+      { status: 200 },
+    );
+  } catch (error) {
+    if (error instanceof EmailExistsError) {
+      return NextResponse.json(
+        { error: 'Email already registered' },
+        { status: 409 },
+      );
+    }
+
     const message =
-      e instanceof Error ? e.message : 'Unknown server error';
-    return new NextResponse(message, { status: 500 });
+      error instanceof Error ? error.message : 'Server error';
+
+    return NextResponse.json(
+      { error: message },
+      { status: 500 },
+    );
   }
 }

@@ -1,45 +1,45 @@
+// src/app/components/RegisterOnlyDialog.tsx
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 
-type Props = {
+type RegisterOnlyDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (payload: { email: string; firstName: string }) => void;
 };
 
-export function RegisterOnlyDialog({ isOpen, onClose, onSuccess }: Props) {
-  // Form state
+export function RegisterOnlyDialog({
+  isOpen,
+  onClose,
+  onSuccess,
+}: RegisterOnlyDialogProps) {
   const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
 
-  // UI state
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  // Simple email validation (good-enough for UI; server should also validate)
-  const isValidEmail = useCallback((v: string): boolean => {
-    // Intentionally simple: prevents obvious mistakes; do stricter checks server-side
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const isValidEmail = useCallback((value: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }, []);
 
-  // Password policy (adjust as needed)
-  const PASSWORD_MIN = 6;
-  const passwordOk = password.length >= PASSWORD_MIN;
-  const passwordsMatch = password.length > 0 && password === password2;
+  const PASSWORD_MIN_LENGTH = 6;
 
-  // Derived validity
   const firstNameOk = firstName.trim().length > 0;
   const emailOk = isValidEmail(email);
+  const passwordOk = password.length >= PASSWORD_MIN_LENGTH;
+  const passwordsMatch =
+    password.length > 0 && password === password2;
+
   const formValid = useMemo(
     () => firstNameOk && emailOk && passwordOk && passwordsMatch,
-    [firstNameOk, emailOk, passwordOk, passwordsMatch]
+    [firstNameOk, emailOk, passwordOk, passwordsMatch],
   );
 
-  // Reset dialog state whenever it (re)opens
   useEffect(() => {
     if (isOpen) {
       setFirstName('');
@@ -53,31 +53,45 @@ export function RegisterOnlyDialog({ isOpen, onClose, onSuccess }: Props) {
   }, [isOpen]);
 
   const handleSubmit = useCallback(async (): Promise<void> => {
-    if (!formValid || submitting) return;
+    if (!formValid || submitting) {
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
     try {
-      const res = await fetch('/api/register-only', {
+      const response = await fetch('/api/register-only', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Send password along with firstName + email
-        body: JSON.stringify({ email, firstName, password }),
+        body: JSON.stringify({
+          email,
+          firstName,
+          password,
+        }),
       });
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || 'Request failed');
+      if (response.status === 409) {
+        setError('This email is already registered.');
+        setSubmitting(false);
+        return;
       }
 
-      // Mark user as logged in locally so download becomes available immediately
-      localStorage.setItem('isLoggedIn', 'true');
-      window.dispatchEvent(new Event('authStateChange'));
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || 'Server error');
+      }
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('isLoggedIn', 'true');
+        window.dispatchEvent(new Event('authStateChange'));
+      }
 
       setDone(true);
       onSuccess?.({ email, firstName });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message =
+        err instanceof Error ? err.message : 'Network error';
       setError(message);
     } finally {
       setSubmitting(false);
@@ -95,95 +109,110 @@ export function RegisterOnlyDialog({ isOpen, onClose, onSuccess }: Props) {
         </p>
 
         {error && (
-          <div className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-700" role="alert">
+          <div
+            className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-700"
+            role="alert"
+          >
             {error}
           </div>
         )}
 
         {!done ? (
           <>
-            {/* First name */}
-            <label className="mb-1 block text-sm font-medium" htmlFor="reg-firstname">
+            <label
+              className="mb-1 block text-sm font-medium"
+              htmlFor="reg-firstname"
+            >
               First name
             </label>
             <input
               id="reg-firstname"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(event) => setFirstName(event.target.value)}
               type="text"
               className="mb-3 w-full rounded-md border px-3 py-2"
               placeholder="Anna"
               aria-invalid={!firstNameOk}
             />
 
-            {/* Email */}
-            <label className="mb-1 block text-sm font-medium" htmlFor="reg-email">
+            <label
+              className="mb-1 block text-sm font-medium"
+              htmlFor="reg-email"
+            >
               Email
             </label>
             <input
               id="reg-email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(event) => setEmail(event.target.value)}
               type="email"
               className="w-full rounded-md border px-3 py-2"
               placeholder="you@example.com"
               aria-invalid={email.length > 0 && !emailOk}
             />
             {email.length > 0 && !emailOk && (
-              <p className="mt-1 text-xs text-red-600">Please enter a valid email address.</p>
+              <p className="mt-1 text-xs text-red-600">
+                Please enter a valid email address.
+              </p>
             )}
 
-            {/* Password */}
-            <label className="mt-4 mb-1 block text-sm font-medium" htmlFor="reg-password">
+            <label
+              className="mt-4 mb-1 block text-sm font-medium"
+              htmlFor="reg-password"
+            >
               Password
             </label>
             <input
               id="reg-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(event) => setPassword(event.target.value)}
               type="password"
               className="w-full rounded-md border px-3 py-2"
-              placeholder={`At least ${PASSWORD_MIN} characters`}
+              placeholder={`At least ${PASSWORD_MIN_LENGTH} characters`}
               aria-invalid={password.length > 0 && !passwordOk}
             />
             {password.length > 0 && !passwordOk && (
               <p className="mt-1 text-xs text-red-600">
-                Password must be at least {PASSWORD_MIN} characters long.
+                Password must be at least {PASSWORD_MIN_LENGTH} characters
+                long.
               </p>
             )}
 
-            {/* Confirm password */}
-            <label className="mt-4 mb-1 block text-sm font-medium" htmlFor="reg-password2">
+            <label
+              className="mt-4 mb-1 block text-sm font-medium"
+              htmlFor="reg-password2"
+            >
               Re-enter password
             </label>
             <input
               id="reg-password2"
               value={password2}
-              onChange={(e) => setPassword2(e.target.value)}
+              onChange={(event) => setPassword2(event.target.value)}
               type="password"
               className="w-full rounded-md border px-3 py-2"
               placeholder="Re-enter your password"
               aria-invalid={password2.length > 0 && !passwordsMatch}
             />
             {password2.length > 0 && !passwordsMatch && (
-              <p className="mt-1 text-xs text-red-600">Passwords do not match.</p>
+              <p className="mt-1 text-xs text-red-600">
+                Passwords do not match.
+              </p>
             )}
 
-            {/* Actions */}
             <div className="mt-5 flex items-center gap-3">
               <button
+                type="button"
                 onClick={handleSubmit}
                 disabled={!formValid || submitting}
                 className="rounded-md bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
-                type="button"
                 aria-disabled={!formValid || submitting}
               >
                 {submitting ? 'Saving…' : 'Register'}
               </button>
               <button
+                type="button"
                 onClick={onClose}
                 className="rounded-md px-4 py-2 text-gray-700"
-                type="button"
               >
                 Cancel
               </button>
@@ -195,9 +224,9 @@ export function RegisterOnlyDialog({ isOpen, onClose, onSuccess }: Props) {
               Registration saved. You can now download the PDF.
             </div>
             <button
+              type="button"
               onClick={onClose}
               className="rounded-md bg-blue-600 px-4 py-2 text-white"
-              type="button"
             >
               Close
             </button>
