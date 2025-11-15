@@ -3,6 +3,7 @@ import SearchForm from '@/app/components/SearchForm';
 import { fetchFilteredDesigns } from '@/lib/data-access';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
+import RegisterNewsletterLink from '@/app/components/RegisterNewsletterLink';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +36,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     console.error('Error fetching designs for metadata:', error);
     return {
       title: 'Cross Stitch Designs',
-      description: 'Explore thousands of cross-stitch designs with downloadable PDFs',
+      description: 'Explore thousands of free cross-stitch designs with downloadable PDF patterns ready for instant download.',
     };
   }
 
@@ -43,13 +44,13 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const canonicalUrl = 'https://cross-stitch-pattern.net/';
   const title = searchText ? `Search Results for "${searchText}" - Cross Stitch Designs` : 'Cross Stitch Designs';
   const description = searchText 
-    ? `Search results for "${searchText}". Explore thousands of cross-stitch designs with downloadable PDFs.` 
-    : 'Explore thousands of cross-stitch designs with downloadable PDFs.';
+    ? `Search results for "${searchText}". Explore thousands of free cross-stitch PDF patterns with instant downloads.` 
+    : 'Explore thousands of free cross-stitch PDF patterns with instant downloads.';
 
   return {
     title,
     description,
-    keywords: 'cross stitch, designs, patterns, PDF, embroidery',
+    keywords: 'cross stitch, free designs, free patterns, free PDF embroidery charts',
     alternates: {
       canonical: canonicalUrl,
     },
@@ -133,77 +134,70 @@ export default async function Home({ searchParams }: Props) {
             />
           </Suspense>
           <div className="mt-8 prose max-w-none bg-white p-6 rounded-lg shadow-lg">
-          <br/>
-          My name is Ann, and I am delighted to welcome you here! <br/>
-        <br/>
-    For many years, I have been creating counted cross-stitch patterns for myself and others. Now, I am thrilled to share them with you. I am confident you will enjoy them as much as my friends do. All my patterns, designs, and charts are meticulously crafted to simplify your stitching experience.<br/>
-<br/>
-    
+            <p>My name is Ann, and I am delighted to welcome you here!</p>
 
-    So, what exactly are we discussing? Counted cross-stitch, of course! As you likely know, it is one of the world&apos;s most beloved hobbies. It is simple to learn and execute—essentially embroidery using small crosses to form stunning, memorable designs. Often called &quot;counted cross-stitch,&quot; this craft requires precise counting of stitches on the fabric to ensure accurate placement.
+            <h2>Free Cross-Stitch PDF Patterns for Every Stitcher</h2>
+            <p>
+              For many years, I have been creating counted cross-stitch patterns for myself and others.
+              Now, I am thrilled to share these free designs with you. I am confident you will enjoy them
+              as much as my friends do. All my patterns, designs, and charts are meticulously crafted to
+              simplify your stitching experience.
+            </p>
 
-    <br/><br/>
+            <h3>Why Counted Cross-Stitch Still Inspires Me</h3>
+            <p>
+              Counted cross-stitch is one of the world&apos;s most beloved hobbies. It is simple to learn and execute - 
+              essentially embroidery using small crosses to form stunning, memorable designs. Often called &quot;counted cross-stitch,&quot;
+              this craft requires precise counting of stitches on the fabric to ensure accurate placement. I personally adore cross-stitching
+              and view it as a form of meditation; the rhythmic process - stitch by stitch - is incredibly soothing and calming.
+            </p>
 
-    I personally adore cross-stitching; I view it as a form of meditation. The rhythmic process—stitch by stitch—is incredibly soothing and calming.
+            <h3>Creative Possibilities</h3>
+            <p>
+              The possibilities are endless. You can adorn your home, gift your work to loved ones, or simply enjoy the process
+              for personal fulfillment. My collection includes seasonal sets, floral themes, animals, landscapes, and beginner-friendly
+              mini designs so you can always find the perfect project.
+            </p>
 
-    <br/><br/>
+            <h3>What You Need to Start Stitching</h3>
+            <p>
+              Getting started is straightforward. Unlike many crafts, cross-stitch requires minimal supplies: primarily a needle and thread.
+              If you are new to cross-stitching, begin with a small, simple design and gradually advance to more complex projects.
+            </p>
+            <p>
+              Online shops today offer an extensive range of fabrics and threads. I favor Aida fabric for its ease of use and maintenance.
+              Woven with threads grouped into bundles, Aida features small holes that guide the needle effortlessly. Fabric count determines
+              the size and overall look of your project, so ensure your needles match the fabric count.
+            </p>
+            <p>
+              For threads, options abound, including Anchor and Madeira. I prefer DMC floss for its quality. Patterns typically specify colors,
+              and I advise following them closely. Subtle shade variations add depth to the design, even if they are not immediately noticeable.
+              Essential tools include embroidery hoops and scissors. Hoops keep the fabric taut and flat, easing the stitching process - though
+              some stitchers prefer working without them.
+            </p>
 
-    What can you create with it? The possibilities are endless. You can adorn your home, gift your work to loved ones, or simply enjoy the process for personal fulfillment.
+            <h3>Find Your Next Free Pattern</h3>
+            <p>
+              My galleries feature hundreds of free cross-stitch designs, with new ones added nearly every day. Newsletter subscribers receive
+              fresh free designs every few days. Explore my albums from this page to find the perfect free chart, and use the search box to locate
+              free patterns: enter comma-separated terms (e.g., cats, birds, dogs).
+            </p>
+            <RegisterNewsletterLink />
 
-    <br/><br/>
+            <h3>Popular Free Pattern Topics</h3>
+            <ul>
+              <li>Seasonal cross-stitch PDFs such as Christmas and Halloween motifs</li>
+              <li>Animal-themed embroidery charts featuring cats, birds, and woodland creatures</li>
+              <li>Landscape scenes with detailed color blends and shading</li>
+              <li>Beginner-friendly mini patterns that stitch quickly</li>
+              <li>Large-format heirloom charts for experienced stitchers</li>
+            </ul>
 
-    Getting started is straightforward. Unlike many crafts, cross-stitch requires minimal supplies: primarily a needle and thread.
-
-    
-
-    If you are new to cross-stitching, begin with a small, simple design and gradually advance to more complex projects.
-<br/><br/>
-    
-
-    Online shops today offer an extensive range of fabrics and threads. I favor Aida fabric for its ease of use and maintenance. Woven with threads grouped into bundles, Aida features small holes that guide the needle effortlessly. It is the most popular choice for counted cross-stitch, though evenweave and linen are alternatives. In my experience, Aida is the simplest option.
-
-    <br/><br/>
-
-    Aida comes in various colors, which serve as the background for your finished piece and significantly impact its appearance.
-
-    
-
-    Fabric count is also crucial—it determines the size and overall look of your project. Ensure your needles match the fabric count; I recommend purchasing a variety pack.
-
-    <br/>
-
-    For threads, options abound, including Anchor and Madeira. I prefer DMC floss for its quality. Patterns typically specify colors, and I advise following them closely. Subtle shade variations add depth to the design, even if they are not immediately noticeable.
-<br/>
-    
-
-    Essential tools include embroidery hoops and scissors. Hoops keep the fabric taut and flat, easing the stitching process—though some stitchers prefer working without them.
-<br/><br/>
-    
-
-    Completing a project brings immense satisfaction—a natural thrill from admiring your creation.
-
-    <br/><br/>
-
-    Happy stitching!
-
-    <br/><br/>
-
-    My galleries feature hundreds of cross-stitch designs, with new ones added nearly every day. Newsletter subscribers receive fresh designs every few days.
-
-    <br/><br/>
-
-    Explore my albums from this page to find the perfect chart.
-
-    <br/><br/>  
-
-    Use the search box to locate patterns: enter comma-separated terms (e.g., cats, birds, dogs).
-
-    <br/><br/>
-
-    Sign up for my newsletter to receive new designs as they are released.
-    </div>
+            <p>Happy stitching!</p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+

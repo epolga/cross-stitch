@@ -29,36 +29,44 @@ console.log("Generating metadata for designId:", designId);
   const canonicalUrl = `https://cross-stitch-pattern.net/${await CreateDesignUrl(design)}`;
   const ogImage = design.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
 
+  const baseTitle = `${design.Caption} - Free Cross-Stitch Design`;
+
   return {
-    title: design.Caption,
-    description: design.Description || `View cross-stitch design ${design.Caption}`,
-    keywords: 'cross stitch, design, pattern, PDF',
+    title: baseTitle,
+    description: design.Description || `View free cross-stitch design ${design.Caption}`,
+    keywords: 'cross stitch, free design, free pattern, PDF, embroidery chart',
     alternates: {
       canonical: canonicalUrl,
     },
     robots: 'index, follow',
     openGraph: {
-      title: design.Caption,
-      description: design.Description || `View cross-stitch design ${design.Caption}`,
+      title: baseTitle,
+      description: design.Description || `View free cross-stitch design ${design.Caption}`,
       images: ogImage,
       url: canonicalUrl,
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
-      title: design.Caption,
-      description: design.Description || `View cross-stitch design ${design.Caption}`,
+      title: baseTitle,
+      description: design.Description || `View free cross-stitch design ${design.Caption}`,
       images: ogImage,
     },
     other: {
       'application/ld+json': JSON.stringify({
         "@context": "https://schema.org",
         "@type": "CreativeWork",
-        "name": design.Caption,
-        "description": design.Description || `Cross-stitch design pattern for ${design.Caption}`,
+        "name": baseTitle,
+        "description": design.Description || `Free cross-stitch design pattern for ${design.Caption}`,
         "image": ogImage,
         "url": canonicalUrl,
-        "keywords": "cross stitch, pattern, design",
+        "keywords": "cross stitch, free pattern, design",
+        "isAccessibleForFree": true,
+        "inLanguage": "en",
+        "author": {
+          "@type": "Person",
+          "name": "Ann"
+        }
       }),
     },
   };
@@ -84,6 +92,17 @@ export default async function DesignPage({ params }: Props) {
     );
   }
 
+  const featureItems: string[] = [];
+  if (design.Width && design.Height) {
+    featureItems.push(`Stitch count: ${design.Width} x ${design.Height}`);
+  }
+  if (design.NColors) {
+    featureItems.push(`${design.NColors} colors in the palette`);
+  }
+  if (design.NDownloaded) {
+    featureItems.push(`Downloaded ${design.NDownloaded} times`);
+  }
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">{design.Caption}</h1>
@@ -96,12 +115,20 @@ export default async function DesignPage({ params }: Props) {
             design={design}
             className="inline-block text-blue-600 hover:underline mb-4"
           />
+          <p className="text-sm text-gray-600 mb-4">Download the free PDF chart once you sign in.</p>
+          {featureItems.length > 0 && (
+            <ul className="text-left text-sm text-gray-700 mb-4 list-disc list-inside">
+              {featureItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          )}
 
           {design.ImageUrl ? (
             <div className="mx-auto flex items-center justify-center mb-4">
               <Image
                 src={design.ImageUrl}
-                alt={design.Caption}
+                alt={`${design.Caption} free cross-stitch pattern`}
                 width={0}
                 height={0}
                 className="max-w-[600px] max-h-[600px] w-full h-auto object-contain rounded"
