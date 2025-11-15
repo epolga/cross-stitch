@@ -30,11 +30,22 @@ console.log("Generating metadata for designId:", designId);
   const ogImage = design.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
 
   const baseTitle = `${design.Caption} - Free Cross-Stitch Design`;
+  const captionSlug = design.Caption.replace(/\s+/g, '-');
+  const keywords = [
+    'cross stitch',
+    'free design',
+    'free pattern',
+    'PDF',
+    'embroidery chart',
+    design.Caption,
+    `${design.Caption} pattern`,
+    `${captionSlug} cross stitch`,
+  ].join(', ');
 
   return {
     title: baseTitle,
     description: design.Description || `View free cross-stitch design ${design.Caption}`,
-    keywords: 'cross stitch, free design, free pattern, PDF, embroidery chart',
+    keywords,
     alternates: {
       canonical: canonicalUrl,
     },

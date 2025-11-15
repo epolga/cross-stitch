@@ -40,9 +40,10 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const canonicalUrl = `https://cross-stitch-pattern.net${await CreateAlbumUrl(albumCaption ? albumCaption : '')}`;
   const title = `Free Designs in ${albumCaption || `Album ${albumId}`}`;
   const description = `Explore free cross-stitch designs in album ${albumCaption || albumId}. Downloadable PDF patterns available.`;
+  const slugCaption = (albumCaption || `Album ${albumId}`).replace(/\s+/g, '-');
   const keywords = albumCaption
-    ? `free cross stitch ${albumCaption} patterns, ${albumCaption} charts, free embroidery PDFs`
-    : 'cross stitch, free designs, free patterns, PDFs, album';
+    ? `free cross stitch ${albumCaption} patterns, ${albumCaption} charts, free embroidery PDFs, ${slugCaption} designs`
+    : `cross stitch, free designs, free patterns, PDFs, album ${albumId}`;
   const hasPart = (designs || []).slice(0, 3).map((design) => ({
     "@type": "CreativeWork",
     "name": design.Caption,
