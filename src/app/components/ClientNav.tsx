@@ -39,11 +39,15 @@ export default function ClientNav() {
           <Link href="/" className={desktopLinkBase}>
             Home
           </Link>
-          <span className="text-gray-400 text-xl">›</span>
+          <span className="text-gray-400 text-xl">&middot;</span>
           <Link href="/XStitch-Charts.aspx" className={desktopLinkBase}>
             Thematic catalog
           </Link>
-          <span className="text-gray-400 text-xl">›</span>
+          <span className="text-gray-400 text-xl">&middot;</span>
+          <Link href="/CrossStitchTips.aspx" className={desktopLinkBase}>
+            Tips
+          </Link>
+          <span className="text-gray-400 text-xl">&middot;</span>
 
           {/* Desktop Articles dropdown */}
           <div className="relative">
@@ -95,9 +99,7 @@ export default function ClientNav() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Right side: AuthControl (desktop) + burger (mobile) */}
+        </div>        {/* Right side: AuthControl (desktop) + burger (mobile) */}
         <div className="flex items-center gap-3">
           <div className="hidden md:block">
             <AuthControl />
@@ -166,6 +168,13 @@ export default function ClientNav() {
                 onClick={closeMobileMenu}
               >
                 Thematic catalog
+              </Link>
+              <Link
+                href="/CrossStitchTips.aspx"
+                className={mobileLinkBase}
+                onClick={closeMobileMenu}
+              >
+                Tips
               </Link>
 
               {/* Articles as submenu on mobile */}

@@ -3,9 +3,58 @@ import SearchForm from '@/app/components/SearchForm';
 import { fetchFilteredDesigns } from '@/lib/data-access';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import RegisterNewsletterLink from '@/app/components/RegisterNewsletterLink';
 
 export const dynamic = 'force-dynamic';
+
+type FAQEntry = {
+  question: string;
+  answer: string;
+  ctaHref?: string;
+  ctaLabel?: string;
+};
+
+const faqEntries: FAQEntry[] = [
+  {
+    question: 'Are the cross-stitch patterns really free?',
+    answer:
+      'Yes. Every chart on Cross Stitch Pattern is offered as a free PDF so you can stitch without paying subscriptions or hidden fees.',
+  },
+  {
+    question: 'Do I need to create an account to download the PDFs?',
+    answer:
+      'You only need a free account so the site can deliver each PDF instantly and unlock repeat downloads from any device.',
+  },
+  {
+    question: 'Are the patterns suitable for beginners?',
+    answer:
+      'Absolutely. Each listing shows the stitch count and color count so newcomers can pick manageable projects and progress to larger heirloom pieces.',
+  },
+  {
+    question: 'How often do you publish new designs?',
+    answer:
+      'Fresh cross-stitch PDFs are added several times a week and newsletter subscribers are the first to know when new designs go live.',
+  },
+  {
+    question: 'Where can I browse themed collections?',
+    answer: 'Use the themed collections to jump straight into animals, holidays, florals, landscapes, and more.',
+    ctaHref: '/XStitch-Charts.aspx',
+    ctaLabel: 'Browse the XStitch Charts page',
+  },
+  {
+    question: 'Where can I learn more cross-stitch techniques?',
+    answer:
+      'The dedicated tips page covers fabric choices, thread management, finishing techniques, and more detailed how-tos for every level.',
+    ctaHref: '/CrossStitchTips.aspx',
+    ctaLabel: 'Read the cross-stitch tips guide',
+  },
+  {
+    question: 'Can I print the charts at home?',
+    answer:
+      'Yes. Every PDF is formatted for standard letter or A4 pages so you can print from home or view the chart on a tablet without extra software.',
+  },
+];
 
 interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -47,6 +96,32 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     ? `Search results for "${searchText}". Explore thousands of free cross-stitch PDF patterns with instant downloads.` 
     : 'Explore thousands of free cross-stitch PDF patterns with instant downloads.';
 
+  const websiteStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Cross Stitch Pattern",
+    "description": description,
+    "url": canonicalUrl,
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": `${canonicalUrl}?searchText={search_term_string}`,
+      "query-input": "required name=search_term_string"
+    }
+  };
+
+  const faqStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqEntries.map((item) => ({
+      "@type": "Question",
+      "name": item.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": item.answer,
+      },
+    })),
+  };
+
   return {
     title,
     description,
@@ -69,18 +144,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       images: ogImage,
     },
     other: {
-      'application/ld+json': JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Cross Stitch Pattern",
-        "description": description,
-        "url": canonicalUrl,
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": `${canonicalUrl}?searchText={search_term_string}`,
-          "query-input": "required name=search_term_string"
-        }
-      }),
+      'application/ld+json': JSON.stringify([websiteStructuredData, faqStructuredData]),
     },
   };
 }
@@ -194,6 +258,27 @@ export default async function Home({ searchParams }: Props) {
             </ul>
 
             <p>Happy stitching!</p>
+
+            <section className="mt-10">
+              <h3>Frequently Asked Questions</h3>
+              <dl className="space-y-4">
+                {faqEntries.map((item) => (
+                  <div key={item.question}>
+                    <dt className="font-semibold">{item.question}</dt>
+                    <dd className="text-gray-700">
+                      <p>{item.answer}</p>
+                      {item.ctaHref ? (
+                        <p className="mt-1">
+                          <Link href={item.ctaHref} className="text-blue-600 hover:underline">
+                            {item.ctaLabel ?? 'Learn more'}
+                          </Link>
+                        </p>
+                      ) : null}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
           </div>
         </div>
       </div>
