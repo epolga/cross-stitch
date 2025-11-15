@@ -40,6 +40,8 @@ console.log("Generating metadata for designId:", designId);
     design.Caption,
     `${design.Caption} pattern`,
     `${captionSlug} cross stitch`,
+    `${design.Caption} download`,
+    `download ${design.Caption} pattern`,
   ].join(', ');
 
   return {

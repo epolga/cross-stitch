@@ -42,8 +42,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const description = `Explore free cross-stitch designs in album ${albumCaption || albumId}. Downloadable PDF patterns available.`;
   const slugCaption = (albumCaption || `Album ${albumId}`).replace(/\s+/g, '-');
   const keywords = albumCaption
-    ? `free cross stitch ${albumCaption} patterns, ${albumCaption} charts, free embroidery PDFs, ${slugCaption} designs`
-    : `cross stitch, free designs, free patterns, PDFs, album ${albumId}`;
+    ? `free cross stitch ${albumCaption} patterns, ${albumCaption} charts, free embroidery PDFs, ${slugCaption} designs, download ${albumCaption} charts`
+    : `cross stitch, free designs, free patterns, PDFs, album ${albumId}, download album ${albumId} charts`;
   const hasPart = (designs || []).slice(0, 3).map((design) => ({
     "@type": "CreativeWork",
     "name": design.Caption,
