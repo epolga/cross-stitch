@@ -34,7 +34,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           crossOrigin="anonymous"
         />
       </head>
-      <body className="min-h-screen bg-gray-100 flex flex-col">
+      <body className="min-h-screen flex flex-col bg-white text-black">
         <ClientNav />
         <main className="flex-grow">{children}</main>
         <footer className="bg-white border-t border-gray-200 py-6 px-4 shadow-md text-center text-gray-700 text-sm" aria-label="Site footer">
