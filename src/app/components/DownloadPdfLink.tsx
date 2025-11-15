@@ -17,9 +17,22 @@ export default function DownloadPdfLink({ design, className }: Props) {
 
   // Keep auth state updated across same-tab and cross-tab
   useEffect(() => {
-    const onAuthChange = () => setLoggedIn(isUserLoggedIn());
+    const onAuthChange = () => {
+      const newLoggedIn = isUserLoggedIn();
+      setLoggedIn(newLoggedIn);
+
+      // If newly logged in and there's a pending download matching this design's URL, trigger it
+      if (newLoggedIn && !loggedIn) {
+        const pendingDownload = localStorage.getItem('pendingDownload');
+        if (pendingDownload && pendingDownload === design.PdfUrl) {
+          window.open(pendingDownload, '_blank');
+          localStorage.removeItem('pendingDownload');
+        }
+      }
+    };
+
     const onStorage = (e: StorageEvent) => {
-      if (e.key === 'isLoggedIn') setLoggedIn(isUserLoggedIn());
+      if (e.key === 'isLoggedIn') onAuthChange();
     };
 
     setLoggedIn(isUserLoggedIn());
@@ -30,13 +43,16 @@ export default function DownloadPdfLink({ design, className }: Props) {
       window.removeEventListener('authStateChange', onAuthChange as EventListener);
       window.removeEventListener('storage', onStorage);
     };
-  }, []);
+  }, [loggedIn, design.PdfUrl]);
 
-  // Dispatch event to open registration modal
+  // Dispatch event to open registration modal, and store pending download URL
   const openRegister = useCallback(() => {
+    if (design.PdfUrl) {
+      localStorage.setItem('pendingDownload', design.PdfUrl);
+    }
     const evt = new Event('openRegisterModal');
     window.dispatchEvent(evt);
-  }, []);
+  }, [design.PdfUrl]);
 
   // Dispatch event to open PayPal modal (handled elsewhere)
   const openPayPal = useCallback(() => {
