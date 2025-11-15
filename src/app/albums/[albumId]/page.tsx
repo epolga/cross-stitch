@@ -120,7 +120,7 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
       <h1 className="text-3xl font-bold mb-6">Designs in {albumCaption || `Album ${albumId}`} ({entryCount} designs)</h1>
       <p className="text-gray-700 mb-4">
         This curated collection of free PDF charts includes instant downloads and stitch details tailored to the {albumCaption || `album ${albumId}`} theme.
-        Looking for more ideas? <Link href="/albums" className="text-blue-600 hover:underline">View all free cross-stitch albums</Link>.
+        Looking for more ideas? <Link href="/XStitch-Charts.aspx" className="text-blue-600 hover:underline">View all free cross-stitch albums</Link>.
       </p>
       <DesignList
         designs={designs}

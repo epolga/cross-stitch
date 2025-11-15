@@ -40,7 +40,7 @@ export default function ClientNav() {
             Home
           </Link>
           <span className="text-gray-400 text-xl">›</span>
-          <Link href="/albums" className={desktopLinkBase}>
+          <Link href="/XStitch-Charts.aspx" className={desktopLinkBase}>
             Thematic catalog
           </Link>
           <span className="text-gray-400 text-xl">›</span>
@@ -161,7 +161,7 @@ export default function ClientNav() {
                 Home
               </Link>
               <Link
-                href="/albums"
+                href="/XStitch-Charts.aspx"
                 className={mobileLinkBase}
                 onClick={closeMobileMenu}
               >
