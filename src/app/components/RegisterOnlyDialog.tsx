@@ -1,17 +1,20 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import type { RegistrationSourceInfo } from '@/types/registration';
 
 type RegisterOnlyDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (payload: { email: string; firstName: string }) => void;
+  sourceInfo?: RegistrationSourceInfo | null;
 };
 
 export function RegisterOnlyDialog({
   isOpen,
   onClose,
   onSuccess,
+  sourceInfo,
 }: RegisterOnlyDialogProps) {
   const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
@@ -74,6 +77,7 @@ export function RegisterOnlyDialog({
           email,
           firstName,
           password,
+          sourceInfo: sourceInfo ?? undefined,
         }),
       });
 
@@ -101,7 +105,7 @@ export function RegisterOnlyDialog({
     } finally {
       setSubmitting(false);
     }
-  }, [email, firstName, password, formValid, submitting, onSuccess]);
+  }, [email, firstName, password, formValid, submitting, onSuccess, sourceInfo]);
 
   if (!isOpen) return null;
 

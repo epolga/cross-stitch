@@ -50,9 +50,23 @@ export default function DownloadPdfLink({ design, className }: Props) {
     if (design.PdfUrl) {
       localStorage.setItem('pendingDownload', design.PdfUrl);
     }
-    const evt = new Event('openRegisterModal');
+    const designPath = `/designs/${design.DesignID}`;
+    const absoluteDesignUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}${designPath}`
+        : designPath;
+
+    const evt = new CustomEvent('openRegisterModal', {
+      detail: {
+        source: 'design-download',
+        label: `Download attempt for ${design.Caption}`,
+        designId: design.DesignID,
+        designCaption: design.Caption,
+        designUrl: absoluteDesignUrl,
+      },
+    });
     window.dispatchEvent(evt);
-  }, [design.PdfUrl]);
+  }, [design.DesignID, design.Caption, design.PdfUrl]);
 
   // Dispatch event to open PayPal modal (handled elsewhere)
   const openPayPal = useCallback(() => {

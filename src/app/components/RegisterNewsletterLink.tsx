@@ -30,7 +30,12 @@ export default function RegisterNewsletterLink({ className }: Props) {
       return;
     }
 
-    const evt = new Event('openRegisterModal');
+    const evt = new CustomEvent('openRegisterModal', {
+      detail: {
+        source: 'newsletter-cta',
+        label: 'Homepage newsletter signup',
+      },
+    });
     window.dispatchEvent(evt);
   }, [router]);
 
@@ -52,4 +57,3 @@ export default function RegisterNewsletterLink({ className }: Props) {
     </p>
   );
 }
-

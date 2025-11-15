@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense, useMemo } from 'react';
 import { RegisterForm } from './RegisterForm';
 import { RegisterOnlyDialog } from './RegisterOnlyDialog';
 import { useSearchParams, useRouter } from 'next/navigation';
+import type { RegistrationSourceInfo } from '@/types/registration';
 
 // Utility function to check login status globally
 export const isUserLoggedIn = (): boolean => {
@@ -83,6 +84,7 @@ export function AuthControl() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false); // RegisterForm (PayPal)
   const [isRegisterOnlyOpen, setIsRegisterOnlyOpen] = useState(false); // RegisterOnlyDialog
+  const [registrationSource, setRegistrationSource] = useState<RegistrationSourceInfo | null>(null);
 
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -91,6 +93,12 @@ export function AuthControl() {
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotMessage, setForgotMessage] = useState('');
+
+  const closeRegisterOnly = (): void => {
+    setIsRegisterOnlyOpen(false);
+    setRegistrationSource(null);
+  };
+
 
   const mode: DownloadMode = useMemo(() => resolveDownloadMode(), []);
 
@@ -120,7 +128,7 @@ export function AuthControl() {
         console.log('Received openPayPalModal event');
         if (mode === 'paid') {
           setIsRegisterModalOpen(true);
-          setIsRegisterOnlyOpen(false);
+          closeRegisterOnly();
           setIsLoginModalOpen(false);
         }
       };
@@ -133,9 +141,12 @@ export function AuthControl() {
   // Listen for openRegisterModal → open RegisterOnlyDialog (register mode)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const handleOpenRegisterOnly = () => {
+      const handleOpenRegisterOnly = (event: Event) => {
         console.log('Received openRegister event');
         if (mode === 'register') {
+          const detail =
+            (event as CustomEvent<RegistrationSourceInfo | null>).detail ?? null;
+          setRegistrationSource(detail);
           setIsRegisterOnlyOpen(true);
           setIsRegisterModalOpen(false);
           setIsLoginModalOpen(false);
@@ -154,7 +165,7 @@ export function AuthControl() {
     console.log('Login button clicked, opening login modal...');
     setIsLoginModalOpen(true);
     setIsRegisterModalOpen(false);
-    setIsRegisterOnlyOpen(false);
+    closeRegisterOnly();
     setErrorMessage('');
     setForgotMessage('');
     setIsForgotMode(false);
@@ -266,6 +277,10 @@ export function AuthControl() {
     setErrorMessage('');
     setForgotMessage('');
     setIsLoginModalOpen(false);
+    setRegistrationSource({
+      source: 'auth-control',
+      label: 'Register button in header',
+    });
 
     if (mode === 'register') {
       setIsRegisterOnlyOpen(true);
@@ -275,7 +290,7 @@ export function AuthControl() {
 
     if (mode === 'paid') {
       setIsRegisterModalOpen(true);
-      setIsRegisterOnlyOpen(false);
+      closeRegisterOnly();
       return;
     }
   };
@@ -297,7 +312,7 @@ export function AuthControl() {
     }
     setIsLoggedIn(true);
     setIsRegisterModalOpen(false);
-    setIsRegisterOnlyOpen(false);
+    closeRegisterOnly();
     dispatchAuthStateChange();
   };
 
@@ -508,8 +523,12 @@ export function AuthControl() {
       {/* Register-only dialog */}
       <RegisterOnlyDialog
         isOpen={isRegisterOnlyOpen}
-        onClose={() => setIsRegisterOnlyOpen(false)}
+        onClose={() => {
+          closeRegisterOnly();
+          setRegistrationSource(null);
+        }}
         onSuccess={handleRegisterSuccess}
+        sourceInfo={registrationSource}
       />
     </div>
   );
