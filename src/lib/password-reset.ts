@@ -18,15 +18,15 @@ const RESET_TABLE_NAME =
 const client = new DynamoDBClient({ region: REGION });
 
 const RESET_TTL_SECONDS =
-  Number(process.env.PASSWORD_RESET_TTL_SECONDS ?? '7200'); // 2 часа по умолчанию
+  Number(process.env.PASSWORD_RESET_TTL_SECONDS ?? '7200'); // 2 hours by default
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
 /**
- * Проверка, что пользователь существует.
- * Просто GetItem по ключу ID = USR#email.
+ * Checks that the user exists.
+ * Just executes a GetItem call with the key ID = USR#email.
  */
 export async function userExists(email: string): Promise<boolean> {
   const normalized = normalizeEmail(email);
@@ -46,15 +46,15 @@ export async function userExists(email: string): Promise<boolean> {
 }
 
 /**
- * Создаёт токен восстановления для email и записывает его в таблицу PasswordResetTokens.
- * Возвращает сам токен (строка).
+ * Creates a reset token for the email and stores it in the PasswordResetTokens table.
+ * Returns the token string.
  */
 export async function createPasswordResetToken(
   email: string,
 ): Promise<string> {
   const normalized = normalizeEmail(email);
  console.log('Normalized email for token:', normalized);
-  // криптостойкий токен
+  // Cryptographically strong token
   const token = crypto.randomBytes(32).toString('hex');
   console.log('RESET_TABLE_NAME :', RESET_TABLE_NAME);
   const now = Math.floor(Date.now() / 1000);
@@ -78,9 +78,9 @@ export async function createPasswordResetToken(
 }
 
 /**
- * Проверяет токен:
- *  - если нет записи или токен просрочен — возвращает null
- *  - если валиден — удаляет его и возвращает email пользователя
+ * Validates the token:
+ *  - if there is no record or the token is expired — returns null
+ *  - if it is valid — deletes it and returns the user's email
  */
 export async function consumePasswordResetToken(
   token: string,
@@ -102,7 +102,7 @@ export async function consumePasswordResetToken(
   const expiresAtRaw = res.Item.ExpiresAtEpoch?.N;
 
   if (!email || !expiresAtRaw) {
-    // что-то не так с записью — на всякий случай удалим
+    // Something is wrong with the record — delete it just in case
     await client.send(
       new DeleteItemCommand({
         TableName: RESET_TABLE_NAME,
@@ -116,7 +116,7 @@ export async function consumePasswordResetToken(
   const expiresAt = Number(expiresAtRaw);
 
   if (Number.isNaN(expiresAt) || now > expiresAt) {
-    // просрочен — удаляем
+    // Token expired — delete it
     await client.send(
       new DeleteItemCommand({
         TableName: RESET_TABLE_NAME,
@@ -126,7 +126,7 @@ export async function consumePasswordResetToken(
     return null;
   }
 
-  // токен валиден — сразу удаляем (одноразовый)
+  // Token is valid — delete it immediately (single-use)
   await client.send(
     new DeleteItemCommand({
       TableName: RESET_TABLE_NAME,
@@ -138,8 +138,8 @@ export async function consumePasswordResetToken(
 }
 
 /**
- * Обновляет пароль пользователя в CrossStitchUsers.
- * Поле Password — в том же виде, как вы сейчас его храните.
+ * Updates the user's password in CrossStitchUsers.
+ * The Password field stays in the same format you currently use.
  */
 export async function updateUserPassword(
   email: string,
@@ -164,3 +164,4 @@ export async function updateUserPassword(
     }),
   );
 }
+
