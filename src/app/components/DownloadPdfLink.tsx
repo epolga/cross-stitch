@@ -14,6 +14,22 @@ export default function DownloadPdfLink({ design, className }: Props) {
   const [loggedIn, setLoggedIn] = useState(false);
 
   const mode: DownloadMode = useMemo(() => resolveDownloadMode(), []);
+  const recordDownload = useCallback(() => {
+    void fetch(`/api/designs/${design.DesignID}`, { method: 'POST' }).catch((error) =>
+      console.error('Failed to increment download count', error),
+    );
+  }, [design.DesignID]);
+
+  const handleDownload = useCallback(() => {
+    if (!design.PdfUrl) {
+      return;
+    }
+
+    recordDownload();
+    if (typeof window !== 'undefined') {
+      window.open(design.PdfUrl, '_blank', 'noopener,noreferrer');
+    }
+  }, [design.PdfUrl, recordDownload]);
 
   // Keep auth state updated across same-tab and cross-tab
   useEffect(() => {
@@ -85,30 +101,28 @@ export default function DownloadPdfLink({ design, className }: Props) {
   // 1) Free download for everyone
   if (mode === 'free') {
     return (
-      <a
-        href={design.PdfUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+      <button
+        type="button"
+        onClick={handleDownload}
         className={className ?? 'inline-block text-blue-600 hover:underline'}
         aria-label="Download PDF"
       >
         Download PDF
-      </a>
+      </button>
     );
   }
 
   // 2) Registration required: show register modal if not logged in
   if (mode === 'register') {
     return loggedIn ? (
-      <a
-        href={design.PdfUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+      <button
+        type="button"
+        onClick={handleDownload}
         className={className ?? 'inline-block text-blue-600 hover:underline'}
         aria-label="Download PDF"
       >
         Download PDF
-      </a>
+      </button>
     ) : (
       <button
         onClick={openRegister}

@@ -6,6 +6,7 @@ import {
   QueryCommand,
   ScanCommand,
   ScanCommandInput,
+  UpdateItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import type { Design, DesignsResponse } from '@/app/types/design';
 import type { Album, AlbumsResponse } from '@/app/types/album';
@@ -66,6 +67,7 @@ async function verifyUserInSecondaryTable(
 
 // In-memory caches for designs and albums
 const designCache: Map<number, Design> = new Map();
+const designKeyCache: Map<number, { id: string; nPage: string }> = new Map();
 const albumCache: Map<number, Album> = new Map();
 const albumCaptionCache: Map<number, string> = new Map();
 let cacheInitialized: boolean = false;
@@ -129,6 +131,11 @@ async function initializeCache(): Promise<void> {
             };
             if (design.DesignID > 0) {
               designCache.set(design.DesignID, design);
+              const rawId = item.ID?.S;
+              const rawNPage = item.NPage?.S;
+              if (rawId && rawNPage) {
+                designKeyCache.set(design.DesignID, { id: rawId, nPage: rawNPage });
+              }
             }
           });
           totalDesigns += Items.length;
@@ -189,7 +196,7 @@ async function initializeCache(): Promise<void> {
 }
 
 // Wrapper to initialize cache on first access
-async function withCache<T>(fn: () => Promise<T>): Promise<T> {
+async function ensureCacheReady(): Promise<void> {
   if (!cacheInitialized && !cacheInitializationPromise) {
     console.debug('First access, initializing cache');
     await initializeCache();
@@ -197,6 +204,10 @@ async function withCache<T>(fn: () => Promise<T>): Promise<T> {
     console.debug('Waiting for cache initialization');
     await cacheInitializationPromise;
   }
+}
+
+async function withCache<T>(fn: () => Promise<T>): Promise<T> {
+  await ensureCacheReady();
   return fn();
 }
 
@@ -515,6 +526,80 @@ export async function fetchAllDesigns(): Promise<Design[]> {
   });
 }
 
+async function fetchDesignKeyFromDb(designId: number): Promise<{ id: string; nPage: string } | null> {
+  const tableName = process.env.DYNAMODB_TABLE_NAME;
+  if (!tableName) {
+    throw new Error('DYNAMODB_TABLE_NAME environment variable is not set');
+  }
+
+  const params = {
+    TableName: tableName,
+    IndexName: 'DesignsByID-index',
+    KeyConditionExpression: 'EntityType = :entityType AND DesignID = :designId',
+    ExpressionAttributeValues: {
+      ':entityType': { S: 'DESIGN' },
+      ':designId': { N: designId.toString() },
+    },
+    Limit: 1,
+  };
+
+  const { Items } = await dynamoDBClient.send(new QueryCommand(params));
+  if (!Items || Items.length === 0) {
+    return null;
+  }
+
+  const id = Items[0].ID?.S;
+  const nPage = Items[0].NPage?.S;
+  if (!id || !nPage) {
+    return null;
+  }
+
+  const keyInfo = { id, nPage };
+  designKeyCache.set(designId, keyInfo);
+  return keyInfo;
+}
+
+export async function incrementDesignDownloadCount(designId: number): Promise<void> {
+  await ensureCacheReady();
+  const tableName = process.env.DYNAMODB_TABLE_NAME;
+  if (!tableName) {
+    throw new Error('DYNAMODB_TABLE_NAME environment variable is not set');
+  }
+
+  let keyInfo: { id: string; nPage: string } | null =
+    designKeyCache.get(designId) ?? null;
+  if (!keyInfo) {
+    keyInfo = await fetchDesignKeyFromDb(designId);
+  }
+
+  if (!keyInfo) {
+    throw new Error(`Unable to locate DynamoDB key info for design ${designId}`);
+  }
+
+  const { id, nPage } = keyInfo;
+
+  await dynamoDBClient.send(
+    new UpdateItemCommand({
+      TableName: tableName,
+      Key: {
+        ID: { S: id },
+        NPage: { S: nPage },
+      },
+      UpdateExpression: 'SET NDownloaded = if_not_exists(NDownloaded, :zero) + :inc',
+      ExpressionAttributeValues: {
+        ':inc': { N: '1' },
+        ':zero': { N: '0' },
+      },
+    }),
+  );
+
+  const cached = designCache.get(designId);
+  if (cached) {
+    cached.NDownloaded = (cached.NDownloaded ?? 0) + 1;
+    designCache.set(designId, cached);
+  }
+}
+
 // Retrieve the maximum NPage value for existing users (prefixed with "USR#")
 async function getMaxUserNPage(): Promise<number> {
   const scanParams: ScanCommandInput = {
@@ -674,6 +759,7 @@ export async function createTestUser(email: string, password: string, username: 
 export async function refreshCache(): Promise<void> {
   console.info('Refreshing cache');
   designCache.clear();
+  designKeyCache.clear();
   albumCache.clear();
   albumCaptionCache.clear();
   cacheInitialized = false;
