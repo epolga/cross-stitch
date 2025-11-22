@@ -48,6 +48,10 @@ export default function ClientNav() {
             Tips
           </Link>
           <span className="text-gray-400 text-xl">&middot;</span>
+          <Link href="/short-stories" className={desktopLinkBase}>
+            My thoughts
+          </Link>
+          <span className="text-gray-400 text-xl">&middot;</span>
 
           {/* Desktop Articles dropdown */}
           <div className="relative">
@@ -175,6 +179,13 @@ export default function ClientNav() {
                 onClick={closeMobileMenu}
               >
                 Tips
+              </Link>
+              <Link
+                href="/short-stories"
+                className={mobileLinkBase}
+                onClick={closeMobileMenu}
+              >
+                My thoughts
               </Link>
 
               {/* Articles as submenu on mobile */}
