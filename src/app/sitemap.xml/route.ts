@@ -43,6 +43,7 @@ async function generateAndUploadSitemap(baseUrl: string) {
     { url: '/WhyCrossStitch', changefreq: 'monthly', priority: 0.5, lastmod: new Date().toISOString() },
     { url: '/Article070409.aspx', changefreq: 'monthly', priority: 0.5, lastmod: new Date().toISOString() },
     { url: '/exercises', changefreq: 'monthly', priority: 0.5, lastmod: new Date().toISOString() },
+    { url: '/short-stories', changefreq: 'monthly', priority: 0.4, lastmod: new Date().toISOString() },
   ];
 
   // Fetch album URLs
