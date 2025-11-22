@@ -5,6 +5,7 @@ import {
   type PutItemCommandInput,
   type AttributeValue,
 } from '@aws-sdk/client-dynamodb';
+import { randomUUID } from 'crypto';
 
 const REGION = process.env.AWS_REGION || 'us-east-1';
 const USERS_TABLE_NAME = process.env.DDB_USERS_TABLE || 'CrossStitchUsers';
@@ -44,6 +45,7 @@ export async function saveUserToDynamoDB(
   const email = input.email.trim().toLowerCase();
   const firstName = input.firstName.trim();
   const password = input.password;
+  const unsubscribeToken = randomUUID();
 
   if (!email || !firstName || !password) {
     throw new Error('Missing required fields');
@@ -58,6 +60,8 @@ export async function saveUserToDynamoDB(
     FirstName: { S: firstName },
     Password: { S: password }, // Storing plain password for migration purposes
     CreatedAt: { S: createdAt },
+    UnsubscribeToken: { S: unsubscribeToken },
+    Unsubscribed: { BOOL: false },
   };
 
   const params: PutItemCommandInput = {
