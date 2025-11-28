@@ -91,8 +91,8 @@ export async function generateMetadata({ params, searchParams }: {
   } else if(resolvedParams.slug.toLowerCase() === 'xstitch-charts.aspx'){
     // Add metadata for albums page if needed
     return {
-      title: 'Albums',
-      description: 'Browse cross-stitch albums',
+      title: 'Free Cross-Stitch Pattern Albums | Downloadable PDF Chart Catalog',
+      description: 'Browse themed cross-stitch albums with full PDF charts, stitch counts, and color keys. Instant downloads for every album.',
       alternates: {
         canonical: 'https://cross-stitch-pattern.net/XStitch-Charts.aspx',
       },
