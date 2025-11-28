@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <footer className="bg-white border-t border-gray-200 py-6 px-4 shadow-md text-center text-gray-700 text-sm" aria-label="Site footer">
           <div className="container mx-auto">
             <p>Copyright © 2008 - {currentYear}</p>
-            <p>www.cross-stitch-pattern.net</p>
+            <p>cross-stitch-pattern.net</p>
             <p className="mt-2">
               <a
                 href="mailto:ann@cross-stitch-pattern.net"

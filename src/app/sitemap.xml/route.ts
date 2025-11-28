@@ -1,5 +1,5 @@
 // Place this file at src/app/sitemap.xml/route.ts in your Next.js project.
-// This will serve the sitemap at /sitemap.xml (e.g., https://www.cross-stitch-pattern.net/sitemap.xml).
+// This will serve the sitemap at /sitemap.xml (e.g., https://cross-stitch-pattern.net/sitemap.xml).
 // Install required packages if not already: npm install sitemap @aws-sdk/client-s3
 // Ensure your environment variables include AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY (or use IAM roles on Elastic Beanstalk), and S3_BUCKET_NAME.
 // The sitemap is generated dynamically using your existing DataAccess functions to fetch all albums and designs.

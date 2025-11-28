@@ -12,7 +12,7 @@ const FROM_EMAIL =
 // Base URL of your website (to generate the reset link)
 const APP_BASE_URL =
   process.env.NEXT_PUBLIC_BASE_URL ||
-  'https://www.cross-stitch-pattern.net';
+  'https://scross-stitch-pattern.net';
 
 const sesClient = new SESClient({ region: REGION });
 

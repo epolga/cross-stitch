@@ -3,4 +3,4 @@ User-agent: *
 Disallow:
 
 # Sitemap (replace with your actual sitemap URL)
-Sitemap: https://www.cross-stitch-pattern.net/sitemap.xml
+Sitemap: https://cross-stitch-pattern.net/sitemap.xml
