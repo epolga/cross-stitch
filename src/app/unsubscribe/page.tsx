@@ -1,8 +1,15 @@
 import Link from 'next/link';
 import { unsubscribeUserByToken } from '@/lib/users';
 import { sendEmailToAdmin } from '@/lib/email-service';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Unsubscribe from Emails | Cross Stitch Pattern',
+  description: 'Update your email preferences or unsubscribe from Cross Stitch Pattern notifications.',
+  robots: 'noindex, nofollow',
+};
 
 type PageProps = {
   searchParams?: Promise<

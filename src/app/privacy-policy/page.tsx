@@ -1,5 +1,12 @@
 // app/privacy-policy/page.tsx
+import type { Metadata } from 'next';
 import React from 'react';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy | Cross Stitch Pattern',
+  description: 'Learn how Cross Stitch Pattern collects, uses, and protects your personal information.',
+  robots: 'noindex, nofollow',
+};
 
 const PrivacyPolicy = () => {
   return (

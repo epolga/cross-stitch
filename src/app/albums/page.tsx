@@ -1,8 +1,13 @@
-import Head from "next/head";
 import Link from "next/link";
 import { getAllAlbumCaptions } from "@/lib/data-access";
+import type { Metadata } from "next";
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: "Cross-Stitch Pattern Albums | Free PDF Catalog",
+  description: "Browse themed albums of free cross-stitch PDF charts with instant downloads and curated collections.",
+};
 
 export default async function AlbumsPage() {
   const albums = await getAllAlbumCaptions();
@@ -18,14 +23,6 @@ export default async function AlbumsPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <Head>
-        <title>Free Cross-Stitch Patterns Catalog</title>
-        <meta name="description" content="Browse hundreds of free cross-stitch pattern albums with instant PDF downloads and curated themes." />
-        <meta name="keywords" content="cross stitch, free albums, free patterns, free pdf charts" />
-        <meta property="og:title" content="Free Cross-Stitch Patterns Catalog" />
-        <meta property="og:description" content="Browse themed free cross-stitch albums packed with downloadable charts." />
-        <meta property="og:image" content="https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg" />
-      </Head>
       <h1 className="text-3xl font-bold mb-2 text-center">Free Cross-Stitch Patterns Catalog</h1>
       <h2 className="text-2xl mb-4 text-center">to embroider in your leisure time</h2>
       <p className="text-center text-gray-700 mb-8">
