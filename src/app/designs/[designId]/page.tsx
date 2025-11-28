@@ -29,7 +29,16 @@ console.log("Generating metadata for designId:", designId);
   const canonicalUrl = `https://cross-stitch-pattern.net/${await CreateDesignUrl(design)}`;
   const ogImage = design.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
 
+  const featureParts = [
+    design.Width && design.Height ? `${design.Width}x${design.Height} stitches` : null,
+    design.NColors ? `${design.NColors} colors` : null,
+    design.NDownloaded ? `${design.NDownloaded} downloads` : null,
+  ].filter(Boolean);
+
   const baseTitle = `${design.Caption} (Design ${designId}) - Free Cross-Stitch Pattern`;
+  const description = design.Description
+    ? `${design.Description} (Design ${designId}${featureParts.length ? ` · ${featureParts.join(' · ')}` : ''})`
+    : `Free cross-stitch pattern ${design.Caption} (Design ${designId})${featureParts.length ? ` with ${featureParts.join(' · ')}` : ''}.`;
   const captionSlug = design.Caption.replace(/\s+/g, '-');
   const keywords = [
     'cross stitch',
@@ -46,7 +55,7 @@ console.log("Generating metadata for designId:", designId);
 
   return {
     title: baseTitle,
-    description: design.Description || `View free cross-stitch design ${design.Caption}`,
+    description,
     keywords,
     alternates: {
       canonical: canonicalUrl,
@@ -54,7 +63,7 @@ console.log("Generating metadata for designId:", designId);
     robots: 'index, follow',
     openGraph: {
       title: baseTitle,
-      description: design.Description || `View free cross-stitch design ${design.Caption}`,
+      description,
       images: ogImage,
       url: canonicalUrl,
       type: 'website',
@@ -62,7 +71,7 @@ console.log("Generating metadata for designId:", designId);
     twitter: {
       card: 'summary_large_image',
       title: baseTitle,
-      description: design.Description || `View free cross-stitch design ${design.Caption}`,
+      description,
       images: ogImage,
     },
     other: {
@@ -70,7 +79,7 @@ console.log("Generating metadata for designId:", designId);
         "@context": "https://schema.org",
         "@type": "CreativeWork",
         "name": baseTitle,
-        "description": design.Description || `Free cross-stitch design pattern for ${design.Caption}`,
+        "description": description,
         "image": ogImage,
         "url": canonicalUrl,
         "keywords": "cross stitch, free pattern, design",

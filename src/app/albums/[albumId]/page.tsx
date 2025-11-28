@@ -39,8 +39,10 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const ogImage = designs[0]?.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
   const canonicalUrl = `https://cross-stitch-pattern.net${await CreateAlbumUrl(albumCaption ? albumCaption : '')}`;
   const baseName = albumCaption || `Album ${albumId}`;
+  const highlightNames = (designs || []).slice(0, 2).map((d) => d.Caption).filter(Boolean);
   const title = `${baseName} Cross-Stitch Patterns (Album ${albumId}${page > 1 ? `, Page ${page}` : ''})`;
-  const description = `Explore free cross-stitch designs in ${baseName} (Album ${albumId})${page > 1 ? ` on page ${page}` : ''}. Downloadable PDF patterns available.`;
+  const highlights = highlightNames.length ? ` Highlights: ${highlightNames.join(' | ')}.` : '';
+  const description = `Explore free cross-stitch designs in ${baseName} (Album ${albumId})${page > 1 ? ` on page ${page}` : ''}. Downloadable PDF patterns available.${highlights}`;
   const slugCaption = baseName.replace(/\s+/g, '-');
   const keywords = albumCaption
     ? `free cross stitch ${albumCaption} patterns, ${albumCaption} charts, free embroidery PDFs, ${slugCaption} designs, download ${albumCaption} charts, album ${albumId}`
