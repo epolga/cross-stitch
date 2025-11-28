@@ -2,8 +2,12 @@
 import {
   DynamoDBClient,
   PutItemCommand,
+  ScanCommand,
+  UpdateItemCommand,
   type PutItemCommandInput,
   type AttributeValue,
+  type ScanCommandInput,
+  type UpdateItemCommandInput,
 } from '@aws-sdk/client-dynamodb';
 import { randomUUID } from 'crypto';
 
@@ -87,4 +91,68 @@ export async function saveUserToDynamoDB(
     console.error('Error saving user to DynamoDB:', error);
     throw error;
   }
+}
+
+export type UnsubscribeResult =
+  | { status: 'updated'; email?: string }
+  | { status: 'already-unsubscribed'; email?: string }
+  | { status: 'not-found' };
+
+/**
+ * Marks a user as unsubscribed based on their unique unsubscribe token.
+ * Scans CrossStitchUsers for the token, then flips Unsubscribed to true.
+ */
+export async function unsubscribeUserByToken(
+  token: string,
+): Promise<UnsubscribeResult> {
+  const trimmedToken = token.trim();
+  if (!trimmedToken) {
+    return { status: 'not-found' };
+  }
+
+  const scanParams: ScanCommandInput = {
+    TableName: USERS_TABLE_NAME,
+    FilterExpression: '#token = :token',
+    ExpressionAttributeNames: {
+      '#token': 'UnsubscribeToken',
+    },
+    ExpressionAttributeValues: {
+      ':token': { S: trimmedToken },
+    },
+    ProjectionExpression: 'ID, Email, Unsubscribed',
+    Limit: 1,
+  };
+
+  const scanResult = await client.send(new ScanCommand(scanParams));
+  const user = scanResult.Items?.[0];
+
+  const userId = user?.ID?.S;
+  if (!user || !userId) {
+    return { status: 'not-found' };
+  }
+
+  const alreadyUnsubscribed = user.Unsubscribed?.BOOL === true;
+
+  if (!alreadyUnsubscribed) {
+    const updateParams: UpdateItemCommandInput = {
+      TableName: USERS_TABLE_NAME,
+      Key: { ID: { S: userId } },
+      UpdateExpression: 'SET #unsub = :true',
+      ExpressionAttributeNames: {
+        '#unsub': 'Unsubscribed',
+      },
+      ExpressionAttributeValues: {
+        ':true': { BOOL: true },
+      },
+    };
+
+    await client.send(new UpdateItemCommand(updateParams));
+  }
+
+  return {
+    status: alreadyUnsubscribed
+      ? 'already-unsubscribed'
+      : 'updated',
+    email: user.Email?.S,
+  };
 }
