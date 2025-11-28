@@ -201,6 +201,27 @@ export default async function Home({ searchParams }: Props) {
               making this library a reliable place to bookmark for future projects.
             </p>
           </div>
+          <section className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-6 space-y-3">
+            <h2 className="text-xl font-semibold text-gray-900">How to use the filters</h2>
+            <p className="text-gray-800">
+              Pick width and height ranges to match your fabric and hoop, and narrow colors to keep floss costs in check.
+              Searching for subjects works too: try &quot;cats, winter&quot; to see themed results in one pass.
+            </p>
+            <p className="text-gray-800">
+              When you find a design you like, open it to see stitch count, palette size, and the PDF download link. You can always
+              change filters and return to the same page of results—pagination keeps your place.
+            </p>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Getting started checklist</h3>
+              <ul className="list-disc list-inside text-gray-800 space-y-1">
+                <li>Set your stitch count range to match your preferred project size.</li>
+                <li>Limit color count if you want faster stitching or minimal floss purchases.</li>
+                <li>Use search terms for themes (e.g., animals, holidays, florals, landscapes).</li>
+                <li>Open a design to confirm the stitch count and download the PDF chart.</li>
+                <li>Save favorites and come back—new free designs are added weekly.</li>
+              </ul>
+            </div>
+          </section>
           <Suspense fallback={<div>Loading...</div>}>
             <DesignListWrapper
               designs={designs}
