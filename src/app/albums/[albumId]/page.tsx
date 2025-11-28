@@ -38,7 +38,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const { albumCaption, designs } = designsResponse;
   const ogImage = designs[0]?.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
   const canonicalPath = albumCaption ? await CreateAlbumUrl(albumCaption) : `/albums/${albumId}`;
-  const canonicalUrl = `https://cross-stitch-pattern.net${canonicalPath}`;
+  const canonicalUrl = `https://cross-stitch-pattern.net/${canonicalPath}`;
   const baseName = albumCaption || `Album ${albumId}`;
   const highlightNames = (designs || []).slice(0, 2).map((d) => d.Caption).filter(Boolean);
   const title = `${baseName} Cross-Stitch Patterns (Album ${albumId}${page > 1 ? `, Page ${page}` : ''})`;
