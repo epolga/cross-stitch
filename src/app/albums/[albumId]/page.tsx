@@ -38,11 +38,12 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const { albumCaption, designs } = designsResponse;
   const ogImage = designs[0]?.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
   const canonicalUrl = `https://cross-stitch-pattern.net${await CreateAlbumUrl(albumCaption ? albumCaption : '')}`;
-  const title = `Free Designs in ${albumCaption || `Album ${albumId}`}`;
-  const description = `Explore free cross-stitch designs in album ${albumCaption || albumId}. Downloadable PDF patterns available.`;
-  const slugCaption = (albumCaption || `Album ${albumId}`).replace(/\s+/g, '-');
+  const baseName = albumCaption || `Album ${albumId}`;
+  const title = `${baseName} Cross-Stitch Patterns (Album ${albumId}${page > 1 ? `, Page ${page}` : ''})`;
+  const description = `Explore free cross-stitch designs in ${baseName} (Album ${albumId})${page > 1 ? ` on page ${page}` : ''}. Downloadable PDF patterns available.`;
+  const slugCaption = baseName.replace(/\s+/g, '-');
   const keywords = albumCaption
-    ? `free cross stitch ${albumCaption} patterns, ${albumCaption} charts, free embroidery PDFs, ${slugCaption} designs, download ${albumCaption} charts`
+    ? `free cross stitch ${albumCaption} patterns, ${albumCaption} charts, free embroidery PDFs, ${slugCaption} designs, download ${albumCaption} charts, album ${albumId}`
     : `cross stitch, free designs, free patterns, PDFs, album ${albumId}, download album ${albumId} charts`;
   const hasPart = (designs || []).slice(0, 3).map((design) => ({
     "@type": "CreativeWork",

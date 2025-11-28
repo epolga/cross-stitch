@@ -29,7 +29,7 @@ console.log("Generating metadata for designId:", designId);
   const canonicalUrl = `https://cross-stitch-pattern.net/${await CreateDesignUrl(design)}`;
   const ogImage = design.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
 
-  const baseTitle = `${design.Caption} - Free Cross-Stitch Design`;
+  const baseTitle = `${design.Caption} (Design ${designId}) - Free Cross-Stitch Pattern`;
   const captionSlug = design.Caption.replace(/\s+/g, '-');
   const keywords = [
     'cross stitch',
