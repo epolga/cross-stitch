@@ -12,6 +12,7 @@ type Props = {
 
 export default function DownloadPdfLink({ design, className }: Props) {
   const [loggedIn, setLoggedIn] = useState(false);
+  const [referrerBypass, setReferrerBypass] = useState(false);
 
   const mode: DownloadMode = useMemo(() => resolveDownloadMode(), []);
   const recordDownload = useCallback(() => {
@@ -90,6 +91,15 @@ export default function DownloadPdfLink({ design, className }: Props) {
     window.dispatchEvent(evt);
   }, [design]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const ref = document.referrer.toLowerCase();
+    const allow =
+      ref.includes('allcraftsblogs.com') || ref.includes('allcrafts.allcraftsblogs.com');
+    setReferrerBypass(allow);
+  }, []);
+
   if (!design || !design.PdfUrl) {
     return <p className="text-gray-500">PDF is not available for this design.</p>;
   }
@@ -114,7 +124,9 @@ export default function DownloadPdfLink({ design, className }: Props) {
 
   // 2) Registration required: show register modal if not logged in
   if (mode === 'register') {
-    return loggedIn ? (
+    const allowDirectDownload = loggedIn || referrerBypass;
+
+    return allowDirectDownload ? (
       <button
         type="button"
         onClick={handleDownload}
