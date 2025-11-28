@@ -188,6 +188,12 @@ export default async function Home({ searchParams }: Props) {
           <SearchForm />
         </div>
         <div className="w-full md:flex-1">
+          <h1 className="text-3xl font-bold mb-4 text-gray-900">
+            Free Cross-Stitch PDF Patterns
+          </h1>
+          <p className="text-gray-700 mb-6">
+            Browse hundreds of free downloadable charts, filter by size or colors, and find your next stitching project.
+          </p>
           <Suspense fallback={<div>Loading...</div>}>
             <DesignListWrapper
               designs={designs}

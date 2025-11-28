@@ -93,6 +93,9 @@ export async function generateMetadata({ params, searchParams }: {
     return {
       title: 'Albums',
       description: 'Browse cross-stitch albums',
+      alternates: {
+        canonical: 'https://cross-stitch-pattern.net/XStitch-Charts.aspx',
+      },
     };
   } else if (resolvedParams.slug.toLowerCase().endsWith('-charts.aspx')) {
     const albumCaption = await getAlbumCaptionFromSlug(resolvedParams.slug);
