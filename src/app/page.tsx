@@ -194,6 +194,13 @@ export default async function Home({ searchParams }: Props) {
           <p className="text-gray-700 mb-6">
             Browse hundreds of free downloadable charts, filter by size or colors, and find your next stitching project.
           </p>
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-6">
+            <p className="text-gray-800">
+              All charts here are full, printable PDFs with color keys and stitch counts. Every listing includes stitch width, height,
+              and color totals so you can judge effort quickly. New patterns are published weekly and older designs stay free forever,
+              making this library a reliable place to bookmark for future projects.
+            </p>
+          </div>
           <Suspense fallback={<div>Loading...</div>}>
             <DesignListWrapper
               designs={designs}
