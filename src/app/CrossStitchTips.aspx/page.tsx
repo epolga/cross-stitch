@@ -30,32 +30,32 @@ const tipSections = [
 ];
 
 export const metadata: Metadata = {
-  title: 'Cross-Stitch Tips & Techniques',
+  title: 'Cross-Stitch Tips & Techniques Guide | Free Stitching Advice',
   description:
-    'Discover practical cross-stitch tips covering tools, fabric selection, thread management, finishing techniques, and more.',
+    'Practical cross-stitch tips on tools, fabric selection, thread management, stitching rhythm, and finishing for polished results.',
   keywords: ['cross stitch tips', 'embroidery techniques', 'aida fabric advice', 'beginner stitching tips'],
   alternates: {
     canonical: 'https://cross-stitch-pattern.net/CrossStitchTips.aspx',
   },
   openGraph: {
-    title: 'Cross-Stitch Tips & Techniques',
+    title: 'Cross-Stitch Tips & Techniques Guide | Free Stitching Advice',
     description:
-      'Practical guidance on tools, fabric, thread management, and finishing touches to elevate your free cross-stitch projects.',
+      'Guidance on tools, fabric, thread management, and finishing touches to elevate your free cross-stitch projects.',
     url: 'https://cross-stitch-pattern.net/CrossStitchTips.aspx',
     type: 'article',
   },
   twitter: {
     card: 'summary',
-    title: 'Cross-Stitch Tips & Techniques',
+    title: 'Cross-Stitch Tips & Techniques Guide | Free Stitching Advice',
     description: 'Helpful cross-stitch tips for beginners and seasoned stitchers alike.',
   },
   other: {
     'application/ld+json': JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'Article',
-      headline: 'Cross-Stitch Tips & Techniques',
+      headline: 'Cross-Stitch Tips & Techniques Guide | Free Stitching Advice',
       description:
-        'Guidance on essential tools, fabric choices, thread management, and finishing steps for successful cross-stitching.',
+        'Guidance on essential tools, fabric choices, thread management, stitching rhythm, and finishing steps for successful cross-stitching.',
       author: {
         '@type': 'Person',
         name: 'Ann',
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
 export default function CrossStitchTipsPage() {
   return (
     <main className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-4 text-center">Cross-Stitch Tips &amp; Techniques</h1>
+      <h1 className="text-3xl font-bold mb-4 text-center">Cross-Stitch Tips &amp; Techniques Guide</h1>
       <p className="text-lg text-gray-700 mb-6 text-center">
         Whether you are threading your first needle or polishing advanced skills, these practical cross-stitch tips
         will help you create neat, professional results.
@@ -106,4 +106,3 @@ export default function CrossStitchTipsPage() {
     </main>
   );
 }
-
