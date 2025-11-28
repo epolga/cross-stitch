@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Cross-Stitch Pattern Albums | Free PDF Catalog",
-  description: "Browse themed albums of free cross-stitch PDF charts with instant downloads and curated collections.",
+  description: "Browse themed albums of free cross-stitch PDF charts with instant downloads and curated collections!",
   alternates: {
     canonical: "https://cross-stitch-pattern.net/XStitch-Charts.aspx",
   },
