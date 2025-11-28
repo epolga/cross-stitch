@@ -150,7 +150,7 @@ export async function GET(request: Request) {
     );
   }
   try {
-    const host = request.headers.get('host') || 'www.cross-stitch-pattern.net';
+    const host = request.headers.get('host') || 'cross-stitch-pattern.net';
     const protocol = (host.includes('localhost') ? 'http' : request.headers.get('x-forwarded-proto') || 'https');
     const baseUrl = `${protocol}://${host}`;
     const xml = await getSitemap(baseUrl);

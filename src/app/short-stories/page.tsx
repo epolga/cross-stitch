@@ -14,6 +14,9 @@ export const metadata: Metadata = {
     'Eldridge story',
     'grandmother granddaughter cross stitch',
   ],
+  alternates: {
+    canonical: 'https://cross-stitch-pattern.net/short-stories',
+  },
 };
 
 export default function ShortStories() {
