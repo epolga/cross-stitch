@@ -127,6 +127,18 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
         This curated collection of free PDF charts includes instant downloads and stitch details tailored to the {albumCaption || `album ${albumId}`} theme.
         Looking for more ideas? <Link href="/XStitch-Charts.aspx" className="text-blue-600 hover:underline">View all free cross-stitch albums</Link>.
       </p>
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-6 space-y-2">
+        <h2 className="text-xl font-semibold text-gray-900">How to choose a chart</h2>
+        <p className="text-sm text-gray-800">
+          Pick stitch sizes that fit your fabric and frame, and watch the color count if you want a faster stitch or minimal floss purchases.
+          Larger stitch counts and more shades add detail but take longer to finish.
+        </p>
+        <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
+          <li>Match stitch count to your fabric to estimate the finished dimensions.</li>
+          <li>Limit colors for quicker projects; choose richer palettes for detailed pieces.</li>
+          <li>Open a design to view the PDF, color key, and notes before you start stitching.</li>
+        </ul>
+      </div>
       <DesignList
         designs={designs}
         page={currentPage}

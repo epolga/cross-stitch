@@ -138,6 +138,18 @@ export default async function DesignPage({ params }: Props) {
             className="inline-block text-blue-600 hover:underline mb-4"
           />
           <p className="text-sm text-gray-600 mb-4">Download the free PDF chart once you sign in.</p>
+          <div className="text-left bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 space-y-2">
+            <h3 className="text-base font-semibold text-gray-900">About this pattern</h3>
+            <p className="text-sm text-gray-800">
+              Each PDF includes stitch counts and a full color key so you can kit it quickly. Check the stitch size against your fabric count to estimate finished dimensions, and keep a few extra skeins on hand if you plan to backstitch or outline.
+            </p>
+            <h4 className="text-sm font-semibold text-gray-900">Quick finishing tips</h4>
+            <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
+              <li>Use shorter floss lengths to avoid tangles and keep coverage even.</li>
+              <li>Secure thread ends under nearby stitches instead of bulky knots.</li>
+              <li>Gently wash and press face-down on a towel before framing.</li>
+            </ul>
+          </div>
           {featureItems.length > 0 && (
             <ul className="text-left text-sm text-gray-700 mb-4 list-disc list-inside">
               {featureItems.map((item) => (
