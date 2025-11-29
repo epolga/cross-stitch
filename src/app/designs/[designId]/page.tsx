@@ -176,6 +176,15 @@ export default async function DesignPage({ params }: Props) {
           )}
 
           <p className="text-gray-700 mb-4">{design.Description || 'No description available'}</p>
+          <div className="text-left bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 space-y-2">
+            <h3 className="text-base font-semibold text-gray-900">Stitch planning checklist</h3>
+            <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
+              <li>Measure your fabric against the stitch count to confirm finished size.</li>
+              <li>Sort floss by symbol before you start; pre-thread a few needles for speed.</li>
+              <li>Work in small blocks to keep counting accurate and spot mistakes early.</li>
+              <li>Backstitch at the end of each session so outlines stay crisp.</li>
+            </ul>
+          </div>
          <div className="text-gray-700 mb-4 text-xs">
           {(design.Notes || 'No notes available')
           .split('<br />')
