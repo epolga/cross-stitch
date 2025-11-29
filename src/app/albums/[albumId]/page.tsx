@@ -119,7 +119,7 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
   }
 
   const { designs, entryCount, page: currentPage, totalPages, albumCaption } = designsResponse;
-
+  const baseUrl = albumCaption ? await CreateAlbumUrl(albumCaption) : `/albums/${albumId}`;
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Designs in {albumCaption || `Album ${albumId}`} ({entryCount} designs)</h1>
@@ -145,7 +145,7 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
         totalPages={totalPages}
         pageSize={pageSize}
         caption={albumCaption || `Album ${albumId}`}
-        baseUrl={`/albums/${albumId}`}
+        baseUrl={`${baseUrl}`}
         isLoggedIn={false} // Assuming user is logged in for this example
       />
     </div>
