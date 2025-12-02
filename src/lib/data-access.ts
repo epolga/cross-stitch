@@ -8,6 +8,7 @@ import {
   ScanCommandInput,
   UpdateItemCommand,
 } from "@aws-sdk/client-dynamodb";
+import { randomUUID } from "crypto";
 import type { Design, DesignsResponse } from '@/app/types/design';
 import type { Album, AlbumsResponse } from '@/app/types/album';
 
@@ -692,6 +693,7 @@ export async function verifyUser(email: string, password: string): Promise<boole
 // Create a new user in DynamoDB
 export async function createUser(email: string, password: string, username: string, subscriptionId: string, receiveUpdates: boolean): Promise<void> {
   const userId = `USR#${email}`;
+  const cid = randomUUID();
   try {
     console.log('Creating user:', { email, username, subscriptionId, receiveUpdates });
     const maxNPage = await getMaxUserNPage();
@@ -708,6 +710,7 @@ export async function createUser(email: string, password: string, username: stri
         ReceiveUpdates: { BOOL: receiveUpdates },
         DateCreated: { S: new Date().toISOString() },
         NPage: { S: newNPage },
+        CID: { S: cid },
         EntityType: { S: "USER" },
       },
       ConditionExpression: 'attribute_not_exists(ID)', // Prevent overwrites
@@ -727,6 +730,7 @@ export async function createUser(email: string, password: string, username: stri
 // Create a new test user in DynamoDB
 export async function createTestUser(email: string, password: string, username: string, subscriptionId: string, receiveUpdates: boolean): Promise<void> {
   const userId = `TST#${email}` + Date.now();
+  const cid = randomUUID();
   try {
     console.log('Creating test user:', { email, username, subscriptionId, receiveUpdates });
     const putParams = {
@@ -740,6 +744,7 @@ export async function createTestUser(email: string, password: string, username: 
         ReceiveUpdates: { BOOL: receiveUpdates },
         DateCreated: { S: new Date().toISOString() },
         NPage: { S: "00000" },
+        CID: { S: cid },
         EntityType: { S: "USER" },
       },
       ConditionExpression: 'attribute_not_exists(ID)', // Prevent overwrites

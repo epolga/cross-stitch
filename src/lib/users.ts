@@ -50,6 +50,7 @@ export async function saveUserToDynamoDB(
   const firstName = input.firstName.trim();
   const password = input.password;
   const unsubscribeToken = randomUUID();
+  const cid = randomUUID();
 
   if (!email || !firstName || !password) {
     throw new Error('Missing required fields');
@@ -66,6 +67,7 @@ export async function saveUserToDynamoDB(
     CreatedAt: { S: createdAt },
     UnsubscribeToken: { S: unsubscribeToken },
     Unsubscribed: { BOOL: false },
+    CID: { S: cid },
   };
 
   const params: PutItemCommandInput = {
