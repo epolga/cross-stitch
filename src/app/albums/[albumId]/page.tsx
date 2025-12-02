@@ -41,9 +41,11 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const canonicalUrl = `https://cross-stitch-pattern.net/${canonicalPath}`;
   const baseName = albumCaption || `Album ${albumId}`;
   const highlightNames = (designs || []).slice(0, 2).map((d) => d.Caption).filter(Boolean);
+  const isBookmarksAlbum = (albumCaption || '').toLowerCase() === 'bookmarks';
   const title = `${baseName} Cross-Stitch Patterns (Album ${albumId}${page > 1 ? `, Page ${page}` : ''})`;
   const highlights = highlightNames.length ? ` Highlights: ${highlightNames.join(' | ')}.` : '';
-  const description = `Explore free cross-stitch designs in ${baseName} (Album ${albumId})${page > 1 ? ` on page ${page}` : ''}. Downloadable PDF patterns available.${highlights}`;
+  const bookmarkNote = isBookmarksAlbum ? ' Includes free cross-stitch bookmark patterns with slim, ready-to-print PDF charts.' : '';
+  const description = `Explore free cross-stitch designs in ${baseName} (Album ${albumId})${page > 1 ? ` on page ${page}` : ''}. Downloadable PDF patterns available.${highlights}${bookmarkNote}`;
   const slugCaption = baseName.replace(/\s+/g, '-');
   const keywords = albumCaption
     ? `free cross stitch ${albumCaption} patterns, ${albumCaption} charts, free embroidery PDFs, ${slugCaption} designs, download ${albumCaption} charts, album ${albumId}`
@@ -120,6 +122,7 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
 
   const { designs, entryCount, page: currentPage, totalPages, albumCaption } = designsResponse;
   const baseUrl = albumCaption ? await CreateAlbumUrl(albumCaption) : `/albums/${albumId}`;
+  const isBookmarksAlbum = (albumCaption || '').toLowerCase() === 'bookmarks';
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Designs in {albumCaption || `Album ${albumId}`} ({entryCount} designs)</h1>
@@ -127,6 +130,11 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
         This curated collection of free PDF charts includes instant downloads and stitch details tailored to the {albumCaption || `album ${albumId}`} theme.
         Looking for more ideas? <Link href="/XStitch-Charts.aspx" className="text-blue-600 hover:underline">View all free cross-stitch albums</Link>.
       </p>
+      {isBookmarksAlbum ? (
+        <p className="text-gray-700 mb-4">
+          Explore free cross-stitch bookmark patterns with slim, ready-to-print PDF charts—ideal for quick gifts and travel-friendly stitching.
+        </p>
+      ) : null}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-6 space-y-2">
         <h2 className="text-xl font-semibold text-gray-900">How to choose a chart</h2>
         <p className="text-sm text-gray-800">
