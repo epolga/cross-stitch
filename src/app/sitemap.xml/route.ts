@@ -39,7 +39,7 @@ async function generateAndUploadSitemap(baseUrl: string) {
   const staticUrls = [
     { url: '/', changefreq: 'weekly', priority: 1.0, lastmod: new Date().toISOString() },
     { url: '/XStitch-Charts.aspx', changefreq: 'daily', priority: 0.8, lastmod: new Date().toISOString() },
-    { url: '/EmbroideryHistory.aspx', changefreq: 'monthly', priority: 0.5, lastmod: new Date().toISOString() },
+    { url: '/Embroidery_History.aspx', changefreq: 'monthly', priority: 0.5, lastmod: new Date().toISOString() },
     { url: '/WhyCrossStitch', changefreq: 'monthly', priority: 0.5, lastmod: new Date().toISOString() },
     { url: '/Article070409.aspx', changefreq: 'monthly', priority: 0.5, lastmod: new Date().toISOString() },
     { url: '/exercises', changefreq: 'monthly', priority: 0.5, lastmod: new Date().toISOString() },
