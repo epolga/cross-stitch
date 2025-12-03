@@ -710,7 +710,7 @@ export async function createUser(email: string, password: string, username: stri
         ReceiveUpdates: { BOOL: receiveUpdates },
         DateCreated: { S: new Date().toISOString() },
         NPage: { S: newNPage },
-        CID: { S: cid },
+        cid: { S: cid },
         EntityType: { S: "USER" },
       },
       ConditionExpression: 'attribute_not_exists(ID)', // Prevent overwrites
@@ -744,7 +744,7 @@ export async function createTestUser(email: string, password: string, username: 
         ReceiveUpdates: { BOOL: receiveUpdates },
         DateCreated: { S: new Date().toISOString() },
         NPage: { S: "00000" },
-        CID: { S: cid },
+        cid: { S: cid },
         EntityType: { S: "USER" },
       },
       ConditionExpression: 'attribute_not_exists(ID)', // Prevent overwrites
@@ -759,6 +759,59 @@ export async function createTestUser(email: string, password: string, username: 
     console.error(`Error creating test user for ID ${userId}:`, errorDetails);
     throw error;
   }
+}
+
+/**
+ * Update LastEmailEntry for a user (primary table) identified by cid.
+ * Uses a scan (no index on cid) and updates the first matching record.
+ */
+export async function updateLastEmailEntryByCid(cid: string): Promise<void> {
+  const tableName = process.env.DYNAMODB_TABLE_NAME;
+  if (!tableName) {
+    console.warn('DYNAMODB_TABLE_NAME not set; skipping LastEmailEntry update');
+    return;
+  }
+
+  const trimmedCid = cid.trim();
+  if (!trimmedCid) {
+    console.warn('Empty cid provided; skipping LastEmailEntry update');
+    return;
+  }
+
+  const scanParams: ScanCommandInput = {
+    TableName: tableName,
+    FilterExpression: '#entityType = :user AND #cid = :cid',
+    ExpressionAttributeNames: {
+      '#entityType': 'EntityType',
+      '#cid': 'cid',
+    },
+    ExpressionAttributeValues: {
+      ':user': { S: 'USER' },
+      ':cid': { S: trimmedCid },
+    },
+    ProjectionExpression: 'ID, NPage',
+    Limit: 1,
+  };
+
+  const { Items } = await dynamoDBClient.send(new ScanCommand(scanParams));
+  const id = Items?.[0]?.ID?.S;
+  const nPage = Items?.[0]?.NPage?.S;
+  if (!id || !nPage) {
+    console.warn(`No user found for cid ${trimmedCid} in ${tableName}`);
+    return;
+  }
+
+  const nowIso = new Date().toISOString();
+
+  await dynamoDBClient.send(
+    new UpdateItemCommand({
+      TableName: tableName,
+      Key: { ID: { S: id }, NPage: { S: nPage } },
+      UpdateExpression: 'SET #lastEmailEntry = :now',
+      ExpressionAttributeNames: { '#lastEmailEntry': 'LastEmailEntry' },
+      ExpressionAttributeValues: { ':now': { S: nowIso } },
+    }),
+  );
 }
 
 export async function refreshCache(): Promise<void> {

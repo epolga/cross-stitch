@@ -3,8 +3,9 @@ import type { Metadata } from 'next';
 import DesignPage, { generateMetadata as generateDesignMetadata } from '../designs/[designId]/page'; // Adjust path if needed
 import AlbumDesignsPage, { generateMetadata as generateAlbumMetadata } from '../albums/[albumId]/page'; // Adjust path if needed
 import AlbumsPage from '../albums/page'; // Adjust path if needed
-import { getAlbumIdByCaption, getDesignIdByAlbumAndPage } from '@/lib/data-access'; // Adjust path if needed
+import { getAlbumIdByCaption, getDesignIdByAlbumAndPage, updateLastEmailEntryByCid } from '@/lib/data-access'; // Adjust path if needed
 import { sendEmailToAdmin } from '@/lib/email-service'; // Import the email service
+import { updateLastEmailEntryInUsersTable } from '@/lib/users';
 import { headers } from 'next/headers';
 
 // Helper to parse slug (e.g., 'lion-37-114-Free-Design.aspx')
@@ -132,6 +133,10 @@ export default async function SlugPage({ params, searchParams }: {
     const subject = 'Notification: Access from Email';
     const body = `A user accessed the page "${resolvedParams.slug}" from an email link with parameters:\n- eid: ${eid}\n- cid: ${cid}\n- IP Address: ${ip}`;
     try {
+      await Promise.all([
+        updateLastEmailEntryByCid(cid),
+        updateLastEmailEntryInUsersTable(cid),
+      ]);
       await sendEmailToAdmin(subject, body, false); // Send as plain text
       console.log('Notification email sent to admin successfully.');
     } catch (error) {

@@ -67,7 +67,7 @@ export async function saveUserToDynamoDB(
     CreatedAt: { S: createdAt },
     UnsubscribeToken: { S: unsubscribeToken },
     Unsubscribed: { BOOL: false },
-    CID: { S: cid },
+    cid: { S: cid },
   };
 
   const params: PutItemCommandInput = {
@@ -99,6 +99,54 @@ export type UnsubscribeResult =
   | { status: 'updated'; email?: string }
   | { status: 'already-unsubscribed'; email?: string }
   | { status: 'not-found' };
+
+/**
+ * Update LastEmailEntry for a user in the secondary users table by cid.
+ * Uses a scan (no index on cid) and updates the first matching record.
+ */
+export async function updateLastEmailEntryInUsersTable(
+  cid: string,
+): Promise<void> {
+  const tableName = process.env.DDB_USERS_TABLE;
+  if (!tableName) {
+    console.warn('DDB_USERS_TABLE not set; skipping LastEmailEntry update');
+    return;
+  }
+
+  const trimmedCid = cid.trim();
+  if (!trimmedCid) {
+    console.warn('Empty cid provided; skipping LastEmailEntry update');
+    return;
+  }
+
+  const scanParams: ScanCommandInput = {
+    TableName: tableName,
+    FilterExpression: '#cid = :cid',
+    ExpressionAttributeNames: { '#cid': 'cid' },
+    ExpressionAttributeValues: { ':cid': { S: trimmedCid } },
+    ProjectionExpression: 'ID',
+    Limit: 1,
+  };
+
+  const { Items } = await client.send(new ScanCommand(scanParams));
+  const id = Items?.[0]?.ID?.S;
+  if (!id) {
+    console.warn(`No user found for c ${trimmedCid} in ${tableName}`);
+    return;
+  }
+
+  const nowIso = new Date().toISOString();
+
+  await client.send(
+    new UpdateItemCommand({
+      TableName: tableName,
+      Key: { ID: { S: id } },
+      UpdateExpression: 'SET #lastEmailEntry = :now',
+      ExpressionAttributeNames: { '#lastEmailEntry': 'LastEmailEntry' },
+      ExpressionAttributeValues: { ':now': { S: nowIso } },
+    }),
+  );
+}
 
 /**
  * Marks a user as unsubscribed based on their unique unsubscribe token.
