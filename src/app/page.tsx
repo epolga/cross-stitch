@@ -158,6 +158,7 @@ export default async function Home({ searchParams }: Props) {
   const eid = resolvedSearchParams?.eid?.toString() || '';
   const cid = resolvedSearchParams?.cid?.toString() || '';
 
+  console.log("Home page accessed with eid:", eid, "and cid:", cid);
   if (eid && cid) {
     try {
       await Promise.all([

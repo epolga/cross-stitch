@@ -261,10 +261,12 @@ export async function getAlbumCaption(albumId: number): Promise<string | undefin
 export async function getAllAlbumCaptions(): Promise<{ albumId: number; Caption: string }[] | undefined> {
   return withCache(async () => {
     try {
-      const albums = Array.from(albumCache.values()).map(album => ({
-        albumId: album.AlbumID,
-        Caption: album.Caption,
-      }));
+      const albums = Array.from(albumCache.values())
+        .map(album => ({
+          albumId: album.AlbumID,
+          Caption: album.Caption,
+        }))
+        .sort((a, b) => a.Caption.localeCompare(b.Caption, undefined, { sensitivity: 'base' }));
 
       if (albums.length === 0) {
         console.warn(`No albums found in cache`);
