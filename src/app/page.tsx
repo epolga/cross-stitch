@@ -1,10 +1,11 @@
 import { DesignListWrapper } from '@/app/components/DesignListWrapper';
 import SearchForm from '@/app/components/SearchForm';
-import { fetchFilteredDesigns } from '@/lib/data-access';
+import { fetchFilteredDesigns, updateLastEmailEntryByCid } from '@/lib/data-access';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import RegisterNewsletterLink from '@/app/components/RegisterNewsletterLink';
+import { updateLastEmailEntryInUsersTable } from '@/lib/users';
 
 export const dynamic = 'force-dynamic';
 
@@ -154,6 +155,19 @@ export default async function Home({ searchParams }: Props) {
   const nPage = parseInt(resolvedSearchParams?.nPage?.toString() || '1', 10);
   const pageSize = parseInt(resolvedSearchParams?.pageSize?.toString() || '20', 10);
   const searchText = resolvedSearchParams?.searchText?.toString() || '';
+  const eid = resolvedSearchParams?.eid?.toString() || '';
+  const cid = resolvedSearchParams?.cid?.toString() || '';
+
+  if (eid && cid) {
+    try {
+      await Promise.all([
+        updateLastEmailEntryByCid(cid),
+        updateLastEmailEntryInUsersTable(cid),
+      ]);
+    } catch (error) {
+      console.error('Failed to update LastEmailEntry for root email entry:', error);
+    }
+  }
 
   const filters = {
     widthFrom: parseInt(resolvedSearchParams?.widthFrom?.toString() || '0', 10),
