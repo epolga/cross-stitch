@@ -126,6 +126,7 @@ export default async function SlugPage({ params, searchParams }: {
   const eid = typeof resolvedSearchParams.eid === 'string' ? resolvedSearchParams.eid : Array.isArray(resolvedSearchParams.eid) ? resolvedSearchParams.eid[0] : undefined;
   const cid = typeof resolvedSearchParams.cid === 'string' ? resolvedSearchParams.cid : Array.isArray(resolvedSearchParams.cid) ? resolvedSearchParams.cid[0] : undefined;
 
+  console.log(`Accessed slug: ${resolvedParams.slug} with eid: ${eid} and cid: ${cid}`);
   if (eid && cid) {
     const headersList = await headers();
     const ip = headersList.get('x-forwarded-for')?.split(',')[0].trim() || headersList.get('x-real-ip') || 'unknown';

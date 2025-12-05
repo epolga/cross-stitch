@@ -117,21 +117,33 @@ export async function updateLastEmailEntryInUsersTable(
   if (!trimmedCid) {
     console.warn('Empty cid provided; skipping LastEmailEntry update');
     return;
-  }
-
+  } 
+   
   const scanParams: ScanCommandInput = {
     TableName: tableName,
     FilterExpression: '#cid = :cid',
     ExpressionAttributeNames: { '#cid': 'cid' },
     ExpressionAttributeValues: { ':cid': { S: trimmedCid } },
     ProjectionExpression: 'ID',
-    Limit: 1,
   };
 
-  const { Items } = await client.send(new ScanCommand(scanParams));
-  const id = Items?.[0]?.ID?.S;
+  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+  let id: string | undefined;
+
+  do {
+    const { Items, LastEvaluatedKey } = await client.send(
+      new ScanCommand({ ...scanParams, ExclusiveStartKey: lastEvaluatedKey }),
+    );
+    const match = Items?.find((item) => item?.ID?.S);
+    if (match?.ID?.S) {
+      id = match.ID.S;
+      break;
+    }
+    lastEvaluatedKey = LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
   if (!id) {
-    console.warn(`No user found for c ${trimmedCid} in ${tableName}`);
+    console.warn(`No user found for cid ${trimmedCid} in ${tableName}`);
     return;
   }
 

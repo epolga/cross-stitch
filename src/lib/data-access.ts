@@ -772,6 +772,7 @@ export async function updateLastEmailEntryByCid(cid: string): Promise<void> {
     return;
   }
 
+  console.log(`Updating LastEmailEntry for user with cid: ${cid}`);
   const trimmedCid = cid.trim();
   if (!trimmedCid) {
     console.warn('Empty cid provided; skipping LastEmailEntry update');
@@ -781,7 +782,7 @@ export async function updateLastEmailEntryByCid(cid: string): Promise<void> {
   const scanParams: ScanCommandInput = {
     TableName: tableName,
     FilterExpression: '#entityType = :user AND #cid = :cid',
-    ExpressionAttributeNames: {
+     ExpressionAttributeNames: {
       '#entityType': 'EntityType',
       '#cid': 'cid',
     },
@@ -789,15 +790,13 @@ export async function updateLastEmailEntryByCid(cid: string): Promise<void> {
       ':user': { S: 'USER' },
       ':cid': { S: trimmedCid },
     },
-    ProjectionExpression: 'ID, NPage',
-    Limit: 1,
+    ProjectionExpression: 'ID'
   };
 
   const { Items } = await dynamoDBClient.send(new ScanCommand(scanParams));
   const id = Items?.[0]?.ID?.S;
-  const nPage = Items?.[0]?.NPage?.S;
-  if (!id || !nPage) {
-    console.warn(`No user found for cid ${trimmedCid} in ${tableName}`);
+  if (!id) {
+    console.warn(`No user found for cid ${trimmedCid} in ${tableName}, id: ${id}`);
     return;
   }
 
@@ -806,7 +805,7 @@ export async function updateLastEmailEntryByCid(cid: string): Promise<void> {
   await dynamoDBClient.send(
     new UpdateItemCommand({
       TableName: tableName,
-      Key: { ID: { S: id }, NPage: { S: nPage } },
+      Key: { ID: { S: id } },
       UpdateExpression: 'SET #lastEmailEntry = :now',
       ExpressionAttributeNames: { '#lastEmailEntry': 'LastEmailEntry' },
       ExpressionAttributeValues: { ':now': { S: nowIso } },
