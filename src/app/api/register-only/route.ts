@@ -28,6 +28,7 @@ export async function POST(req: Request): Promise<Response> {
 
     const verificationToken = randomUUID();
     const verificationTokenExpiresAt = new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(); // 48h
+    const redirectTarget = sourceInfo?.designUrl;
 
     await saveUserToDynamoDB({
       email: body.email,
@@ -43,7 +44,9 @@ export async function POST(req: Request): Promise<Response> {
         ? 'http'
         : req.headers.get('x-forwarded-proto') || 'https';
     const baseUrl = `${protocol}://${host}`;
-    const verificationLink = `${baseUrl}/api/register-only/verify?token=${verificationToken}`;
+    const verificationLink = `${baseUrl}/api/register-only/verify?token=${verificationToken}${
+      redirectTarget ? `&redirect=${encodeURIComponent(redirectTarget)}` : ''
+    }`;
 
     const sourceNote = sourceInfo?.designCaption || sourceInfo?.designUrl || '';
 

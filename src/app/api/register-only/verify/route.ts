@@ -14,6 +14,7 @@ export async function GET(req: Request): Promise<Response> {
       );
     }
 
+    const redirectParam = url.searchParams.get('redirect');
     const result = await verifyUserByToken(token);
     if (!result) {
       return NextResponse.json(
@@ -43,8 +44,17 @@ export async function GET(req: Request): Promise<Response> {
     const baseUrl = `${protocol}://${host}`;
 
     if (result.cid) {
-      const redirectUrl = `${baseUrl}/?cid=${encodeURIComponent(result.cid)}&eid=verified`;
-      return NextResponse.redirect(redirectUrl, { status: 302 });
+      let targetUrl: URL;
+      try {
+        targetUrl = redirectParam
+          ? new URL(redirectParam, baseUrl)
+          : new URL(`${baseUrl}/`);
+      } catch {
+        targetUrl = new URL(`${baseUrl}/`);
+      }
+      targetUrl.searchParams.set('cid', result.cid);
+      targetUrl.searchParams.set('eid', 'verified');
+      return NextResponse.redirect(targetUrl.toString(), { status: 302 });
     }
 
     return NextResponse.json({ ok: true, message: 'Email verified' }, { status: 200 });
