@@ -32,10 +32,8 @@ function AutoLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     const cid = searchParams?.get('cid') || '';
     const loggedIn = isUserLoggedIn();
 
-    if (eid && cid) {
-      localStorage.setItem('isLoggedIn', 'true');
-    } else if (eid && cid && !loggedIn) {
-      console.log('Attempting auto-login from email params');
+    if (eid && cid && !loggedIn) {
+      console.log('Attempting email auto-login with cid');
       const autoLogin = async (): Promise<void> => {
         try {
           const response = await fetch('/api/auth/login-from-email', {
@@ -46,18 +44,18 @@ function AutoLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
 
           const data: { success?: boolean; email?: string } = await response.json();
 
-          if (true || (response.ok && data.success)) {
-            console.log('Auto-login successful');
+          if (response.ok && data.success) {
             if (typeof window !== 'undefined') {
               localStorage.setItem('isLoggedIn', 'true');
               localStorage.setItem('userEmail', data.email ?? '');
             }
             onLoginSuccess();
             dispatchAuthStateChange();
-            // Remove query params from URL
-            router.replace(window.location.pathname);
+            if (typeof window !== 'undefined') {
+              router.replace(window.location.pathname);
+            }
           } else {
-            console.error('Auto-login failed:', data as unknown as Record<string, unknown>);
+            console.warn('Email auto-login blocked: user not verified or not found');
           }
         } catch (error) {
           console.error('Error during auto-login:', error);
@@ -84,6 +82,7 @@ export function AuthControl() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false); // RegisterForm (PayPal)
   const [isRegisterOnlyOpen, setIsRegisterOnlyOpen] = useState(false); // RegisterOnlyDialog
+  const [showVerifyNotice, setShowVerifyNotice] = useState(false);
   const [registrationSource, setRegistrationSource] = useState<RegistrationSourceInfo | null>(null);
 
   const [loginUsername, setLoginUsername] = useState('');
@@ -307,13 +306,9 @@ export function AuthControl() {
   };
 
   const handleRegisterSuccess = (): void => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('isLoggedIn', 'true');
-    }
-    setIsLoggedIn(true);
     setIsRegisterModalOpen(false);
     closeRegisterOnly();
-    dispatchAuthStateChange();
+    setShowVerifyNotice(true);
   };
 
   const handleAutoLoginSuccess = (): void => {
@@ -339,6 +334,33 @@ export function AuthControl() {
       <Suspense fallback={null}>
         <AutoLogin onLoginSuccess={handleAutoLoginSuccess} />
       </Suspense>
+
+      {showVerifyNotice && (
+        <div
+          role="alert"
+          className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50"
+          style={{ backgroundColor: 'rgba(17, 24, 39, 0.5)' }}
+          onClick={() => setShowVerifyNotice(false)}
+        >
+          <div
+            className="bg-white p-4 rounded-lg shadow-md w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Check your email</h2>
+            <p className="text-sm text-gray-700 mb-3">
+              We&apos;ve sent a verification link. Please check your inbox (and spam) to complete
+              registration. You&apos;ll be logged in automatically after verification.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowVerifyNotice(false)}
+              className="rounded-md bg-gray-500 px-3 py-1.5 text-white hover:bg-gray-600 text-sm"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
 
       {isLoggedIn ? (
         <button

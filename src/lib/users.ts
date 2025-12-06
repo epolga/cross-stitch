@@ -20,6 +20,8 @@ export interface NewUserRegistration {
   email: string;
   firstName: string;
   password: string;
+  verificationToken?: string;
+  verificationTokenExpiresAt?: string;
 }
 
 /** Error thrown when email already exists in the users table */
@@ -51,6 +53,10 @@ export async function saveUserToDynamoDB(
   const password = input.password;
   const unsubscribeToken = randomUUID();
   const cid = randomUUID();
+  const verificationToken = input.verificationToken || randomUUID();
+  const verificationTokenExpiresAt =
+    input.verificationTokenExpiresAt ||
+    new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(); // 48h default
 
   if (!email || !firstName || !password) {
     throw new Error('Missing required fields');
@@ -68,6 +74,10 @@ export async function saveUserToDynamoDB(
     UnsubscribeToken: { S: unsubscribeToken },
     Unsubscribed: { BOOL: false },
     cid: { S: cid },
+    VerificationToken: { S: verificationToken },
+    VerificationTokenExpiresAt: { S: verificationTokenExpiresAt },
+    Verified: { BOOL: false },
+    VerifiedAt: { S: '' },
   };
 
   const params: PutItemCommandInput = {
@@ -99,6 +109,149 @@ export type UnsubscribeResult =
   | { status: 'updated'; email?: string }
   | { status: 'already-unsubscribed'; email?: string }
   | { status: 'not-found' };
+
+/**
+ * Fetch a verified user by cid (secondary users table).
+ */
+export async function getVerifiedUserByCid(
+  cid: string,
+): Promise<{ id: string; email?: string } | null> {
+  const tableName = process.env.DDB_USERS_TABLE;
+  if (!tableName) {
+    console.warn('DDB_USERS_TABLE not set; cannot fetch verified user by cid');
+    return null;
+  }
+
+  const trimmedCid = cid.trim();
+  if (!trimmedCid) return null;
+
+  const scanParams: ScanCommandInput = {
+    TableName: tableName,
+    FilterExpression: '#cid = :cid',
+    ExpressionAttributeNames: { '#cid': 'cid' },
+    ExpressionAttributeValues: { ':cid': { S: trimmedCid } },
+    ProjectionExpression: 'ID, Email, Verified, VerifiedAt',
+  };
+
+  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+  let match: { id: string; email?: string; verified?: boolean; verifiedAt?: string } | null =
+    null;
+
+  do {
+    const { Items, LastEvaluatedKey } = await client.send(
+      new ScanCommand({ ...scanParams, ExclusiveStartKey: lastEvaluatedKey }),
+    );
+    const found = Items?.find((item) => item?.ID?.S);
+    if (found?.ID?.S) {
+      match = {
+        id: found.ID.S,
+        email: found.Email?.S,
+        verified: found.Verified?.BOOL,
+        verifiedAt: found.VerifiedAt?.S,
+      };
+      break;
+    }
+    lastEvaluatedKey = LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  if (!match) return null;
+  if (match.verified || (match.verifiedAt && match.verifiedAt.length > 0)) {
+    return { id: match.id, email: match.email };
+  }
+  return null;
+}
+
+/**
+ * Mark user verified by verification token; returns basic info or null if not found/expired.
+ */
+export async function verifyUserByToken(
+  token: string,
+): Promise<{ email?: string; firstName?: string; cid?: string } | null> {
+  const tableName = process.env.DDB_USERS_TABLE;
+  if (!tableName) {
+    console.warn('DDB_USERS_TABLE not set; cannot verify user');
+    return null;
+  }
+
+  const trimmedToken = token.trim();
+  if (!trimmedToken) {
+    return null;
+  }
+
+  const scanParams: ScanCommandInput = {
+    TableName: tableName,
+    FilterExpression: '#token = :token',
+    ExpressionAttributeNames: { '#token': 'VerificationToken' },
+    ExpressionAttributeValues: { ':token': { S: trimmedToken } },
+    ProjectionExpression:
+      'ID, Email, FirstName, VerificationTokenExpiresAt, Verified, cid',
+  };
+
+  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+  let match:
+    | {
+        id: string;
+        email?: string;
+        firstName?: string;
+        expiresAt?: string;
+        verified?: boolean;
+        cid?: string;
+      }
+    | undefined;
+
+  do {
+    const { Items, LastEvaluatedKey } = await client.send(
+      new ScanCommand({ ...scanParams, ExclusiveStartKey: lastEvaluatedKey }),
+    );
+    const found = Items?.find((item) => item?.ID?.S);
+    if (found?.ID?.S) {
+      match = {
+        id: found.ID.S,
+        email: found.Email?.S,
+        firstName: found.FirstName?.S,
+        expiresAt: found.VerificationTokenExpiresAt?.S,
+        verified: found.Verified?.BOOL,
+        cid: found.cid?.S,
+      };
+      break;
+    }
+    lastEvaluatedKey = LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  if (!match) return null;
+
+  if (match.verified) {
+    return { email: match.email, firstName: match.firstName, cid: match.cid };
+  }
+
+  if (match.expiresAt && new Date(match.expiresAt).getTime() < Date.now()) {
+    console.warn('Verification token expired for user', match.id);
+    return null;
+  }
+
+  const nowIso = new Date().toISOString();
+
+  await client.send(
+    new UpdateItemCommand({
+      TableName: tableName,
+      Key: { ID: { S: match.id } },
+      UpdateExpression:
+        'SET #verified = :true, #verifiedAt = :now REMOVE #token, #tokenExp',
+      ExpressionAttributeNames: {
+        '#verified': 'Verified',
+        '#verifiedAt': 'VerifiedAt',
+        '#token': 'VerificationToken',
+        '#tokenExp': 'VerificationTokenExpiresAt',
+      },
+      ExpressionAttributeValues: {
+        ':true': { BOOL: true },
+        ':now': { S: nowIso },
+      },
+    }),
+  );
+
+  return { email: match.email, firstName: match.firstName, cid: match.cid };
+}
 
 /**
  * Update LastEmailEntry for a user in the secondary users table by cid.

@@ -5,7 +5,8 @@ import {
   EmailExistsError,
   type NewUserRegistration,
 } from '@/lib/users';
-import { sendEmailToAdmin } from '@/lib/email-service';
+import { sendEmail } from '@/lib/email-service';
+import { randomUUID } from 'crypto';
 import type { RegistrationSourceInfo } from '@/types/registration';
 
 type RegisterRequest = NewUserRegistration & {
@@ -25,40 +26,42 @@ export async function POST(req: Request): Promise<Response> {
 
     const sourceInfo = body.sourceInfo;
 
-    const result = await saveUserToDynamoDB({
+    const verificationToken = randomUUID();
+    const verificationTokenExpiresAt = new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(); // 48h
+
+    await saveUserToDynamoDB({
       email: body.email,
       firstName: body.firstName,
       password: body.password,
+      verificationToken,
+      verificationTokenExpiresAt,
     });
 
-    try {
-      const sourceRows = sourceInfo
-        ? [
-            `<li><strong>Source:</strong> ${sourceInfo.label ?? sourceInfo.source}</li>`,
-            sourceInfo.designUrl
-              ? `<li><strong>Design:</strong> <a href="${sourceInfo.designUrl}">${
-                  sourceInfo.designCaption ?? sourceInfo.designUrl
-                }</a></li>`
-              : '',
-          ].join('')
-        : '';
+    const host = req.headers.get('host') || 'cross-stitch-pattern.net';
+    const protocol =
+      host.includes('localhost') || host.startsWith('127.')
+        ? 'http'
+        : req.headers.get('x-forwarded-proto') || 'https';
+    const baseUrl = `${protocol}://${host}`;
+    const verificationLink = `${baseUrl}/api/register-only/verify?token=${verificationToken}`;
 
-      await sendEmailToAdmin(
-        `New user registered: ${body.firstName}`,
-        `<p>A new user has registered on Cross Stitch Pattern.</p>
-        <ul>
-          <li><strong>Name:</strong> ${body.firstName}</li>
-          <li><strong>Email:</strong> ${body.email}</li>
-          ${sourceRows}
-        </ul>
-        <p>You can reach out to welcome them or verify their subscription status.</p>`
-      );
-    } catch (notifyError) {
-      console.error('Failed to send admin registration email:', notifyError);
-    }
+    const sourceNote = sourceInfo?.designCaption || sourceInfo?.designUrl || '';
+
+    await sendEmail({
+      to: body.email,
+      subject: 'Verify your email for Cross Stitch Pattern',
+      body: `
+        <p>Hello ${body.firstName},</p>
+        <p>Thanks for registering at Cross Stitch Pattern. Please verify your email to complete your registration:</p>
+        <p><a href="${verificationLink}">${verificationLink}</a></p>
+        <p>If you did not request this, you can ignore this email.</p>
+        ${sourceNote ? `<p>Requested from: ${sourceNote}</p>` : ''}
+      `,
+      html: true,
+    });
 
     return NextResponse.json(
-      { ok: true, userId: result.userId },
+      { ok: true, message: 'Please check your email to verify your address.' },
       { status: 200 },
     );
   } catch (error) {

@@ -25,6 +25,7 @@ export function RegisterOnlyDialog({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const isValidEmail = useCallback((value: string): boolean => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -60,6 +61,11 @@ export function RegisterOnlyDialog({
       setSubmitting(false);
       setError(null);
       setDone(false);
+      setSuccessMessage(null);
+      // Don't auto-login; verification is required
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('isLoggedIn');
+      }
     }
   }, [isOpen]);
 
@@ -92,12 +98,11 @@ export function RegisterOnlyDialog({
         throw new Error(text || 'Server error');
       }
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('isLoggedIn', 'true');
-        window.dispatchEvent(new Event('authStateChange'));
-      }
-
+      const data: { message?: string } = await response.json().catch(() => ({}));
       setDone(true);
+      setSuccessMessage(
+        data.message || 'Thanks for registering. Please check your email to verify your address.',
+      );
       onSuccess?.({ email, firstName });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Network error';
@@ -260,7 +265,8 @@ export function RegisterOnlyDialog({
         ) : (
           <>
             <div className="mb-3 rounded-md bg-green-50 p-2 text-green-700">
-              Registration completed. You can now download the PDF.
+              {successMessage ||
+                'Thanks for registering. Check your email for the verification link (it may be in spam). You will be able to download after you verify.'}
             </div>
 
             <button
