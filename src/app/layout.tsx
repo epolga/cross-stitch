@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import '@/lib/global-error-handler';
 import Script from 'next/script';
 import ClientNav from './components/ClientNav';
 import './globals.css';
