@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import type { RegistrationSourceInfo } from '@/types/registration';
+import type { RegistrationSourceInfo } from '@/app/types/registration';
 
 type RegisterOnlyDialogProps = {
   isOpen: boolean;

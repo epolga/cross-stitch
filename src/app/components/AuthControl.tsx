@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, useMemo } from 'react';
 import { RegisterForm } from './RegisterForm';
 import { RegisterOnlyDialog } from './RegisterOnlyDialog';
 import { useSearchParams, useRouter } from 'next/navigation';
-import type { RegistrationSourceInfo } from '@/types/registration';
+import type { RegistrationSourceInfo } from '@/app/types/registration';
 
 // Utility function to check login status globally
 export const isUserLoggedIn = (): boolean => {

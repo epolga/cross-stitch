@@ -5,13 +5,25 @@ const flag = Symbol.for('cross-stitch.globalErrorHandlerInitialized');
 const globalSymbols = globalThis as Record<string | symbol, unknown>;
 
 if (typeof window === 'undefined' && typeof process !== 'undefined' && !globalSymbols[flag]) {
+  // Optionally enable source map support when dependency is present (avoids build-time resolution errors).
+  let sourceMapsEnabled = false;
+  try {
+    const req = eval('require') as NodeRequire;
+    req('source-map-support/register');
+    sourceMapsEnabled = true;
+  } catch {
+    // Optional dependency not installed; continue without source maps.
+  }
+
   const logError = (label: string, payload: Record<string, unknown>) => {
     const entry = {
       label,
       timestamp: new Date().toISOString(),
+      sourceMapsEnabled,
+      runtime: process.release?.name,
+      nodeVersion: process.version,
       ...payload,
     };
-    // eslint-disable-next-line no-console
     console.error(JSON.stringify(entry, null, 2));
   };
 

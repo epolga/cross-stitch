@@ -7,7 +7,7 @@ import {
 } from '@/lib/users';
 import { sendEmail } from '@/lib/email-service';
 import { randomUUID } from 'crypto';
-import type { RegistrationSourceInfo } from '@/types/registration';
+import type { RegistrationSourceInfo } from '@/app/types/registration';
 
 type RegisterRequest = NewUserRegistration & {
   sourceInfo?: RegistrationSourceInfo | null;
