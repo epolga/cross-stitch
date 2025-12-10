@@ -1,25 +1,10 @@
 branch-defaults:
-  default:
-    environment: cross-stitch-env
   main:
-    environment: cross-stitch-env
-    group_suffix: null
-environment-defaults:
-  template-env:
-    branch: null
-    repository: null
+    environment: cross-stitch-com-env
+
 global:
-  application_name: cross-stitch
-  branch: null
-  default_ec2_keyname: null
-  default_platform: Node.js 20
+  application_name: cross-stitch-com
   default_region: us-east-1
-  include_git_submodules: true
-  instance_profile: null
-  instance_type: t2.micro
-  platform_name: null
-  platform_version: null
+  default_ec2_keyname: aws-eb
   profile: null
-  repository: null
-  sc: git
-  workspace_type: Application
+  sc: null
