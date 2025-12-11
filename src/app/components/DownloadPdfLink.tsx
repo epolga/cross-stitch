@@ -9,9 +9,13 @@ type Props = {
   design: Design;
   className?: string;
   formatLabel?: string;
+  formatNumber?: string;
+  isMissing?: boolean;
 };
 
-export default function DownloadPdfLink({ design, className, formatLabel }: Props) {
+const PDF_BASE = 'https://d2o1uvvg91z7o4.cloudfront.net/pdfs';
+
+export default function DownloadPdfLink({ design, className, formatLabel, formatNumber, isMissing }: Props) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [referrerBypass, setReferrerBypass] = useState(false);
 
@@ -22,16 +26,68 @@ export default function DownloadPdfLink({ design, className, formatLabel }: Prop
     );
   }, [design.DesignID]);
 
+  const fallbackPdfUrl = useMemo(() => {
+    if (!design?.AlbumID || !design?.DesignID) return null;
+    const chosenNumber = formatNumber || '1';
+    return `${PDF_BASE}/${design.AlbumID}/${design.DesignID}/Stitch${design.DesignID}_${chosenNumber}_Kit.pdf`;
+  }, [design.AlbumID, design.DesignID, formatNumber]);
+
+  const resolvedPdfUrl = useMemo(() => {
+    if (isMissing === true) {
+      // Listed in MissingDesignPdfs.txt -> keep legacy link if present
+      return design.PdfUrl ?? fallbackPdfUrl ?? null;
+    }
+    if (isMissing === false) {
+      // Not listed -> use new per-format path
+      return fallbackPdfUrl ?? design.PdfUrl ?? null;
+    }
+    // Unknown yet: default to existing link to avoid surprises
+    return design.PdfUrl ?? fallbackPdfUrl ?? null;
+  }, [design.PdfUrl, fallbackPdfUrl, isMissing]);
+
+  useEffect(() => {
+    console.log('[DownloadPdfLink] init', {
+      designId: design.DesignID,
+      albumId: design.AlbumID,
+      pdfUrl: design.PdfUrl,
+      fallbackPdfUrl,
+      resolvedPdfUrl,
+      formatLabel,
+      formatNumber,
+      isMissing,
+    });
+  }, [design.DesignID, design.AlbumID, design.PdfUrl, fallbackPdfUrl, resolvedPdfUrl, formatLabel, formatNumber, isMissing]);
+
   const handleDownload = useCallback(() => {
-    if (!design.PdfUrl) {
+    if (!resolvedPdfUrl) {
+      console.warn('[DownloadPdfLink] no resolvedPdfUrl', {
+        designId: design.DesignID,
+        albumId: design.AlbumID,
+        formatNumber,
+      });
       return;
     }
 
+    console.log('[DownloadPdfLink] handleDownload', {
+      designId: design.DesignID,
+      albumId: design.AlbumID,
+      resolvedPdfUrl,
+      formatLabel,
+      formatNumber,
+    });
+
     recordDownload();
     if (typeof window !== 'undefined') {
-      window.open(design.PdfUrl, '_blank', 'noopener,noreferrer');
+      window.open(resolvedPdfUrl, '_blank', 'noopener,noreferrer');
     }
-  }, [design.PdfUrl, recordDownload]);
+  }, [
+    design.AlbumID,
+    design.DesignID,
+    formatLabel,
+    formatNumber,
+    recordDownload,
+    resolvedPdfUrl,
+  ]);
 
   // Keep auth state updated across same-tab and cross-tab
   useEffect(() => {
@@ -42,7 +98,7 @@ export default function DownloadPdfLink({ design, className, formatLabel }: Prop
       // If newly logged in and there's a pending download matching this design's URL, trigger it
       if (newLoggedIn && !loggedIn) {
         const pendingDownload = localStorage.getItem('pendingDownload');
-        if (pendingDownload && pendingDownload === design.PdfUrl) {
+        if (pendingDownload && pendingDownload === resolvedPdfUrl) {
           window.open(pendingDownload, '_blank');
           localStorage.removeItem('pendingDownload');
         }
@@ -61,12 +117,12 @@ export default function DownloadPdfLink({ design, className, formatLabel }: Prop
       window.removeEventListener('authStateChange', onAuthChange as EventListener);
       window.removeEventListener('storage', onStorage);
     };
-  }, [loggedIn, design.PdfUrl]);
+  }, [loggedIn, resolvedPdfUrl]);
 
   // Dispatch event to open registration modal, and store pending download URL
   const openRegister = useCallback(() => {
-    if (design.PdfUrl) {
-      localStorage.setItem('pendingDownload', design.PdfUrl);
+    if (resolvedPdfUrl) {
+      localStorage.setItem('pendingDownload', resolvedPdfUrl);
     }
     const designPath = `/designs/${design.DesignID}`;
     const absoluteDesignUrl =
@@ -84,7 +140,7 @@ export default function DownloadPdfLink({ design, className, formatLabel }: Prop
       },
     });
     window.dispatchEvent(evt);
-  }, [design.DesignID, design.Caption, design.PdfUrl, formatLabel]);
+  }, [design.DesignID, design.Caption, resolvedPdfUrl, formatLabel]);
 
   // Dispatch event to open PayPal modal (handled elsewhere)
   const openPayPal = useCallback(() => {
@@ -101,14 +157,16 @@ export default function DownloadPdfLink({ design, className, formatLabel }: Prop
     setReferrerBypass(allow);
   }, []);
 
-  if (!design || !design.PdfUrl) {
+  if (!design || !resolvedPdfUrl) {
     return <p className="text-gray-500">PDF is not available for this design.</p>;
   }
 
   const downloadLabel = 'Download PDF';
   const labelContent = <span>Download PDF</span>;
 
-  console.log(`DownloadPdfLink: mode = ${mode}, loggedIn = ${loggedIn}, format = ${formatLabel ?? 'default'}`);
+  console.log(
+    `DownloadPdfLink: mode = ${mode}, loggedIn = ${loggedIn}, format = ${formatLabel ?? 'default'}, formatNumber = ${formatNumber ?? 'default'}, url = ${resolvedPdfUrl}`,
+  );
 
   // ===== MODES =====
 

@@ -43,6 +43,16 @@
   font-size: 0.875rem;
 }
 
+.formatRow {
+  width: 100%;
+  min-height: 2.5rem;
+}
+
+.formatPlaceholder {
+  width: 100%;
+  height: 100%;
+}
+
 .downloadLink {
   color: #4b5563;
   font-weight: 500;

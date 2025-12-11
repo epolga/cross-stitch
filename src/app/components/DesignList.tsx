@@ -17,15 +17,107 @@ const chartFormatLabels: Record<ChartFormat, string> = {
   'color-chart': 'Color Chart',
 };
 
+const chartFormatNumbers: Record<ChartFormat, string> = {
+  'color-symbol': '1',
+  'symbol-chart': '3',
+  'color-chart': '5',
+};
+
 const chartFormatOptions: ChartFormat[] = ['color-symbol', 'symbol-chart', 'color-chart'];
 
 interface DesignCardProps {
   design: Design;
 }
 
+let missingDesignsPromise: Promise<Set<number>> | null = null;
+let missingDesignsCache: Set<number> | null = null;
+
+async function loadMissingDesigns(): Promise<Set<number>> {
+  if (!missingDesignsPromise) {
+    missingDesignsPromise = fetch('/api/missing-design-pdfs', { cache: 'no-store' })
+      .then((res) => res.text())
+      .then((text) => {
+        const set = new Set<number>();
+        text
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .forEach((line) => {
+            const [idStr] = line.split(',');
+            const id = parseInt(idStr, 10);
+            if (!Number.isNaN(id)) set.add(id);
+          });
+        missingDesignsCache = set;
+        console.log('[DesignList] MissingDesignPdfs loaded', {
+          count: set.size,
+          sample: Array.from(set).slice(0, 5),
+        });
+        return set;
+      })
+      .catch((err) => {
+        console.error('[DesignList] Failed to load MissingDesignPdfs.txt', err);
+        return new Set<number>();
+      });
+  }
+  return missingDesignsPromise;
+}
+
+function useMissingDesign(designId: number) {
+  // Default to false (show combo) until list loads
+  const [isMissing, setIsMissing] = useState<boolean>(
+    missingDesignsCache ? missingDesignsCache.has(designId) : false,
+  );
+  const [loaded, setLoaded] = useState<boolean>(Boolean(missingDesignsCache));
+
+  useEffect(() => {
+    let isMounted = true;
+    loadMissingDesigns().then((set) => {
+      if (!isMounted) return;
+      const nextValue = set.has(designId);
+      setIsMissing(nextValue);
+      setLoaded(true);
+      console.log('[useMissingDesign] resolved', { designId, isMissing: nextValue });
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [designId]);
+
+  return { isMissing, loaded };
+}
+
 function DesignCard({ design }: DesignCardProps) {
   const [selectedFormat, setSelectedFormat] = useState<ChartFormat>('color-symbol');
+  const { isMissing, loaded } = useMissingDesign(design.DesignID);
+  const showFormatSelector = loaded && !isMissing; // add combo only after list is loaded
   const selectId = `format-${design.DesignID}`;
+
+  const renderDescription = (description: string) => {
+    if (!description) return null;
+    const parts = description.split(/(stitch(?:es|s))/i);
+    if (parts.length < 3) {
+      return description;
+    }
+    return (
+      <>
+        {parts[0]}
+        {parts[1]}
+        <br />
+        {parts.slice(2).join('')}
+      </>
+    );
+  };
+
+  useEffect(() => {
+    console.log('[DesignCard] render', {
+      designId: design.DesignID,
+      albumId: design.AlbumID,
+      isMissing,
+      loaded,
+      pdfUrl: design.PdfUrl,
+      selectedFormat,
+    });
+  }, [design.DesignID, design.AlbumID, isMissing, loaded, design.PdfUrl, selectedFormat]);
 
   return (
     <div className={styles.card}>
@@ -48,32 +140,40 @@ function DesignCard({ design }: DesignCardProps) {
           )}
           <div className="w-full mt-2">
             <h3 className="text-lg font-semibold truncate">{design.Caption}</h3>
-            <p className="text-sm text-gray-600 mt-1 line-clamp-3">{design.Description}</p>
+            <p className="text-sm text-gray-600 mt-1 line-clamp-3">{renderDescription(design.Description)}</p>
           </div>
         </div>
       </Link>
-      <div className="w-full mt-2">
-        <label htmlFor={selectId} className="sr-only">
-          Select chart format
-        </label>
-        <select
-          id={selectId}
-          className={styles.formatSelect}
-          value={selectedFormat}
-          onChange={(e) => setSelectedFormat(e.target.value as ChartFormat)}
-        >
-          {chartFormatOptions.map((option) => (
-            <option key={option} value={option}>
-              {chartFormatLabels[option]}
-            </option>
-          ))}
-        </select>
+      <div className={`${styles.formatRow} mt-2 text-center`}>
+        {showFormatSelector ? (
+          <>
+            <label htmlFor={selectId} className="sr-only">
+              Select chart format
+            </label>
+            <select
+              id={selectId}
+              className={styles.formatSelect}
+              value={selectedFormat}
+              onChange={(e) => setSelectedFormat(e.target.value as ChartFormat)}
+            >
+              {chartFormatOptions.map((option) => (
+                <option key={option} value={option}>
+                  {chartFormatLabels[option]}
+                </option>
+              ))}
+            </select>
+          </>
+        ) : (
+          <div className={styles.formatPlaceholder} aria-hidden="true" />
+        )}
       </div>
       <div className="w-full mt-2 text-center">
         <DownloadPdfLink
           design={design}
           className={styles.downloadLink}
-          formatLabel={chartFormatLabels[selectedFormat]}
+          formatLabel={showFormatSelector ? chartFormatLabels[selectedFormat] : undefined}
+          formatNumber={showFormatSelector ? chartFormatNumbers[selectedFormat] : undefined}
+          isMissing={isMissing ?? undefined}
         />
       </div>
     </div>
