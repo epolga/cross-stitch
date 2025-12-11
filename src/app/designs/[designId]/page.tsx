@@ -1,8 +1,8 @@
 import Image from 'next/image';
 import type { Design } from '@/app/types/design';
-import DownloadPdfLink from '@/app/components/DownloadPdfLink';
 import type { Metadata } from 'next';
 import { CreateDesignUrl } from '@/lib/url-helper';
+import { DesignDownloadControls } from './DesignDownloadControls';
 
 export const dynamic = 'force-dynamic';
 
@@ -133,10 +133,7 @@ export default async function DesignPage({ params }: Props) {
           <h2 className="text-lg font-semibold mb-2">{design.Caption}</h2>
 
           {/* TOP download control (gated) */}
-          <DownloadPdfLink
-            design={design}
-            className="inline-block text-blue-600 hover:underline mb-4"
-          />
+          <DesignDownloadControls design={design} align="center" />
           <p className="text-sm text-gray-600 mb-4">Download the free PDF chart once you sign in.</p>
           <div className="text-left bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 space-y-2">
             <h3 className="text-base font-semibold text-gray-900">About this pattern</h3>
@@ -191,13 +188,10 @@ export default async function DesignPage({ params }: Props) {
           .map((line, index) => (
             <p key={index}>{line.trim()}</p>
           ))}
-          </div>
+         </div>
 
           {/* BOTTOM download control (gated) */}
-          <DownloadPdfLink
-            design={design}
-            className="inline-block text-blue-600 hover:underline"
-          />
+          <DesignDownloadControls design={design} align="center" />
         </div>
       </div>
     </div>
