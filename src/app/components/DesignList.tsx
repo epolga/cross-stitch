@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import PaginationControl from './PaginationControl';
@@ -8,6 +8,77 @@ import styles from './designList.module.css';
 import type { Design } from '@/app/types/design';
 import DownloadPdfLink from './DownloadPdfLink';
 import { CreateDesignUrl } from '@/lib/url-helper';
+
+type ChartFormat = 'color-symbol' | 'symbol-chart' | 'color-chart';
+
+const chartFormatLabels: Record<ChartFormat, string> = {
+  'color-symbol': 'Color & Symbol',
+  'symbol-chart': 'Symbol Chart',
+  'color-chart': 'Color Chart',
+};
+
+const chartFormatOptions: ChartFormat[] = ['color-symbol', 'symbol-chart', 'color-chart'];
+
+interface DesignCardProps {
+  design: Design;
+}
+
+function DesignCard({ design }: DesignCardProps) {
+  const [selectedFormat, setSelectedFormat] = useState<ChartFormat>('color-symbol');
+  const selectId = `format-${design.DesignID}`;
+
+  return (
+    <div className={styles.card}>
+      <Link href={CreateDesignUrl(design)} className="no-underline">
+        <div className="text-center">
+          {design.ImageUrl ? (
+            <div className="w-[100px] h-[100px] mx-auto flex items-center justify-center">
+              <Image
+                src={design.ImageUrl}
+                alt={design.Caption}
+                width={100}
+                height={100}
+                className="max-w-[100px] max-h-[100px] object-contain rounded"
+              />
+            </div>
+          ) : (
+            <div className="w-[100px] h-[100px] mx-auto bg-gray-200 rounded flex items-center justify-center">
+              <span className="text-gray-500 text-sm">No Image</span>
+            </div>
+          )}
+          <div className="w-full mt-2">
+            <h3 className="text-lg font-semibold truncate">{design.Caption}</h3>
+            <p className="text-sm text-gray-600 mt-1 line-clamp-3">{design.Description}</p>
+          </div>
+        </div>
+      </Link>
+      <div className="w-full mt-2">
+        <label htmlFor={selectId} className="sr-only">
+          Select chart format
+        </label>
+        <select
+          id={selectId}
+          className={styles.formatSelect}
+          value={selectedFormat}
+          onChange={(e) => setSelectedFormat(e.target.value as ChartFormat)}
+        >
+          {chartFormatOptions.map((option) => (
+            <option key={option} value={option}>
+              {chartFormatLabels[option]}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="w-full mt-2 text-center">
+        <DownloadPdfLink
+          design={design}
+          className={styles.downloadLink}
+          formatLabel={chartFormatLabels[selectedFormat]}
+        />
+      </div>
+    </div>
+  );
+}
 
 interface DesignListProps {
   designs: Design[];
@@ -54,41 +125,7 @@ export function DesignList({
       ) : (
         <div className={styles.grid}>
           {designs.map((design) => (
-            <div
-              key={`${design.AlbumID}-${design.DesignID}`}
-              className={styles.card}
-            >
-              <Link href={CreateDesignUrl(design)} className="no-underline">
-                <div className="text-center">
-                  {design.ImageUrl ? (
-                    <div className="w-[100px] h-[100px] mx-auto flex items-center justify-center">
-                      <Image
-                        src={design.ImageUrl}
-                        alt={design.Caption}
-                        width={100}
-                        height={100}
-                        className="max-w-[100px] max-h-[100px] object-contain rounded"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-[100px] h-[100px] mx-auto bg-gray-200 rounded flex items-center justify-center">
-                      <span className="text-gray-500 text-sm">No Image</span>
-                    </div>
-                  )}
-                  <div className="w-full mt-2">
-                    <h3 className="text-lg font-semibold truncate">{design.Caption}</h3>
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-3">{design.Description}</p>
-                  </div>
-                </div>
-              </Link>
-              {/* ✅ Replaced old PDF button logic with the unified DownloadPdfLink */}
-              <div className="w-full mt-2 text-center">
-                <DownloadPdfLink
-                  design ={design}
-                  className={styles.downloadLink}
-                 />
-              </div>
-            </div>
+            <DesignCard key={`${design.AlbumID}-${design.DesignID}`} design={design} />
           ))}
         </div>
       )}

@@ -1,0 +1,13 @@
+6a18b1b Adjusted Elastic Beanstalk config to point main to cross-stitch-com with updated app name/key and cleaned defaults
+b1470fd Add client error reporting and source-mapped diagnostics
+19b9ee5 Add global error handler with throttled admin email notifications
+d1c9dcd Add global error handler with throttled admin email notifications
+6a0e381 Redirect verified signups back to requested design with verified-only auto-login
+b92d1e7 Add verified-only email auto-login and verification notice modal
+931b673 Alphabetize album captions and update root email entry tracking
+14cc44e Update LastEmailEntry when email params hit root page
+ed427b0 Paginate cid scan in users table for LastEmailEntry update
+4fd3e4b Update LastEmailEntry when users arrive via email (CID-based)
+23b5ef5 Add cid GUID to new users
+7ff235c Rename EmbroideryHistory route to Embroidery_History
+6589438 Add bookmark album SEO copy and description

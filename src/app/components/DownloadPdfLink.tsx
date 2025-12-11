@@ -8,9 +8,10 @@ import { Design } from '../types/design';
 type Props = {
   design: Design;
   className?: string;
+  formatLabel?: string;
 };
 
-export default function DownloadPdfLink({ design, className }: Props) {
+export default function DownloadPdfLink({ design, className, formatLabel }: Props) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [referrerBypass, setReferrerBypass] = useState(false);
 
@@ -76,14 +77,14 @@ export default function DownloadPdfLink({ design, className }: Props) {
     const evt = new CustomEvent('openRegisterModal', {
       detail: {
         source: 'design-download',
-        label: `Download attempt for ${design.Caption}`,
+        label: `Download attempt for ${design.Caption}${formatLabel ? ` (${formatLabel})` : ''}`,
         designId: design.DesignID,
         designCaption: design.Caption,
         designUrl: absoluteDesignUrl,
       },
     });
     window.dispatchEvent(evt);
-  }, [design.DesignID, design.Caption, design.PdfUrl]);
+  }, [design.DesignID, design.Caption, design.PdfUrl, formatLabel]);
 
   // Dispatch event to open PayPal modal (handled elsewhere)
   const openPayPal = useCallback(() => {
@@ -104,7 +105,10 @@ export default function DownloadPdfLink({ design, className }: Props) {
     return <p className="text-gray-500">PDF is not available for this design.</p>;
   }
 
-  console.log(`DownloadPdfLink: mode = ${mode}, loggedIn = ${loggedIn}`);
+  const downloadLabel = 'Download PDF';
+  const labelContent = <span>Download PDF</span>;
+
+  console.log(`DownloadPdfLink: mode = ${mode}, loggedIn = ${loggedIn}, format = ${formatLabel ?? 'default'}`);
 
   // ===== MODES =====
 
@@ -114,10 +118,10 @@ export default function DownloadPdfLink({ design, className }: Props) {
       <button
         type="button"
         onClick={handleDownload}
-        className={className ?? 'inline-block text-blue-600 hover:underline'}
-        aria-label="Download PDF"
+        className={className ?? 'inline-block text-gray-600 text-sm leading-tight underline cursor-pointer'}
+        aria-label={downloadLabel}
       >
-        Download PDF
+        {labelContent}
       </button>
     );
   }
@@ -130,19 +134,19 @@ export default function DownloadPdfLink({ design, className }: Props) {
       <button
         type="button"
         onClick={handleDownload}
-        className={className ?? 'inline-block text-blue-600 hover:underline'}
-        aria-label="Download PDF"
+        className={className ?? 'inline-block text-gray-600 text-sm leading-tight underline cursor-pointer'}
+        aria-label={downloadLabel}
       >
-        Download PDF
+        {labelContent}
       </button>
     ) : (
       <button
         onClick={openRegister}
-        className={className ?? 'inline-block text-blue-600 hover:underline'}
+        className={className ?? 'inline-block text-gray-600 text-sm leading-tight underline cursor-pointer'}
         aria-label="Open register form"
         type="button"
       >
-        Download PDF
+        {labelContent}
       </button>
     );
   }
@@ -151,11 +155,11 @@ export default function DownloadPdfLink({ design, className }: Props) {
   return (
     <button
       onClick={openPayPal}
-      className={className ?? 'inline-block text-blue-600 hover:underline'}
+      className={className ?? 'inline-block text-gray-600 text-sm leading-tight underline cursor-pointer'}
       aria-label="Open PayPal checkout"
       type="button"
     >
-      Download PDF
+      {labelContent}
     </button>
   );
 }
