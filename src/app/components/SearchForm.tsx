@@ -27,7 +27,9 @@ export default function SearchForm() {
     if (ncolorsTo) searchParams.set('ncolorsTo', ncolorsTo);
     if (searchText) searchParams.set('searchText', searchText);
 
-    router.push(`/?${searchParams.toString()}`);
+    const query = searchParams.toString();
+    const target = query ? `/?${query}#results` : '/#results';
+    router.push(target);
   };
 
   const handleReset = () => {
@@ -38,13 +40,13 @@ export default function SearchForm() {
     setNColorsFrom('');
     setNColorsTo('');
     setSearchText('');
-    router.push('/');
+    router.push('/#results');
   };
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="mb-4 p-4 bg-gray-300 text-black rounded shadow min-w-0"
+      className="mb-4 p-4 bg-white text-black rounded-lg border border-gray-200 shadow-lg min-w-0"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div className="md:col-span-2">

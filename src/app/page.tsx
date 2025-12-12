@@ -197,12 +197,11 @@ export default async function Home({ searchParams }: Props) {
   }
 
   return (
-    <div className="p-4">
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="hidden md:block md:w-48 w-full">
-          <SearchForm />
-        </div>
-        <div className="w-full md:flex-1">
+    <div className="p-4 md:pl-64 md:pr-4 relative">
+      <div className="hidden md:block fixed left-4 top-1/2 -translate-y-1/2 z-20 w-56">
+        <SearchForm />
+      </div>
+      <div className="w-full" id="results">
           <h1 className="text-3xl font-bold mb-4 text-gray-900">
             Free Cross-Stitch PDF Patterns
           </h1>
@@ -329,9 +328,7 @@ export default async function Home({ searchParams }: Props) {
               </dl>
             </section>
           </div>
-        </div>
       </div>
     </div>
   );
 }
-
