@@ -16,7 +16,7 @@ This document describes how to recreate the production Elastic Beanstalk environ
 ## Source of truth
 - Application code and configuration in this repository
 - Elastic Beanstalk saved configuration:
-  .elasticbeanstalk/saved_configs/prod-secure-alb-tls13.cfg.yml
+  .elasticbeanstalk/saved_configs/eb-configuration-2025-12-12.cfg.yml
 
 ---
 
@@ -31,7 +31,7 @@ This document describes how to recreate the production Elastic Beanstalk environ
 ```powershell
 eb init
 eb config list
-eb create <new-environment-name> --cfg prod-secure-alb-tls13
+eb create <new-environment-name> --cfg eb-configuration-2025-12-12
 ```
 
 Check status:
