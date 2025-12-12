@@ -1,201 +1,112 @@
-# Cross‑stitch.com Transition Runbook (Website + Email) — Step by step
+# Cross-stitch.com Transition Runbook (Website + Email) — Step by step
 
 **Goal:** transition from `cross-stitch-pattern.net` to `cross-stitch.com` with minimal risk and clear rollback points.  
 **Strategy:** do it in phases; keep both domains working in parallel; change one thing at a time.
 
-> ✅ This plan assumes you use **Amazon SES for sending** and you want **Gmail as your inbox** (you currently have no mailbox).
+> ✅ This plan assumes:
+> - Amazon SES is used for **sending**
+> - Dynadot is the **domain registrar**
+> - Email **receiving is via Dynadot forwarding**
+> - Gmail is used as the **single inbox**
+> - Gmail replies are sent **through Amazon SES SMTP** (not Gmail servers)
+> - Gmail account: **ann.logan.mail@gmail.com**
 
 ---
 
 ## 0) Before you start (10 minutes)
 
-### 0.1 Make a quick “rollback note”
-Create a small text note locally with:
-- Current Route 53 records for both domains (screenshots are fine)
+### 0.1 Create a rollback snapshot
+Save or screenshot:
+- Current DNS records (A / CNAME / MX / TXT)
 - Current ALB DNS name
 - Current SES identities (domains + sender emails)
-- Current “From” email used by the app
+- Current sender email configured in the app
 
-### 0.2 Lower DNS TTL (optional but recommended)
-If you manage DNS in Route 53, set TTL for the records you will change (A/ALIAS, CNAME, MX, TXT) to **300 seconds** temporarily (5 min).  
-Later you can restore to 3600.
-
----
-
-## Phase 1 — Make `cross-stitch.com` fully working for the website (low risk)
-
-### 1.1 Confirm DNS points to the correct ALB
-In DNS for `cross-stitch.com`:
-
-- `cross-stitch.com` → **A (ALIAS)** → `<YOUR-ALB-DNS>`
-- `www.cross-stitch.com` → **CNAME** → `<YOUR-ALB-DNS>`
-
-### 1.2 Confirm ACM certificate covers all names
-In **ACM (us-east-1)**, confirm the certificate includes:
-- `cross-stitch.com`
-- `www.cross-stitch.com`
-- `cross-stitch-pattern.net`
-- `www.cross-stitch-pattern.net`
-
-### 1.3 Confirm ALB HTTPS policy
-On the ALB **HTTPS : 443** listener:
-- Security policy: `ELBSecurityPolicy-TLS13-1-2-2021-06`
-
-### 1.4 Confirm HTTP → HTTPS redirect
-On ALB **HTTP : 80** listener:
-- Action: redirect to HTTPS (301)
-
-### 1.5 Confirm the site responds on the new domain
-Open in Chrome:
-- `https://cross-stitch.com`
-- `https://www.cross-stitch.com`
-
-Check:
-- Page loads
-- No certificate warnings
-- Login pages load
-- Design pages load
-
-**Rollback:** if something breaks, revert DNS ALIAS/CNAME back to the previous target.
+### 0.2 Lower DNS TTL (recommended)
+Temporarily set TTL to **300 seconds** for records you will change (MX / TXT).
+You can restore TTL to 3600 later.
 
 ---
 
-## Phase 2 — SEO-safe domain transition (recommended)
+## Phase 1 — Website readiness (low risk)
 
-### 2.1 Add canonical tags (if not already)
-On pages served from `cross-stitch.com`, canonical should point to `cross-stitch.com` versions.
+### 1.1 DNS → Load Balancer
+Ensure DNS for `cross-stitch.com` points to the ALB:
 
-### 2.2 Add 301 redirects (old → new)
-Recommended behavior:
-- `cross-stitch-pattern.net/*` → `cross-stitch.com/*` (301)
-- `www.cross-stitch-pattern.net/*` → `cross-stitch.com/*` (301)
-- `www.cross-stitch.com/*` → `cross-stitch.com/*` (301)
+- `cross-stitch.com` → **A (ALIAS)** → `<ALB-DNS>`
+- `www.cross-stitch.com` → **CNAME** → `<ALB-DNS>`
 
-Where to implement:
-- ALB rules (host-based redirect), or
-- Next.js middleware (host redirect logic), or
-- Nginx (if you use it)
+### 1.2 TLS / HTTPS
+- ACM certificate (us-east-1) covers:
+  - `cross-stitch.com`
+  - `www.cross-stitch.com`
+  - `cross-stitch-pattern.net`
+  - `www.cross-stitch-pattern.net`
+- ALB HTTPS listener policy:
+  - `ELBSecurityPolicy-TLS13-1-2-2021-06`
+- HTTP (80) redirects to HTTPS (443)
 
-**Verification:**
-- Visit `https://cross-stitch-pattern.net/some-page` → ends at `https://cross-stitch.com/some-page`
+### 1.3 Verify
+Open in browser:
+- https://cross-stitch.com
+- https://www.cross-stitch.com
 
-**Rollback:** disable redirect rule / revert code deployment.
+No warnings, no errors.
 
----
-
-## Phase 3 — Create a Gmail inbox (no DNS risk)
-
-### 3.1 Create a dedicated Gmail account
-Example:
-- `crossstitch.contact@gmail.com`
-
-Enable:
-- 2FA (Google Authenticator)
-- Recovery email/phone
+Rollback: revert DNS ALIAS/CNAME if needed.
 
 ---
 
-## Phase 4 — Receiving email for `@cross-stitch.com`
+## Phase 3 — Gmail inbox (already created)
 
-Choose ONE option.
-
-### Option A (cleanest): Google Workspace (paid)
-Use this if you want a real mailbox on your domain (best reliability).
-
-High level:
-1. Sign up for Google Workspace.
-2. Add your domain `cross-stitch.com`.
-3. Verify domain (Google gives a TXT record).
-4. Set MX records to Google.
-5. Create users like `support@cross-stitch.com`.
-6. Read mail in Gmail interface (Workspace).
-
-Verify: send a test email to `support@cross-stitch.com`.
-
-### Option B (free): Email forwarding service → Gmail
-Use this if you want free aliases like `support@cross-stitch.com` that forward to your Gmail.
-
-High level:
-1. In your registrar/DNS provider, enable Email Forwarding.
-2. Create aliases:
-   - `support@cross-stitch.com` → `crossstitch.contact@gmail.com`
-   - `info@cross-stitch.com` → `crossstitch.contact@gmail.com`
-3. Add any MX/TXT records the provider requires.
-
-Verify: send a test email to `support@cross-stitch.com` and confirm it arrives in Gmail.
-
-> If you tell me your registrar (Dynadot/other), I can add a click-by-click section specific to it.
+- Primary inbox:
+  - **ann.logan.mail@gmail.com**
+- 2FA enabled
+- Recovery email and phone configured
 
 ---
 
-## Phase 5 — Sending email from `@cross-stitch.com` using Amazon SES (controlled)
+## Phase 4 — Email receiving (Dynadot → Gmail)
 
-Do this only after Phase 4 receiving works.
+### 4.1 Enable email forwarding in Dynadot
 
-### 5.1 Verify the domain in SES (us-east-1)
-In SES:
-1. Add identity: Domain → `cross-stitch.com`
-2. SES gives DNS records (DKIM CNAMEs, sometimes TXT).
-3. Add them to DNS for `cross-stitch.com`.
-
-### 5.2 Add SPF (TXT)
-Add/merge SPF for `cross-stitch.com`:
-```
-v=spf1 include:amazonses.com -all
-```
-Important: only ONE SPF TXT record per domain.
-
-### 5.3 Add DMARC (recommended, start in monitoring)
-Create `_dmarc.cross-stitch.com` TXT:
-```
-v=DMARC1; p=none; rua=mailto:dmarc@cross-stitch.com; adkim=s; aspf=s; pct=100
-```
-
-### 5.4 Update your application sender
-In EB env vars/config:
-- `SES_FROM_EMAIL=no-reply@cross-stitch.com` (example)
-
-Deploy.
-
-### 5.5 Test sending
-Send test emails to Gmail/Outlook/Yahoo and verify DKIM/SPF pass (Gmail: “Show original”).
-
-Rollback: switch sender back to old domain if needed.
+In Dynadot:
+1. Go to **My Domains → cross-stitch.com**
+2. Open **Email → Email Forwarding**
+3. Enable forwarding
+4. Create aliases:
+   - `support@cross-stitch.com` → `ann.logan.mail@gmail.com`
+   - `info@cross-stitch.com` → `ann.logan.mail@gmail.com`
+5. Apply changes
 
 ---
 
-## Phase 6 — Keep the old domain alive during transition (recommended)
+## Phase 5 — Email sending from domain using Amazon SES
 
-- Keep receiving on `@cross-stitch-pattern.net` and forward to the same Gmail inbox.
-- Keep website redirects and old links working for weeks/months.
-- Only remove old email/DNS after you are fully confident.
+### 5.1 Verify domain in SES (us-east-1)
 
----
-
-## Final verification checklist
-
-### Website
-- [ ] `https://cross-stitch.com` loads
-- [ ] `https://www.cross-stitch.com` loads
-- [ ] HTTP redirects to HTTPS
-- [ ] Old domain redirects to new domain (if enabled)
-- [ ] SSL Labs grade A (or A+)
-
-### Email receiving
-- [ ] `support@cross-stitch.com` forwards/arrives in Gmail
-- [ ] `info@cross-stitch.com` forwards/arrives in Gmail
-
-### Email sending (SES)
-- [ ] SES domain verified
-- [ ] DKIM passing
-- [ ] SPF present (single record)
-- [ ] DMARC present (at least p=none)
-- [ ] App sends from `@cross-stitch.com`
-- [ ] Test emails delivered
+In Amazon SES:
+1. Add identity → **Domain** → `cross-stitch.com`
+2. Add provided DNS records:
+   - DKIM CNAMEs (3 records)
+   - Verification TXT (if provided)
+3. Wait for SES to mark domain as **Verified**
 
 ---
 
-## Placeholders to fill
-- Registrar/DNS provider for `cross-stitch.com`: `<fill>`
-- ALB DNS name: `<fill>`
-- Primary public contact: `<fill>` (e.g., support@cross-stitch.com)
+## Phase 6 — Configure Gmail “Send mail as” via SES SMTP
+
+In Gmail (logged in as **ann.logan.mail@gmail.com**):
+- Settings → Accounts and Import
+- Add `support@cross-stitch.com`
+- SMTP: `email-smtp.us-east-1.amazonaws.com`
+- Port 587 / TLS enabled
+
+---
+
+## Final checklist
+
+- [ ] Website HTTPS OK
+- [ ] Email forwarding works
+- [ ] SES DKIM/SPF/DMARC pass
+- [ ] Gmail sends via SES SMTP
