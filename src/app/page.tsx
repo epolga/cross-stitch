@@ -201,7 +201,7 @@ export default async function Home({ searchParams }: Props) {
       <div className="hidden md:block fixed left-4 top-1/2 -translate-y-1/2 z-20 w-56">
         <SearchForm />
       </div>
-      <div className="w-full" id="results">
+      <div className="w-full">
           <h1 className="text-3xl font-bold mb-4 text-gray-900">
             Free Cross-Stitch PDF Patterns
           </h1>
@@ -236,15 +236,17 @@ export default async function Home({ searchParams }: Props) {
               </ul>
             </div>
           </section>
-          <Suspense fallback={<div>Loading...</div>}>
-            <DesignListWrapper
-              designs={designs}
-              page={nPage}
-              totalPages={totalPages}
-              pageSize={pageSize}
-              baseUrl="/"
-            />
-          </Suspense>
+          <div id="results">
+            <Suspense fallback={<div>Loading...</div>}>
+              <DesignListWrapper
+                designs={designs}
+                page={nPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                baseUrl="/"
+              />
+            </Suspense>
+          </div>
           <div className="mt-8 prose max-w-none bg-white p-6 rounded-lg shadow-lg">
             <p>My name is Ann, and I am delighted to welcome you here!</p>
 

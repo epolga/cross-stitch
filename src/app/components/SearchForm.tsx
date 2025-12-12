@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function SearchForm() {
   const router = useRouter();
@@ -29,7 +29,8 @@ export default function SearchForm() {
 
     const query = searchParams.toString();
     const target = query ? `/?${query}#results` : '/#results';
-    router.push(target);
+    router.push(target, { scroll: false });
+    scrollToResults();
   };
 
   const handleReset = () => {
@@ -40,8 +41,24 @@ export default function SearchForm() {
     setNColorsFrom('');
     setNColorsTo('');
     setSearchText('');
-    router.push('/#results');
+    router.push('/#results', { scroll: false });
+    scrollToResults();
   };
+
+  const scrollToResults = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const resultsEl = document.getElementById('results');
+    if (resultsEl) {
+      resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.hash === '#results') {
+      scrollToResults();
+    }
+  }, [params, scrollToResults]);
 
   return (
     <form
