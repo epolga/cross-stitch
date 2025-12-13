@@ -2,17 +2,16 @@ import {
   SESClient,
   SendEmailCommand,
 } from '@aws-sdk/client-ses';
+import { buildCanonicalUrl, buildSiteEmail, getSiteHostname } from './url-helper';
 
 const REGION = process.env.AWS_REGION || 'us-east-1';
 
 // Who is sending the email
 const FROM_EMAIL =
-  process.env.SES_FROM_EMAIL || 'no-reply@cross-stitch-pattern.net';
+  process.env.SES_FROM_EMAIL || buildSiteEmail('no-reply');
 
 // Base URL of your website (to generate the reset link)
-const APP_BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL ||
-  'https://scross-stitch-pattern.net';
+const SITE_HOSTNAME = getSiteHostname().replace(/^www\./i, '');
 
 const sesClient = new SESClient({ region: REGION });
 
@@ -23,14 +22,14 @@ export async function sendPasswordResetEmail(params: {
   const { to, token } = params;
 
   // User will be directed to /reset-password/[token]
-  const resetLink = `${APP_BASE_URL}/reset-password/${encodeURIComponent(
+  const resetLink = buildCanonicalUrl(`/reset-password/${encodeURIComponent(
     token,
-  )}`;
+  )}`);
 
-  const subject = 'Reset your password on Cross-Stitch-Pattern.net';
+  const subject = `Reset your password on ${SITE_HOSTNAME}`;
 
   const textBody = [
-    'You requested to reset your password on Cross-Stitch-Pattern.net.',
+    `You requested to reset your password on ${SITE_HOSTNAME}.`,
     '',
     'To choose a new password, please follow this link:',
     resetLink,
@@ -38,11 +37,11 @@ export async function sendPasswordResetEmail(params: {
     'If you did not request a password reset, you can safely ignore this email.',
     '',
     'Happy stitching,',
-    'Cross-Stitch-Pattern.net',
+    SITE_HOSTNAME,
   ].join('\n');
 
   const htmlBody = `
-    <p>You requested to reset your password on <strong>Cross-Stitch-Pattern.net</strong>.</p>
+    <p>You requested to reset your password on <strong>${SITE_HOSTNAME}</strong>.</p>
 
     <p>To choose a new password, please click the button below:</p>
 
@@ -67,7 +66,7 @@ export async function sendPasswordResetEmail(params: {
 
     <p>If you did not request a password reset, you can safely ignore this email.</p>
 
-    <p>Happy stitching,<br/>Cross-Stitch-Pattern.net</p>
+    <p>Happy stitching,<br/>${SITE_HOSTNAME}</p>
   `;
 
   await sesClient.send(

@@ -1,5 +1,5 @@
 // Place this file at src/app/sitemap.xml/route.ts in your Next.js project.
-// This will serve the sitemap at /sitemap.xml (e.g., https://cross-stitch-pattern.net/sitemap.xml).
+// This will serve the sitemap at /sitemap.xml (e.g., https://example.com/sitemap.xml).
 // Install required packages if not already: npm install sitemap @aws-sdk/client-s3
 // Ensure your environment variables include AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY (or use IAM roles on Elastic Beanstalk), and S3_BUCKET_NAME.
 // The sitemap is generated dynamically using your existing DataAccess functions to fetch all albums and designs.
@@ -12,7 +12,7 @@ import { Readable } from 'stream';
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getAllAlbumCaptions, fetchAllDesigns } from '@/lib/data-access';
 import { Design } from '../types/design';
-import { CreateAlbumUrl, CreateDesignUrl } from '@/lib/url-helper';
+import { CreateAlbumUrl, CreateDesignUrl, getSiteBaseUrl, normalizeBaseUrl } from '@/lib/url-helper';
 
 // Define AWS error interface to avoid using 'any'
 interface AwsError extends Error {
@@ -23,6 +23,17 @@ interface AwsError extends Error {
 
 function isAwsError(error: unknown): error is AwsError {
   return error instanceof Error && '$metadata' in error;
+}
+
+function resolveBaseUrl(request: Request): string {
+  const host = request.headers.get('host');
+  if (host) {
+    const protocol = host.includes('localhost') || host.startsWith('127.')
+      ? 'http'
+      : request.headers.get('x-forwarded-proto') || 'https';
+    return normalizeBaseUrl(`${protocol}://${host}`);
+  }
+  return getSiteBaseUrl();
 }
 
 // Initialize S3 client (credentials managed via environment variables or IAM role)
@@ -150,9 +161,7 @@ export async function GET(request: Request) {
     );
   }
   try {
-    const host = request.headers.get('host') || 'cross-stitch-pattern.net';
-    const protocol = (host.includes('localhost') ? 'http' : request.headers.get('x-forwarded-proto') || 'https');
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = resolveBaseUrl(request);
     const xml = await getSitemap(baseUrl);
     return new Response(xml, {
       status: 200,

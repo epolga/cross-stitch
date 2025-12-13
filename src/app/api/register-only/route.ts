@@ -8,10 +8,23 @@ import {
 import { sendEmail } from '@/lib/email-service';
 import { randomUUID } from 'crypto';
 import type { RegistrationSourceInfo } from '@/app/types/registration';
+import { getSiteBaseUrl, normalizeBaseUrl } from '@/lib/url-helper';
 
 type RegisterRequest = NewUserRegistration & {
   sourceInfo?: RegistrationSourceInfo | null;
 };
+
+function resolveBaseUrl(req: Request): string {
+  const host = req.headers.get('host');
+  if (host) {
+    const protocol =
+      host.includes('localhost') || host.startsWith('127.')
+        ? 'http'
+        : req.headers.get('x-forwarded-proto') || 'https';
+    return normalizeBaseUrl(`${protocol}://${host}`);
+  }
+  return getSiteBaseUrl();
+}
 
 export async function POST(req: Request): Promise<Response> {
   try {
@@ -38,12 +51,7 @@ export async function POST(req: Request): Promise<Response> {
       verificationTokenExpiresAt,
     });
 
-    const host = req.headers.get('host') || 'cross-stitch-pattern.net';
-    const protocol =
-      host.includes('localhost') || host.startsWith('127.')
-        ? 'http'
-        : req.headers.get('x-forwarded-proto') || 'https';
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = resolveBaseUrl(req);
     const verificationLink = `${baseUrl}/api/register-only/verify?token=${verificationToken}${
       redirectTarget ? `&redirect=${encodeURIComponent(redirectTarget)}` : ''
     }`;

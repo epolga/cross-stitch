@@ -1,6 +1,19 @@
 import { NextResponse } from 'next/server';
 import { verifyUserByToken } from '@/lib/users';
 import { sendEmailToAdmin } from '@/lib/email-service';
+import { getSiteBaseUrl, normalizeBaseUrl } from '@/lib/url-helper';
+
+function resolveBaseUrl(req: Request): string {
+  const host = req.headers.get('host');
+  if (host) {
+    const protocol =
+      host.includes('localhost') || host.startsWith('127.')
+        ? 'http'
+        : req.headers.get('x-forwarded-proto') || 'https';
+    return normalizeBaseUrl(`${protocol}://${host}`);
+  }
+  return getSiteBaseUrl();
+}
 
 export async function GET(req: Request): Promise<Response> {
   try {
@@ -36,12 +49,7 @@ export async function GET(req: Request): Promise<Response> {
       console.error('Failed to send admin verification notification:', notifyError);
     }
 
-    const host = req.headers.get('host') || 'cross-stitch-pattern.net';
-    const protocol =
-      host.includes('localhost') || host.startsWith('127.')
-        ? 'http'
-        : req.headers.get('x-forwarded-proto') || 'https';
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = resolveBaseUrl(req);
 
     if (result.cid) {
       let targetUrl: URL;

@@ -1,12 +1,15 @@
 // app/privacy-policy/page.tsx
 import type { Metadata } from 'next';
 import React from 'react';
+import { buildSiteEmail } from '@/lib/url-helper';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | Cross Stitch Pattern',
   description: 'Learn how Cross Stitch Pattern collects, uses, and protects your personal information.',
   robots: 'noindex, nofollow',
 };
+
+const supportEmail = buildSiteEmail('ann');
 
 const PrivacyPolicy = () => {
   return (
@@ -281,7 +284,7 @@ const PrivacyPolicy = () => {
       <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
       <p className="mb-4">If you have any questions about this Privacy Policy, You can contact us:</p>
       <ul className="list-disc pl-6 mb-4">
-        <li className="mb-2">By email: ann@cross-stitch-pattern.net</li>
+        <li className="mb-2">By email: {supportEmail}</li>
       </ul>
     </div>
   );

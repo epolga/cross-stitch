@@ -6,9 +6,10 @@ import {
   SendEmailCommand,
   SendEmailCommandInput,
 } from '@aws-sdk/client-ses';
+import { buildSiteEmail } from '@/lib/url-helper';
 
 const REGION = process.env.AWS_REGION || 'us-east-1';
-const FROM_EMAIL = process.env.AWS_SES_FROM_EMAIL || 'ann@cross-stitch-pattern.net';
+const FROM_EMAIL = process.env.AWS_SES_FROM_EMAIL || buildSiteEmail('ann');
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'olga.epstein@gmail.com';
 
 const sesClient = new SESClient({

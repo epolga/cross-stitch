@@ -2,9 +2,12 @@
 
 import { NextResponse } from 'next/server';
 import { sendEmail, sendEmailToAdmin } from '@/lib/email-service';
+import { getSiteHostname } from '@/lib/url-helper';
 
 const isValidEmail = (email: string): boolean =>
   typeof email === 'string' && email.includes('@') && email.includes('.');
+
+const siteHostname = getSiteHostname().replace(/^www\./i, '');
 
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -20,7 +23,7 @@ export async function POST(request: Request): Promise<Response> {
     // Письмо пользователю
     const userBodyHtml = `
       <p>Hello,</p>
-      <p>We received a request to reset the password for your account on cross-stitch-pattern.net.</p>
+      <p>We received a request to reset the password for your account on ${siteHostname}.</p>
       <p>If this was you, please reply to this email or contact site support to reset your password.</p>
       <p>If you did not request this, you can ignore this email.</p>
     `;

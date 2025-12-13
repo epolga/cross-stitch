@@ -20,6 +20,20 @@ export function buildCanonicalUrl(path = '/'): string {
   return `${base}${normalizedPath}`;
 }
 
+export function getSiteHostname(): string {
+  const base = getSiteBaseUrl();
+  try {
+    return new URL(base).hostname;
+  } catch {
+    return base.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+  }
+}
+
+export function buildSiteEmail(localPart: string): string {
+  const hostname = getSiteHostname().replace(/^www\./i, '');
+  return `${localPart}@${hostname}`;
+}
+
 // Helper to create design URL based on Caption, AlbumId, and NPage
 export function CreateDesignUrl(
  Design: Design
