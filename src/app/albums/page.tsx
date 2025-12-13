@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { getAllAlbumCaptions } from "@/lib/data-access";
+import { buildCanonicalUrl } from "@/lib/url-helper";
 import type { Metadata } from "next";
 
 export const dynamic = 'force-dynamic';
+
+const canonicalUrl = buildCanonicalUrl('/XStitch-Charts.aspx');
 
 export const metadata: Metadata = {
   title: "Free Cross-Stitch Pattern Albums | Downloadable PDF Chart Catalog",
   description: "Browse themed cross-stitch albums with full PDF charts, stitch counts, and color keys. Instant downloads for every album.",
   alternates: {
-    canonical: "https://cross-stitch-pattern.net/XStitch-Charts.aspx",
+    canonical: canonicalUrl,
   },
 };
 

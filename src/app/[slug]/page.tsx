@@ -7,6 +7,7 @@ import { getAlbumIdByCaption, getDesignIdByAlbumAndPage, updateLastEmailEntryByC
 import { sendEmailToAdmin } from '@/lib/email-service'; // Import the email service
 import { updateLastEmailEntryInUsersTable } from '@/lib/users';
 import { headers } from 'next/headers';
+import { buildCanonicalUrl } from '@/lib/url-helper';
 
 // Helper to parse slug (e.g., 'lion-37-114-Free-Design.aspx')
 function parseSlugForDesign(slug: string): { caption: string; albumId: number; nPage: number } | null {
@@ -91,11 +92,12 @@ export async function generateMetadata({ params, searchParams }: {
     }
   } else if(resolvedParams.slug.toLowerCase() === 'xstitch-charts.aspx'){
     // Add metadata for albums page if needed
+    const canonicalUrl = buildCanonicalUrl('/XStitch-Charts.aspx');
     return {
       title: 'Free Cross-Stitch Pattern Albums | Downloadable PDF Chart Catalog',
       description: 'Browse themed cross-stitch albums with full PDF charts, stitch counts, and color keys. Instant downloads for every album.',
       alternates: {
-        canonical: 'https://cross-stitch-pattern.net/XStitch-Charts.aspx',
+        canonical: canonicalUrl,
       },
     };
   } else if (resolvedParams.slug.toLowerCase().endsWith('-charts.aspx')) {

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { buildCanonicalUrl } from '@/lib/url-helper';
 
 const tipSections = [
   {
@@ -29,19 +30,21 @@ const tipSections = [
   },
 ];
 
+const canonicalUrl = buildCanonicalUrl('/CrossStitchTips.aspx');
+
 export const metadata: Metadata = {
   title: 'Cross-Stitch Tips & Techniques Guide | Free Stitching Advice',
   description:
     'Practical cross-stitch tips on tools, fabric selection, thread management, stitching rhythm, and finishing for polished results.',
   keywords: ['cross stitch tips', 'embroidery techniques', 'aida fabric advice', 'beginner stitching tips'],
   alternates: {
-    canonical: 'https://cross-stitch-pattern.net/CrossStitchTips.aspx',
+    canonical: canonicalUrl,
   },
   openGraph: {
     title: 'Cross-Stitch Tips & Techniques Guide | Free Stitching Advice',
     description:
       'Guidance on tools, fabric, thread management, and finishing touches to elevate your free cross-stitch projects.',
-    url: 'https://cross-stitch-pattern.net/CrossStitchTips.aspx',
+    url: canonicalUrl,
     type: 'article',
   },
   twitter: {
@@ -60,10 +63,10 @@ export const metadata: Metadata = {
         '@type': 'Person',
         name: 'Ann',
       },
-      url: 'https://cross-stitch-pattern.net/CrossStitchTips.aspx',
+      url: canonicalUrl,
       mainEntityOfPage: {
         '@type': 'WebPage',
-        '@id': 'https://cross-stitch-pattern.net/CrossStitchTips.aspx',
+        '@id': canonicalUrl,
       },
     }),
   },

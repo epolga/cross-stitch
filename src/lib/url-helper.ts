@@ -2,6 +2,24 @@
 
 import { Design } from "@/app/types/design";
 
+export function normalizeBaseUrl(value: string): string {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return 'https://cross-stitch.com';
+  return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+}
+
+export function getSiteBaseUrl(): string {
+  return normalizeBaseUrl(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cross-stitch.com');
+}
+
+export function buildCanonicalUrl(path = '/'): string {
+  const base = getSiteBaseUrl();
+  if (!path || path === '/') return `${base}/`;
+  if (/^https?:\/\//i.test(path)) return normalizeBaseUrl(path);
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${base}${normalizedPath}`;
+}
+
 // Helper to create design URL based on Caption, AlbumId, and NPage
 export function CreateDesignUrl(
  Design: Design

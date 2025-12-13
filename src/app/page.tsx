@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import RegisterNewsletterLink from '@/app/components/RegisterNewsletterLink';
 import { updateLastEmailEntryInUsersTable } from '@/lib/users';
+import { buildCanonicalUrl } from '@/lib/url-helper';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,7 +92,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 
   const ogImage = designs[0]?.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
-  const canonicalUrl = 'https://cross-stitch-pattern.net/';
+  const canonicalUrl = buildCanonicalUrl('/');
   const title = searchText ? `Search Results for "${searchText}" - Cross Stitch Designs` : 'Cross Stitch Designs';
   const description = searchText 
     ? `Search results for "${searchText}". Explore thousands of free cross-stitch PDF patterns with instant downloads.` 

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { DesignList } from '@/app/components/DesignList'; // Adjust path
 import type { DesignsResponse } from '@/app/types/design';
-import { CreateAlbumUrl } from '@/lib/url-helper';
+import { buildCanonicalUrl, CreateAlbumUrl } from '@/lib/url-helper';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -38,7 +38,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const { albumCaption, designs } = designsResponse;
   const ogImage = designs[0]?.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
   const canonicalPath = albumCaption ? await CreateAlbumUrl(albumCaption) : `/albums/${albumId}`;
-  const canonicalUrl = `https://cross-stitch-pattern.net/${canonicalPath}`;
+  const canonicalUrl = buildCanonicalUrl(canonicalPath);
   const baseName = albumCaption || `Album ${albumId}`;
   const highlightNames = (designs || []).slice(0, 2).map((d) => d.Caption).filter(Boolean);
   const isBookmarksAlbum = (albumCaption || '').toLowerCase() === 'bookmarks';

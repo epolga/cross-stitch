@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import type { Design } from '@/app/types/design';
 import type { Metadata } from 'next';
-import { CreateDesignUrl } from '@/lib/url-helper';
+import { buildCanonicalUrl, CreateDesignUrl } from '@/lib/url-helper';
 import { DesignDownloadControls } from './DesignDownloadControls';
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +26,7 @@ console.log("Generating metadata for designId:", designId);
     };
   }
 
-  const canonicalUrl = `https://cross-stitch-pattern.net/${await CreateDesignUrl(design)}`;
+  const canonicalUrl = buildCanonicalUrl(await CreateDesignUrl(design));
   const ogImage = design.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
 
   const featureParts = [

@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
+import { buildCanonicalUrl } from '@/lib/url-helper';
 
 const storyTitle = 'Let cross stitch remain for generations';
+const canonicalUrl = buildCanonicalUrl('/short-stories');
 
 export const metadata: Metadata = {
   title: `${storyTitle} | My thoughts`,
@@ -15,7 +17,7 @@ export const metadata: Metadata = {
     'grandmother granddaughter cross stitch',
   ],
   alternates: {
-    canonical: 'https://cross-stitch-pattern.net/short-stories',
+    canonical: canonicalUrl,
   },
 };
 
