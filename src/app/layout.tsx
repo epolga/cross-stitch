@@ -36,6 +36,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <meta name="p:domain_verify" content="2580531f25c20bbb5e2ac0d45872e2b0" />
+
         {/* Google Analytics Script */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=G-232D0Z4TWB`}
