@@ -2,11 +2,27 @@
 
 import { Design } from "@/app/types/design";
 
-export function normalizeBaseUrl(value: string): string {
-  const trimmed = (value || '').trim();
-  if (!trimmed) return 'https://cross-stitch.com';
-  return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+export function normalizeBaseUrl(input: string): string {
+  let url = input.trim();
+
+  // Force https
+  url = url.replace(/^http:\/\//i, "https://");
+
+  // Remove trailing slashes
+  url = url.replace(/\/+$/, "");
+
+  // Remove default HTTPS port
+  url = url.replace(/:443$/i, "");
+
+  // Safety net in production
+  if (process.env.NODE_ENV === "production" &&
+      url.includes("cross-stitch-pattern.net")) {
+    url = "https://cross-stitch.com";
+  }
+
+  return url;
 }
+
 
 export function getSiteBaseUrl(): string {
   return normalizeBaseUrl(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cross-stitch.com');
