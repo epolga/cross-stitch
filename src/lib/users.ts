@@ -13,6 +13,7 @@ import { randomUUID } from 'crypto';
 
 const REGION = process.env.AWS_REGION || 'us-east-1';
 const USERS_TABLE_NAME = process.env.DDB_USERS_TABLE || 'CrossStitchUsers';
+const PRIMARY_TABLE_NAME = process.env.DYNAMODB_TABLE_NAME;
 
 const client = new DynamoDBClient({ region: REGION });
 
@@ -22,6 +23,10 @@ export interface NewUserRegistration {
   password: string;
   verificationToken?: string;
   verificationTokenExpiresAt?: string;
+  username?: string;
+  subscriptionId?: string;
+  receiveUpdates?: boolean;
+  idOverride?: string;
 }
 
 /** Error thrown when email already exists in the users table */
@@ -51,6 +56,10 @@ export async function saveUserToDynamoDB(
   const email = input.email.trim().toLowerCase();
   const firstName = input.firstName.trim();
   const password = input.password;
+  const subscriptionId = input.subscriptionId?.trim();
+  const username = input.username?.trim();
+  const receiveUpdates =
+    typeof input.receiveUpdates === 'boolean' ? input.receiveUpdates : true;
   const unsubscribeToken = randomUUID();
   const cid = randomUUID();
   const verificationToken = input.verificationToken || randomUUID();
@@ -62,7 +71,8 @@ export async function saveUserToDynamoDB(
     throw new Error('Missing required fields');
   }
 
-  const id = `USR#${email}`;
+  const overrideId = input.idOverride?.trim();
+  const id = overrideId || `USR#${email}`;
   const createdAt = new Date().toISOString();
 
   const item: Record<string, AttributeValue> = {
@@ -71,6 +81,7 @@ export async function saveUserToDynamoDB(
     FirstName: { S: firstName },
     Password: { S: password }, // Storing plain password for migration purposes
     CreatedAt: { S: createdAt },
+    ReceiveUpdates: { BOOL: receiveUpdates },
     UnsubscribeToken: { S: unsubscribeToken },
     Unsubscribed: { BOOL: false },
     cid: { S: cid },
@@ -80,11 +91,19 @@ export async function saveUserToDynamoDB(
     VerifiedAt: { S: '' },
   };
 
+  if (subscriptionId) {
+    item.SubscriptionId = { S: subscriptionId };
+  }
+
+  if (username) {
+    item.UserName = { S: username };
+  }
+
   const params: PutItemCommandInput = {
     TableName: USERS_TABLE_NAME,
     Item: item,
     // Do not overwrite existing user
-    ConditionExpression: 'attribute_not_exists(id)',
+    ConditionExpression: 'attribute_not_exists(ID)',
   };
 
   try {
@@ -313,6 +332,54 @@ export async function updateLastEmailEntryInUsersTable(
   );
 }
 
+async function findUserByUnsubscribeToken(
+  tableName: string,
+  token: string,
+  entityType?: string,
+): Promise<Record<string, AttributeValue> | null> {
+  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+
+  do {
+    const expressionNames: Record<string, string> = {
+      '#token': 'UnsubscribeToken',
+    };
+    const expressionValues: Record<string, AttributeValue> = {
+      ':token': { S: token },
+    };
+    let filterExpression = '#token = :token';
+
+    if (entityType) {
+      expressionNames['#entityType'] = 'EntityType';
+      expressionValues[':entityType'] = { S: entityType };
+      filterExpression += ' AND #entityType = :entityType';
+    }
+
+    const scanParams: ScanCommandInput = {
+      TableName: tableName,
+      FilterExpression: filterExpression,
+      ExpressionAttributeNames: expressionNames,
+      ExpressionAttributeValues: expressionValues,
+      ProjectionExpression: 'ID, Email, Unsubscribed',
+      Limit: 100,
+    };
+
+    if (lastEvaluatedKey) {
+      scanParams.ExclusiveStartKey = lastEvaluatedKey;
+    }
+
+    const { Items, LastEvaluatedKey } = await client.send(
+      new ScanCommand(scanParams),
+    );
+    const match = Items?.find((item) => item?.ID?.S);
+    if (match) {
+      return match;
+    }
+    lastEvaluatedKey = LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  return null;
+}
+
 /**
  * Marks a user as unsubscribed based on their unique unsubscribe token.
  * Scans CrossStitchUsers for the token, then flips Unsubscribed to true.
@@ -325,49 +392,50 @@ export async function unsubscribeUserByToken(
     return { status: 'not-found' };
   }
 
-  const scanParams: ScanCommandInput = {
-    TableName: USERS_TABLE_NAME,
-    FilterExpression: '#token = :token',
-    ExpressionAttributeNames: {
-      '#token': 'UnsubscribeToken',
-    },
-    ExpressionAttributeValues: {
-      ':token': { S: trimmedToken },
-    },
-    ProjectionExpression: 'ID, Email, Unsubscribed',
-    Limit: 1,
-  };
-
-  const scanResult = await client.send(new ScanCommand(scanParams));
-  const user = scanResult.Items?.[0];
-
-  const userId = user?.ID?.S;
-  if (!user || !userId) {
-    return { status: 'not-found' };
+  const tables: Array<{ name: string; entityType?: string }> = [];
+  if (USERS_TABLE_NAME) {
+    tables.push({ name: USERS_TABLE_NAME });
+  }
+  if (PRIMARY_TABLE_NAME && PRIMARY_TABLE_NAME !== USERS_TABLE_NAME) {
+    tables.push({ name: PRIMARY_TABLE_NAME, entityType: 'USER' });
   }
 
-  const alreadyUnsubscribed = user.Unsubscribed?.BOOL === true;
+  for (const table of tables) {
+    const user = await findUserByUnsubscribeToken(
+      table.name,
+      trimmedToken,
+      table.entityType,
+    );
+    const userId = user?.ID?.S;
+    if (!user || !userId) {
+      continue;
+    }
 
-  if (!alreadyUnsubscribed) {
-    const updateParams: UpdateItemCommandInput = {
-      TableName: USERS_TABLE_NAME,
-      Key: { ID: { S: userId } },
-      UpdateExpression: 'SET #unsub = :true',
-      ExpressionAttributeNames: {
-        '#unsub': 'Unsubscribed',
-      },
-      ExpressionAttributeValues: {
-        ':true': { BOOL: true },
-      },
+    const alreadyUnsubscribed = user.Unsubscribed?.BOOL === true;
+
+    if (!alreadyUnsubscribed) {
+      const updateParams: UpdateItemCommandInput = {
+        TableName: table.name,
+        Key: { ID: { S: userId } },
+        UpdateExpression: 'SET #unsub = :true',
+        ExpressionAttributeNames: {
+          '#unsub': 'Unsubscribed',
+        },
+        ExpressionAttributeValues: {
+          ':true': { BOOL: true },
+        },
+      };
+
+      await client.send(new UpdateItemCommand(updateParams));
+    }
+
+    return {
+      status: alreadyUnsubscribed
+        ? 'already-unsubscribed'
+        : 'updated',
+      email: user.Email?.S,
     };
-
-    await client.send(new UpdateItemCommand(updateParams));
   }
 
-  return {
-    status: alreadyUnsubscribed
-      ? 'already-unsubscribed'
-      : 'updated',
-    email: user.Email?.S,
-  };
+  return { status: 'not-found' };
 }

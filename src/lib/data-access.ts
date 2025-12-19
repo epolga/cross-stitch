@@ -2,15 +2,14 @@
 import {
   AttributeValue,
   DynamoDBClient,
-  PutItemCommand,
   QueryCommand,
   ScanCommand,
   ScanCommandInput,
   UpdateItemCommand,
 } from "@aws-sdk/client-dynamodb";
-import { randomUUID } from "crypto";
 import type { Design, DesignsResponse } from '@/app/types/design';
 import type { Album, AlbumsResponse } from '@/app/types/album';
+import { saveUserToDynamoDB } from '@/lib/users';
 
 // Force SSR to avoid static generation issues
 export const dynamic = 'force-dynamic';
@@ -603,46 +602,6 @@ export async function incrementDesignDownloadCount(designId: number): Promise<vo
   }
 }
 
-// Retrieve the maximum NPage value for existing users (prefixed with "USR#")
-async function getMaxUserNPage(): Promise<number> {
-  const scanParams: ScanCommandInput = {
-    TableName: process.env.DYNAMODB_TABLE_NAME,
-    FilterExpression: "#et = :et AND begins_with(ID, :prefix)",
-    ExpressionAttributeNames: {
-      "#et": "EntityType",
-    },
-    ExpressionAttributeValues: {
-      ":et": { S: "USER" },
-      ":prefix": { S: "USR#" },
-    },
-  };
-
-  let maxNPage = 0;
-  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
-
-  do {
-    if (lastEvaluatedKey) {
-      scanParams.ExclusiveStartKey = lastEvaluatedKey;
-    }
-
-    const { Items, LastEvaluatedKey } = await dynamoDBClient.send(new ScanCommand(scanParams));
-    lastEvaluatedKey = LastEvaluatedKey;
-
-    if (Items && Items.length > 0) {
-      Items.forEach((item) => {
-        if (item.NPage?.S) {
-          const nPageNum = parseInt(item.NPage.S, 10);
-          if (!isNaN(nPageNum) && nPageNum > maxNPage) {
-            maxNPage = nPageNum;
-          }
-        }
-      });
-    }
-  } while (lastEvaluatedKey);
-
-  return maxNPage;
-}
-
 // Verify user credentials by email and password
 export async function verifyUser(email: string, password: string): Promise<boolean> {
   try {
@@ -694,71 +653,48 @@ export async function verifyUser(email: string, password: string): Promise<boole
 
 // Create a new user in DynamoDB
 export async function createUser(email: string, password: string, username: string, subscriptionId: string, receiveUpdates: boolean): Promise<void> {
-  const userId = `USR#${email}`;
-  const cid = randomUUID();
+  const resolvedName = username?.trim() || email.split('@')[0] || 'User';
   try {
     console.log('Creating user:', { email, username, subscriptionId, receiveUpdates });
-    const maxNPage = await getMaxUserNPage();
-    const newNPageNum = maxNPage + 1;
-    const newNPage = newNPageNum.toString().padStart(7, "0");
-    const putParams = {
-      TableName: process.env.DYNAMODB_TABLE_NAME,
-      Item: {
-        ID: { S: userId },
-        OpenPwd: { S: password },
-        UserName: { S: username },
-        Email: { S: email },
-        SubscriptionId: { S: subscriptionId },
-        ReceiveUpdates: { BOOL: receiveUpdates },
-        DateCreated: { S: new Date().toISOString() },
-        NPage: { S: newNPage },
-        cid: { S: cid },
-        EntityType: { S: "USER" },
-      },
-      ConditionExpression: 'attribute_not_exists(ID)', // Prevent overwrites
-    };
-
-    await dynamoDBClient.send(new PutItemCommand(putParams));
+    const { userId } = await saveUserToDynamoDB({
+      email,
+      firstName: resolvedName,
+      password,
+      username,
+      subscriptionId,
+      receiveUpdates,
+    });
     console.log('User created successfully:', userId);
   } catch (error: unknown) {
     const errorDetails = error instanceof Error
       ? { message: error.message, name: error.name, stack: error.stack }
       : { message: String(error), name: 'UnknownError', stack: '' };
-    console.error(`Error creating user for ID ${userId}:`, errorDetails);
+    console.error(`Error creating user for email ${email}:`, errorDetails);
     throw error;
   }
 }
 
 // Create a new test user in DynamoDB
 export async function createTestUser(email: string, password: string, username: string, subscriptionId: string, receiveUpdates: boolean): Promise<void> {
-  const userId = `TST#${email}` + Date.now();
-  const cid = randomUUID();
+  const resolvedName = username?.trim() || email.split('@')[0] || 'Test User';
+  const testId = `TST#${email}` + Date.now();
   try {
     console.log('Creating test user:', { email, username, subscriptionId, receiveUpdates });
-    const putParams = {
-      TableName: process.env.DYNAMODB_TABLE_NAME,
-      Item: {
-        ID: { S: userId },
-        OpenPwd: { S: password },
-        Username: { S: username },
-        Email: { S: email },
-        SubscriptionId: { S: subscriptionId },
-        ReceiveUpdates: { BOOL: receiveUpdates },
-        DateCreated: { S: new Date().toISOString() },
-        NPage: { S: "00000" },
-        cid: { S: cid },
-        EntityType: { S: "USER" },
-      },
-      ConditionExpression: 'attribute_not_exists(ID)', // Prevent overwrites
-    };
-
-    await dynamoDBClient.send(new PutItemCommand(putParams));
+    const { userId } = await saveUserToDynamoDB({
+      email,
+      firstName: resolvedName,
+      password,
+      username,
+      subscriptionId,
+      receiveUpdates,
+      idOverride: testId,
+    });
     console.log('Test user created successfully:', userId);
   } catch (error: unknown) {
     const errorDetails = error instanceof Error
       ? { message: error.message, name: error.name, stack: error.stack }
       : { message: String(error), name: 'UnknownError', stack: '' };
-    console.error(`Error creating test user for ID ${userId}:`, errorDetails);
+    console.error(`Error creating test user for email ${email}:`, errorDetails);
     throw error;
   }
 }
