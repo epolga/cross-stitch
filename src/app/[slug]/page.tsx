@@ -7,7 +7,7 @@ import { getAlbumIdByCaption, getDesignIdByAlbumAndPage, updateLastEmailEntryByC
 import { sendEmailToAdmin } from '@/lib/email-service'; // Import the email service
 import { updateLastEmailEntryInUsersTable } from '@/lib/users';
 import { headers } from 'next/headers';
-import { buildCanonicalUrl } from '@/lib/url-helper';
+import { buildCanonicalUrl, getSiteBaseUrl, normalizeBaseUrl } from '@/lib/url-helper';
 
 // Helper to parse slug (e.g., 'lion-37-114-Free-Design.aspx')
 function parseSlugForDesign(slug: string): { caption: string; albumId: number; nPage: number } | null {
@@ -60,7 +60,7 @@ async function GetDesignPageFromSlug(slug: string) {
     return <AlbumsPage />;
  }
 
- async function GetAlbumDesignsPageFromSlug(slug: string, searchParams: Record<string, string | string[] | undefined>) {
+async function GetAlbumDesignsPageFromSlug(slug: string, searchParams: Record<string, string | string[] | undefined>) {
   const albumCaption = await getAlbumCaptionFromSlug(slug);
 
       if (!albumCaption) {
@@ -76,7 +76,38 @@ async function GetDesignPageFromSlug(slug: string) {
 
       // Render the imported AlbumDesignsPage component, passing simulated params
       return <AlbumDesignsPage params={Promise.resolve({ albumId: albumId.toString() })} searchParams={Promise.resolve(searchParams)} />;
- }
+}
+
+function resolveBaseUrl(headersList: Headers): string {
+  const host = headersList.get('host');
+  if (host) {
+    const protocol =
+      host.includes('localhost') || host.startsWith('127.')
+        ? 'http'
+        : headersList.get('x-forwarded-proto') || 'https';
+    return normalizeBaseUrl(`${protocol}://${host}`);
+  }
+  return getSiteBaseUrl();
+}
+
+function buildFullRequestUrl(
+  baseUrl: string,
+  slug: string,
+  searchParams: Record<string, string | string[] | undefined>,
+): string {
+  const url = new URL(`/${slug}`, baseUrl);
+  Object.entries(searchParams).forEach(([key, value]) => {
+    if (value === undefined) return;
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (item) url.searchParams.append(key, item);
+      });
+    } else if (value) {
+      url.searchParams.set(key, value);
+    }
+  });
+  return url.toString();
+}
 
 export async function generateMetadata({ params, searchParams }: { 
   params: Promise<{ slug: string }>; 
@@ -132,9 +163,11 @@ export default async function SlugPage({ params, searchParams }: {
   if (eid && cid) {
     const headersList = await headers();
     const ip = headersList.get('x-forwarded-for')?.split(',')[0].trim() || headersList.get('x-real-ip') || 'unknown';
+    const baseUrl = resolveBaseUrl(headersList);
+    const fullUrl = buildFullRequestUrl(baseUrl, resolvedParams.slug, resolvedSearchParams);
 
     const subject = 'Notification: Access from Email';
-    const body = `A user accessed the page "${resolvedParams.slug}" from an email link with parameters:\n- eid: ${eid}\n- cid: ${cid}\n- IP Address: ${ip}`;
+    const body = `A user accessed the page from an email link:\n- URL: ${fullUrl}\n- eid: ${eid}\n- cid: ${cid}\n- IP Address: ${ip}`;
     try {
       await Promise.all([
         updateLastEmailEntryByCid(cid),
