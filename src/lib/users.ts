@@ -332,6 +332,85 @@ export async function updateLastEmailEntryInUsersTable(
   );
 }
 
+export async function updateLastSeenAtByEmail(email: string): Promise<void> {
+  const tableName = USERS_TABLE_NAME;
+  if (!tableName) {
+    console.warn('DDB_USERS_TABLE not set; skipping LastSeenAt update');
+    return;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    console.warn('Empty email provided; skipping LastSeenAt update');
+    return;
+  }
+
+  const nowIso = new Date().toISOString();
+  const primaryId = `USR#${normalizedEmail}`;
+  const updateParams: UpdateItemCommandInput = {
+    TableName: tableName,
+    Key: { ID: { S: primaryId } },
+    UpdateExpression: 'SET #lastSeenAt = :now',
+    ExpressionAttributeNames: { '#lastSeenAt': 'LastSeenAt' },
+    ExpressionAttributeValues: { ':now': { S: nowIso } },
+    ConditionExpression: 'attribute_exists(ID)',
+  };
+
+  try {
+    await client.send(new UpdateItemCommand(updateParams));
+    return;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      !message.includes('ConditionalCheckFailed') &&
+      !message.includes('ConditionalCheckFailedException')
+    ) {
+      console.error('Error updating LastSeenAt in users table:', error);
+      return;
+    }
+  }
+
+  const scanParams: ScanCommandInput = {
+    TableName: tableName,
+    FilterExpression: '#email = :email',
+    ExpressionAttributeNames: { '#email': 'Email' },
+    ExpressionAttributeValues: { ':email': { S: normalizedEmail } },
+    ProjectionExpression: 'ID',
+    Limit: 100,
+  };
+
+  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+  let id: string | undefined;
+
+  do {
+    const { Items, LastEvaluatedKey } = await client.send(
+      new ScanCommand({ ...scanParams, ExclusiveStartKey: lastEvaluatedKey }),
+    );
+    const match = Items?.find((item) => item?.ID?.S);
+    if (match?.ID?.S) {
+      id = match.ID.S;
+      break;
+    }
+    lastEvaluatedKey = LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  if (!id) {
+    console.warn(`No user found for email ${normalizedEmail} in ${tableName}`);
+    return;
+  }
+
+  await client.send(
+    new UpdateItemCommand({
+      TableName: tableName,
+      Key: { ID: { S: id } },
+      UpdateExpression: 'SET #lastSeenAt = :now',
+      ExpressionAttributeNames: { '#lastSeenAt': 'LastSeenAt' },
+      ExpressionAttributeValues: { ':now': { S: nowIso } },
+      ConditionExpression: 'attribute_exists(ID)',
+    }),
+  );
+}
+
 async function findUserByUnsubscribeToken(
   tableName: string,
   token: string,
