@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getVerifiedUserByCid, updateLastEmailEntryInUsersTable, updateLastSeenAtByEmail } from '@/lib/users';
+import { getVerifiedUserByCid, updateLastEmailEntryInUsersTable } from '@/lib/users';
 import { updateLastEmailEntryByCid } from '@/lib/data-access';
 
 export async function POST(req: Request): Promise<Response> {
@@ -23,14 +23,6 @@ export async function POST(req: Request): Promise<Response> {
       updateLastEmailEntryInUsersTable(cid),
       updateLastEmailEntryByCid(cid),
     ]);
-
-    if (verifiedUser.email) {
-      try {
-        await updateLastSeenAtByEmail(verifiedUser.email);
-      } catch (err) {
-        console.error('[login-from-email] Failed to update LastSeenAt:', err);
-      }
-    }
 
     return NextResponse.json(
       { success: true, email: verifiedUser.email ?? '' },

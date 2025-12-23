@@ -111,40 +111,6 @@ export function AuthControl() {
     console.log('AuthControl component mounted, isLoggedIn from storage:', loggedIn);
   }, []);
 
-  // Update LastSeenAt at most once per day while logged in
-  useEffect(() => {
-    if (!isLoggedIn || typeof window === 'undefined') return;
-
-    const email = localStorage.getItem('userEmail') || '';
-    if (!email) return;
-
-    const now = Date.now();
-    const storageKey = `lastSeenAtPing:${email}`;
-    const lastSeenRaw = localStorage.getItem(storageKey);
-    const lastSeen = lastSeenRaw ? Number(lastSeenRaw) : 0;
-    const oneDayMs = 24 * 60 * 60 * 1000;
-    if (lastSeen && now - lastSeen < oneDayMs) return;
-
-    const updateLastSeen = async (): Promise<void> => {
-      try {
-        const response = await fetch('/api/auth/last-seen', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
-        });
-        if (response.ok) {
-          localStorage.setItem(storageKey, String(now));
-        } else {
-          console.warn('LastSeenAt update failed with status', response.status);
-        }
-      } catch (error) {
-        console.error('Failed to update LastSeenAt:', error);
-      }
-    };
-
-    void updateLastSeen();
-  }, [isLoggedIn]);
-
   // Global error logger
   useEffect(() => {
     if (typeof window !== 'undefined') {
