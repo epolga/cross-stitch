@@ -350,9 +350,17 @@ export async function updateLastSeenAtByEmail(email: string): Promise<void> {
   const updateParams: UpdateItemCommandInput = {
     TableName: tableName,
     Key: { ID: { S: primaryId } },
-    UpdateExpression: 'SET #lastSeenAt = :now',
-    ExpressionAttributeNames: { '#lastSeenAt': 'LastSeenAt' },
-    ExpressionAttributeValues: { ':now': { S: nowIso } },
+    UpdateExpression:
+      'SET #lastSeenAt = :now, #lastSeenCount = if_not_exists(#lastSeenCount, :zero) + :inc',
+    ExpressionAttributeNames: {
+      '#lastSeenAt': 'LastSeenAt',
+      '#lastSeenCount': 'LastSeenCount',
+    },
+    ExpressionAttributeValues: {
+      ':now': { S: nowIso },
+      ':zero': { N: '0' },
+      ':inc': { N: '1' },
+    },
     ConditionExpression: 'attribute_exists(ID)',
   };
 
@@ -403,9 +411,17 @@ export async function updateLastSeenAtByEmail(email: string): Promise<void> {
     new UpdateItemCommand({
       TableName: tableName,
       Key: { ID: { S: id } },
-      UpdateExpression: 'SET #lastSeenAt = :now',
-      ExpressionAttributeNames: { '#lastSeenAt': 'LastSeenAt' },
-      ExpressionAttributeValues: { ':now': { S: nowIso } },
+      UpdateExpression:
+        'SET #lastSeenAt = :now, #lastSeenCount = if_not_exists(#lastSeenCount, :zero) + :inc',
+      ExpressionAttributeNames: {
+        '#lastSeenAt': 'LastSeenAt',
+        '#lastSeenCount': 'LastSeenCount',
+      },
+      ExpressionAttributeValues: {
+        ':now': { S: nowIso },
+        ':zero': { N: '0' },
+        ':inc': { N: '1' },
+      },
       ConditionExpression: 'attribute_exists(ID)',
     }),
   );
