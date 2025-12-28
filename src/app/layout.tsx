@@ -3,6 +3,7 @@ import '@/lib/global-error-handler';
 import Script from 'next/script';
 import { getSiteBaseUrl } from '@/lib/url-helper';
 import ClientNav from './components/ClientNav';
+import PrivacyPolicyFooterLink from './components/PrivacyPolicyFooterLink';
 import './globals.css';
 
 export const metadata = {
@@ -93,6 +94,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
             <p>Ann Logan</p>
             <p>Krivoklatska 271, Praha, 19900, CZECH REPUBLIC</p>
+            <PrivacyPolicyFooterLink />
           </div>
         </footer>
       </body>
