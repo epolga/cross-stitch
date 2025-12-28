@@ -16,7 +16,7 @@ export default function PrivacyPolicyFooterLink() {
         href="https://cross-stitch.com/privacy-policy"
         aria-label="Open privacy policy"
       >
-        https://cross-stitch.com/privacy-policy
+        Privacy Policy
       </a>
     </p>
   );
