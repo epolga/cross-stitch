@@ -124,6 +124,10 @@ export default async function DesignPage({ params }: Props) {
   if (design.NDownloaded) {
     featureItems.push(`Downloaded ${design.NDownloaded} times`);
   }
+  const aspectRatio =
+    design.Width && design.Height && design.Width > 0 && design.Height > 0
+      ? `${design.Width} / ${design.Height}`
+      : '1 / 1';
 
   return (
     <div className="container mx-auto p-4">
@@ -156,15 +160,16 @@ export default async function DesignPage({ params }: Props) {
           )}
 
           {design.ImageUrl ? (
-            <div className="mx-auto flex items-center justify-center mb-4">
-              <Image
-                src={design.ImageUrl}
-                alt={`${design.Caption} free cross-stitch pattern`}
-                width={0}
-                height={0}
-                className="max-w-[600px] max-h-[600px] w-full h-auto object-contain rounded"
-                sizes="(max-width: 600px) 100vw, 600px"
-              />
+            <div className="mx-auto w-full max-w-[600px] mb-4">
+              <div className="relative w-full" style={{ aspectRatio }}>
+                <Image
+                  src={design.ImageUrl}
+                  alt={`${design.Caption} free cross-stitch pattern`}
+                  fill
+                  className="object-contain rounded"
+                  sizes="(max-width: 600px) 100vw, 600px"
+                />
+              </div>
             </div>
           ) : (
             <div className="max-w-[200px] max-h-[200px] w-full h-auto mx-auto bg-gray-200 rounded flex items-center justify-center mb-4">
