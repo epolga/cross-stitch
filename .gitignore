@@ -34,6 +34,8 @@
 # misc
 .DS_Store
 *.pem
+.tmp/
+.lighthouse/
 
 # debug
 npm-debug.log*

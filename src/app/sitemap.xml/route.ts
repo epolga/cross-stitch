@@ -14,6 +14,8 @@ import { getAllAlbumCaptions, fetchAllDesigns } from '@/lib/data-access';
 import { Design } from '../types/design';
 import { CreateAlbumUrl, CreateDesignUrl, getSiteBaseUrl, normalizeBaseUrl } from '@/lib/url-helper';
 
+export const dynamic = 'force-dynamic';
+
 // Define AWS error interface to avoid using 'any'
 interface AwsError extends Error {
   $metadata?: {
