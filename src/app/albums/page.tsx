@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAllAlbumCaptions } from "@/lib/data-access";
 import { buildCanonicalUrl } from "@/lib/url-helper";
 import type { Metadata } from "next";
+import AdSlot from "@/app/components/AdSlot";
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,14 @@ export const metadata: Metadata = {
 
 export default async function AlbumsPage() {
   const albums = await getAllAlbumCaptions();
+  const adSlotTop =
+    process.env.NEXT_PUBLIC_AD_SLOT_ALBUMS_TOP ??
+    process.env.NEXT_PUBLIC_AD_SLOT_DESIGN_TOP ??
+    '';
+  const adSlotBottom =
+    process.env.NEXT_PUBLIC_AD_SLOT_ALBUMS_BOTTOM ??
+    process.env.NEXT_PUBLIC_AD_SLOT_DESIGN_BOTTOM ??
+    '';
 
   if (!albums) {
     return (
@@ -35,6 +44,11 @@ export default async function AlbumsPage() {
         Explore themed collections of free cross-stitch PDF charts - from floral bouquets to retro samplers.
         Each album links to instant downloads, detailed color keys, and stitch counts so you can plan your next project quickly.
       </p>
+      {adSlotTop && (
+        <div className="my-6">
+          <AdSlot slot={adSlotTop} minHeight={250} minHeightDesktop={280} />
+        </div>
+      )}
       <div className="overflow-hidden">
         {albums.map((album) => {
           const slug = album.Caption.replace(/\s+/g, '-');
@@ -49,6 +63,11 @@ export default async function AlbumsPage() {
           );
         })}
       </div>
+      {adSlotBottom && (
+        <div className="my-6">
+          <AdSlot slot={adSlotBottom} minHeight={250} minHeightDesktop={280} />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,12 +1,12 @@
 import { DesignListWrapper } from '@/app/components/DesignListWrapper';
 import SearchForm from '@/app/components/SearchForm';
 import { fetchFilteredDesigns, updateLastEmailEntryByCid } from '@/lib/data-access';
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import RegisterNewsletterLink from '@/app/components/RegisterNewsletterLink';
 import { updateLastEmailEntryInUsersTable } from '@/lib/users';
 import { buildCanonicalUrl } from '@/lib/url-helper';
+import AdSlot from '@/app/components/AdSlot';
 
 export const dynamic = 'force-dynamic';
 
@@ -158,6 +158,14 @@ export default async function Home({ searchParams }: Props) {
   const searchText = resolvedSearchParams?.searchText?.toString() || '';
   const eid = resolvedSearchParams?.eid?.toString() || '';
   const cid = resolvedSearchParams?.cid?.toString() || '';
+  const adSlotTop =
+    process.env.NEXT_PUBLIC_AD_SLOT_HOME_TOP ??
+    process.env.NEXT_PUBLIC_AD_SLOT_DESIGN_TOP ??
+    '';
+  const adSlotBottom =
+    process.env.NEXT_PUBLIC_AD_SLOT_HOME_BOTTOM ??
+    process.env.NEXT_PUBLIC_AD_SLOT_DESIGN_BOTTOM ??
+    '';
 
   console.log("Home page accessed with eid:", eid, "and cid:", cid);
   if (eid && cid) {
@@ -209,6 +217,11 @@ export default async function Home({ searchParams }: Props) {
           <p className="text-gray-700 mb-6">
             Browse hundreds of free downloadable charts, filter by size or colors, and find your next stitching project.
           </p>
+          {adSlotTop && (
+            <div className="my-4">
+              <AdSlot slot={adSlotTop} minHeight={250} minHeightDesktop={280} />
+            </div>
+          )}
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-6">
             <p className="text-gray-800">
               All charts here are full, printable PDFs with color keys and stitch counts. Every listing includes stitch width, height,
@@ -238,16 +251,19 @@ export default async function Home({ searchParams }: Props) {
             </div>
           </section>
           <div id="results">
-            <Suspense fallback={<div>Loading...</div>}>
-              <DesignListWrapper
-                designs={designs}
-                page={nPage}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                baseUrl="/"
-              />
-            </Suspense>
+            <DesignListWrapper
+              designs={designs}
+              page={nPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              baseUrl="/"
+            />
           </div>
+          {adSlotBottom && (
+            <div className="my-6">
+              <AdSlot slot={adSlotBottom} minHeight={250} minHeightDesktop={280} />
+            </div>
+          )}
           <div className="mt-8 prose max-w-none bg-white p-6 rounded-lg shadow-lg">
             <p>My name is Ann, and I am delighted to welcome you here!</p>
 

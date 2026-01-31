@@ -56,7 +56,7 @@ export default function PaginationControl({ page, totalPages, pageSize, baseUrl 
           alt=""
           width={16}
           height={16}
-          className={styles.icon}
+          className={styles.iconSmall}
           aria-hidden="true"
         />
       </button>
@@ -73,7 +73,7 @@ export default function PaginationControl({ page, totalPages, pageSize, baseUrl 
           alt=""
           width={32}
           height={32}
-          className={styles.icon}
+          className={styles.iconLarge}
           aria-hidden="true"
         />
       </button>
@@ -90,7 +90,7 @@ export default function PaginationControl({ page, totalPages, pageSize, baseUrl 
           alt=""
           width={32}
           height={32}
-          className={styles.icon}
+          className={styles.iconLarge}
           aria-hidden="true"
         />
       </button>
@@ -107,7 +107,7 @@ export default function PaginationControl({ page, totalPages, pageSize, baseUrl 
           alt=""
           width={16}
           height={16}
-          className={styles.icon}
+          className={styles.iconSmall}
           aria-hidden="true"
         />
       </button>

@@ -3,6 +3,7 @@ import { DesignList } from '@/app/components/DesignList'; // Adjust path
 import type { DesignsResponse } from '@/app/types/design';
 import { buildCanonicalUrl, CreateAlbumUrl } from '@/lib/url-helper';
 import Link from 'next/link';
+import AdSlot from '@/app/components/AdSlot';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,6 +98,14 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
   const searchParamsRes = await searchParams;
   const pageSize = parseInt(searchParamsRes.pageSize as string || '10');
   const page = parseInt(searchParamsRes.nPage as string || '1');
+  const adSlotTop =
+    process.env.NEXT_PUBLIC_AD_SLOT_ALBUMS_TOP ??
+    process.env.NEXT_PUBLIC_AD_SLOT_DESIGN_TOP ??
+    '';
+  const adSlotBottom =
+    process.env.NEXT_PUBLIC_AD_SLOT_ALBUMS_BOTTOM ??
+    process.env.NEXT_PUBLIC_AD_SLOT_DESIGN_BOTTOM ??
+    '';
 
   let designsResponse: DesignsResponse;
   try {
@@ -135,6 +144,11 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
           Explore free cross-stitch bookmark patterns with slim, ready-to-print PDF charts—ideal for quick gifts and travel-friendly stitching.
         </p>
       ) : null}
+      {adSlotTop && (
+        <div className="my-6">
+          <AdSlot slot={adSlotTop} minHeight={250} minHeightDesktop={280} />
+        </div>
+      )}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-6 space-y-2">
         <h2 className="text-xl font-semibold text-gray-900">How to choose a chart</h2>
         <p className="text-sm text-gray-800">
@@ -156,6 +170,11 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
         baseUrl={`${baseUrl}`}
         isLoggedIn={false} // Assuming user is logged in for this example
       />
+      {adSlotBottom && (
+        <div className="my-6">
+          <AdSlot slot={adSlotBottom} minHeight={250} minHeightDesktop={280} />
+        </div>
+      )}
     </div>
   );
 }
