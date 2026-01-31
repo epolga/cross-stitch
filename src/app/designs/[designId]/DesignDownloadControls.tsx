@@ -49,13 +49,19 @@ async function loadMissingDesigns(): Promise<Set<number>> {
   return missingDesignsPromise;
 }
 
-function useMissing(designId: number) {
+function useMissing(designId: number, override?: boolean) {
+  const hasOverride = typeof override === 'boolean';
   const [isMissing, setIsMissing] = useState<boolean>(
-    missingDesignsCache ? missingDesignsCache.has(designId) : false,
+    hasOverride ? (override as boolean) : missingDesignsCache ? missingDesignsCache.has(designId) : false,
   );
-  const [loaded, setLoaded] = useState<boolean>(Boolean(missingDesignsCache));
+  const [loaded, setLoaded] = useState<boolean>(hasOverride || Boolean(missingDesignsCache));
 
   useEffect(() => {
+    if (hasOverride) {
+      setIsMissing(override as boolean);
+      setLoaded(true);
+      return;
+    }
     if (missingDesignsCache) {
       setIsMissing(missingDesignsCache.has(designId));
       setLoaded(true);
@@ -66,7 +72,7 @@ function useMissing(designId: number) {
       setIsMissing(set.has(designId));
       setLoaded(true);
     });
-  }, [designId]);
+  }, [designId, hasOverride, override]);
 
   return { isMissing, loaded };
 }
@@ -74,11 +80,12 @@ function useMissing(designId: number) {
 interface Props {
   design: Design;
   align?: 'left' | 'center';
+  isMissingOverride?: boolean;
 }
 
-export function DesignDownloadControls({ design, align = 'center' }: Props) {
+export function DesignDownloadControls({ design, align = 'center', isMissingOverride }: Props) {
   const [selectedFormat, setSelectedFormat] = useState<ChartFormat>('color-symbol');
-  const { isMissing, loaded } = useMissing(design.DesignID);
+  const { isMissing, loaded } = useMissing(design.DesignID, isMissingOverride);
   const showFormatSelector = loaded && !isMissing;
 
   useEffect(() => {

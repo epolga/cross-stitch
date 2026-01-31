@@ -3,11 +3,35 @@ import type { Design } from '@/app/types/design';
 import type { Metadata } from 'next';
 import { buildCanonicalUrl, CreateDesignUrl } from '@/lib/url-helper';
 import { DesignDownloadControls } from './DesignDownloadControls';
+import AdSlot from '@/app/components/AdSlot';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
 interface Props {
   params: Promise<{ designId: string }>;
+}
+
+async function getMissingDesigns(): Promise<Set<number>> {
+  try {
+    const filePath = path.join(process.cwd(), 'MissingDesignPdfs.txt');
+    const content = await fs.readFile(filePath, 'utf-8');
+    const set = new Set<number>();
+    content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .forEach((line) => {
+        const [idStr] = line.split(',');
+        const id = parseInt(idStr, 10);
+        if (!Number.isNaN(id)) set.add(id);
+      });
+    return set;
+  } catch (error) {
+    console.error('[design page] Failed to read MissingDesignPdfs.txt', error);
+    return new Set<number>();
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -96,6 +120,8 @@ console.log("Generating metadata for designId:", designId);
 
 export default async function DesignPage({ params }: Props) {
   const { designId } = await params;
+  const adSlotTop = process.env.NEXT_PUBLIC_AD_SLOT_DESIGN_TOP ?? '';
+  const adSlotBottom = process.env.NEXT_PUBLIC_AD_SLOT_DESIGN_BOTTOM ?? '';
 
   let design: Design;
   try {
@@ -113,6 +139,9 @@ export default async function DesignPage({ params }: Props) {
       </div>
     );
   }
+
+  const missingDesigns = await getMissingDesigns();
+  const isMissing = missingDesigns.has(design.DesignID);
 
   const featureItems: string[] = [];
   if (design.Width && design.Height) {
@@ -137,8 +166,15 @@ export default async function DesignPage({ params }: Props) {
           <h2 className="text-lg font-semibold mb-2">{design.Caption}</h2>
 
           {/* TOP download control (gated) */}
-          <DesignDownloadControls design={design} align="center" />
+          <DesignDownloadControls design={design} align="center" isMissingOverride={isMissing} />
           <p className="text-sm text-gray-600 mb-4">Download the free PDF chart once you sign in.</p>
+
+          {adSlotTop && (
+            <div className="my-4">
+              <AdSlot slot={adSlotTop} minHeight={250} minHeightDesktop={280} />
+            </div>
+          )}
+
           <div className="text-left bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 space-y-2">
             <h3 className="text-base font-semibold text-gray-900">About this pattern</h3>
             <p className="text-sm text-gray-800">
@@ -195,8 +231,14 @@ export default async function DesignPage({ params }: Props) {
           ))}
          </div>
 
+          {adSlotBottom && (
+            <div className="my-4">
+              <AdSlot slot={adSlotBottom} minHeight={250} minHeightDesktop={280} />
+            </div>
+          )}
+
           {/* BOTTOM download control (gated) */}
-          <DesignDownloadControls design={design} align="center" />
+          <DesignDownloadControls design={design} align="center" isMissingOverride={isMissing} />
         </div>
       </div>
     </div>
