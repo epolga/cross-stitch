@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense, useMemo } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { RegisterForm } from './RegisterForm';
 import { RegisterOnlyDialog } from './RegisterOnlyDialog';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -70,11 +70,40 @@ function AutoLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
 
 export type DownloadMode = 'free' | 'register' | 'paid';
 
+const normalizeDownloadMode = (raw: string): DownloadMode => {
+  if (raw === 'free' || raw === 'register' || raw === 'paid') return raw;
+  return 'register';
+};
+
 export const resolveDownloadMode = (): DownloadMode => {
   const raw = (process.env.NEXT_PUBLIC_DOWNLOAD_MODE || '').toLowerCase().trim();
   console.log('resolveDownloadMode:', raw);
-  if (raw === 'free' || raw === 'register' || raw === 'paid') return raw;
-  return 'register';
+  return normalizeDownloadMode(raw);
+};
+
+export const fetchRuntimeDownloadMode = async (): Promise<DownloadMode> => {
+  if (typeof window === 'undefined') {
+    return resolveDownloadMode();
+  }
+
+  try {
+    const response = await fetch('/api/config/download-mode', {
+      method: 'GET',
+      cache: 'no-store',
+    });
+
+    const data: { mode?: string } | null = await response
+      .json()
+      .catch(() => null);
+
+    if (response.ok && typeof data?.mode === 'string') {
+      return normalizeDownloadMode(data.mode.toLowerCase().trim());
+    }
+  } catch (error) {
+    console.warn('Failed to fetch runtime download mode:', error);
+  }
+
+  return resolveDownloadMode();
 };
 
 export function AuthControl() {
@@ -98,8 +127,24 @@ export function AuthControl() {
     setRegistrationSource(null);
   };
 
+  const [mode, setMode] = useState<DownloadMode>(() => resolveDownloadMode());
 
-  const mode: DownloadMode = useMemo(() => resolveDownloadMode(), []);
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRuntimeMode = async (): Promise<void> => {
+      const runtimeMode = await fetchRuntimeDownloadMode();
+      if (isMounted) {
+        setMode(runtimeMode);
+      }
+    };
+
+    void loadRuntimeMode();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const isValidEmail = (email: string): boolean =>
     email.includes('@') && email.includes('.');

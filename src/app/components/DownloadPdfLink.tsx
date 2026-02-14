@@ -1,7 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { isUserLoggedIn, resolveDownloadMode, DownloadMode } from './AuthControl';
+import {
+  isUserLoggedIn,
+  resolveDownloadMode,
+  fetchRuntimeDownloadMode,
+  DownloadMode,
+} from './AuthControl';
 import { Design } from '../types/design';
 //import { CreateDesignUrl } from '@/lib/url-helper';
 
@@ -19,7 +24,25 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
   const [loggedIn, setLoggedIn] = useState(false);
   const [referrerBypass, setReferrerBypass] = useState(false);
 
-  const mode: DownloadMode = useMemo(() => resolveDownloadMode(), []);
+  const [mode, setMode] = useState<DownloadMode>(() => resolveDownloadMode());
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRuntimeMode = async (): Promise<void> => {
+      const runtimeMode = await fetchRuntimeDownloadMode();
+      if (isMounted) {
+        setMode(runtimeMode);
+      }
+    };
+
+    void loadRuntimeMode();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const recordDownload = useCallback(() => {
     void fetch(`/api/designs/${design.DesignID}`, { method: 'POST' }).catch((error) =>
       console.error('Failed to increment download count', error),
