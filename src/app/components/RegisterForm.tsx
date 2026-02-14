@@ -21,6 +21,11 @@ interface SubscriptionPlan {
   recommended?: boolean;
 }
 
+interface SubscriptionStatusResponse {
+  active?: boolean;
+  error?: string;
+}
+
 interface RegisterFormProps {
   isOpen: boolean;
   onClose: () => void;
@@ -38,6 +43,9 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
+  const [subscriptionStatusError, setSubscriptionStatusError] = useState('');
 
   // Validate email format
   const isValidEmail = (email: string) => email.includes('@') && email.includes('.');
@@ -111,6 +119,68 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
     }
   }, [isOpen]);  // Runs when isOpen changes
 
+  useEffect(() => {
+    if (!isOpen) {
+      setIsCheckingSubscription(false);
+      setHasActiveSubscription(null);
+      setSubscriptionStatusError('');
+      return;
+    }
+
+    const normalizedEmail = registerEmail.trim().toLowerCase();
+    if (!isValidEmail(normalizedEmail)) {
+      setIsCheckingSubscription(false);
+      setHasActiveSubscription(null);
+      setSubscriptionStatusError('');
+      return;
+    }
+
+    const abortController = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      const checkSubscriptionStatus = async () => {
+        setIsCheckingSubscription(true);
+        setSubscriptionStatusError('');
+
+        try {
+          const response = await fetch('/api/subscription/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: normalizedEmail }),
+            signal: abortController.signal,
+          });
+
+          const data = (await response
+            .json()
+            .catch(() => null)) as SubscriptionStatusResponse | null;
+
+          if (response.ok) {
+            setHasActiveSubscription(data?.active === true);
+            return;
+          }
+
+          setHasActiveSubscription(null);
+          setSubscriptionStatusError(
+            data?.error || 'Unable to verify subscription status.',
+          );
+        } catch (error: unknown) {
+          if (error instanceof Error && error.name === 'AbortError') return;
+          console.error('Error checking subscription status:', error);
+          setHasActiveSubscription(null);
+          setSubscriptionStatusError('Unable to verify subscription status.');
+        } finally {
+          setIsCheckingSubscription(false);
+        }
+      };
+
+      void checkSubscriptionStatus();
+    }, 300);
+
+    return () => {
+      abortController.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [isOpen, registerEmail]);
+
   const handlePayPalSubscription = (data: Record<string, unknown>, actions: PayPalActions) => {
     try {
       console.log('PayPal subscription initiated:', data);
@@ -159,6 +229,8 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
         setRegisterPassword('');
         setConfirmPassword('');
         setReceiveUpdates(false);
+        setHasActiveSubscription(null);
+        setSubscriptionStatusError('');
         setErrorMessage('');
         alert('Test user registration successful! Welcome!');
       } else {
@@ -376,7 +448,26 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
                 {errorMessage}
               </p>
             )}
-            {selectedPlanId && isFormValid && (
+            {isCheckingSubscription && isValidEmail(registerEmail) && (
+              <p className="text-gray-600 text-sm text-center" role="status">
+                Checking subscription status...
+              </p>
+            )}
+            {hasActiveSubscription === true && (
+              <p className="text-amber-700 text-sm text-center" role="status">
+                This email already has an active subscription.
+              </p>
+            )}
+            {subscriptionStatusError && (
+              <p className="text-red-500 text-sm text-center" role="alert">
+                {subscriptionStatusError}
+              </p>
+            )}
+            {selectedPlanId &&
+              isFormValid &&
+              hasActiveSubscription === false &&
+              !isCheckingSubscription &&
+              !subscriptionStatusError && (
               <PayPalButtons
                 createSubscription={handlePayPalSubscription}
                 onApprove={handlePayPalApprove}

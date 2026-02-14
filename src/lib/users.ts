@@ -1,6 +1,7 @@
 // src/lib/users.ts
 import {
   DynamoDBClient,
+  GetItemCommand,
   PutItemCommand,
   ScanCommand,
   UpdateItemCommand,
@@ -425,6 +426,63 @@ export async function updateLastSeenAtByEmail(email: string): Promise<void> {
       ConditionExpression: 'attribute_exists(ID)',
     }),
   );
+}
+
+export async function getUserSubscriptionIdByEmail(
+  email: string,
+): Promise<string | null> {
+  const tableName = USERS_TABLE_NAME;
+  if (!tableName) {
+    console.warn('DDB_USERS_TABLE not set; cannot check subscription status');
+    return null;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) return null;
+
+  const primaryId = `USR#${normalizedEmail}`;
+
+  try {
+    const { Item } = await client.send(
+      new GetItemCommand({
+        TableName: tableName,
+        Key: { ID: { S: primaryId } },
+        ProjectionExpression: 'SubscriptionId',
+      }),
+    );
+
+    const idByPrimaryKey = Item?.SubscriptionId?.S?.trim();
+    if (idByPrimaryKey) {
+      return idByPrimaryKey;
+    }
+  } catch (error) {
+    console.error('Error fetching subscription by primary key:', error);
+  }
+
+  const scanParams: ScanCommandInput = {
+    TableName: tableName,
+    FilterExpression: '#email = :email',
+    ExpressionAttributeNames: { '#email': 'Email' },
+    ExpressionAttributeValues: { ':email': { S: normalizedEmail } },
+    ProjectionExpression: 'SubscriptionId',
+    Limit: 100,
+  };
+
+  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+
+  do {
+    const { Items, LastEvaluatedKey } = await client.send(
+      new ScanCommand({ ...scanParams, ExclusiveStartKey: lastEvaluatedKey }),
+    );
+    const match = Items?.find((item) => item?.SubscriptionId?.S?.trim());
+    const idByEmail = match?.SubscriptionId?.S?.trim();
+    if (idByEmail) {
+      return idByEmail;
+    }
+    lastEvaluatedKey = LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  return null;
 }
 
 async function findUserByUnsubscribeToken(
