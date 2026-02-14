@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import '@/lib/global-error-handler';
 import Script from 'next/script';
 import { getSiteBaseUrl } from '@/lib/url-helper';
+import { isPaidDownloadMode } from '@/lib/download-mode';
 import ClientNav from './components/ClientNav';
 import PrivacyPolicyFooterLink from './components/PrivacyPolicyFooterLink';
 import './globals.css';
@@ -28,6 +29,7 @@ function stripWww(hostname: string): string {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const currentYear = new Date().getFullYear();
+  const adsEnabled = !isPaidDownloadMode();
 
   const siteBaseUrl = getSiteBaseUrl();
   const siteHost = extractHostname(siteBaseUrl);
@@ -53,15 +55,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           `}
         </Script>
 
-        {/* Google AdSense Script */}
-        <Script
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8273546332414099"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-        />
+        {adsEnabled && (
+          <Script
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8273546332414099"
+            strategy="afterInteractive"
+            crossOrigin="anonymous"
+          />
+        )}
       </head>
 
-      <body className="min-h-screen flex flex-col bg-white text-black">
+      <body className={`min-h-screen flex flex-col bg-white text-black ${adsEnabled ? 'ads-enabled' : ''}`}>
         <ClientNav />
         <main className="flex-grow">{children}</main>
 

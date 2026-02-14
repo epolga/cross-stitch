@@ -30,6 +30,12 @@ export interface NewUserRegistration {
   idOverride?: string;
 }
 
+export interface UserSubscriptionStatus {
+  subscriptionId: string | null;
+  subscriptionActive: boolean;
+  subscriptionStartedAt?: string;
+}
+
 /** Error thrown when email already exists in the users table */
 export class EmailExistsError extends Error {
   public readonly code = 'EmailExists';
@@ -94,6 +100,8 @@ export async function saveUserToDynamoDB(
 
   if (subscriptionId) {
     item.SubscriptionId = { S: subscriptionId };
+    item.SubscriptionActive = { BOOL: true };
+    item.SubscriptionStartedAt = { S: createdAt };
   }
 
   if (username) {
@@ -428,9 +436,9 @@ export async function updateLastSeenAtByEmail(email: string): Promise<void> {
   );
 }
 
-export async function getUserSubscriptionIdByEmail(
+export async function getUserSubscriptionStatusByEmail(
   email: string,
-): Promise<string | null> {
+): Promise<UserSubscriptionStatus | null> {
   const tableName = USERS_TABLE_NAME;
   if (!tableName) {
     console.warn('DDB_USERS_TABLE not set; cannot check subscription status');
@@ -447,13 +455,17 @@ export async function getUserSubscriptionIdByEmail(
       new GetItemCommand({
         TableName: tableName,
         Key: { ID: { S: primaryId } },
-        ProjectionExpression: 'SubscriptionId',
+        ProjectionExpression: 'SubscriptionId, SubscriptionActive, SubscriptionStartedAt',
       }),
     );
 
-    const idByPrimaryKey = Item?.SubscriptionId?.S?.trim();
-    if (idByPrimaryKey) {
-      return idByPrimaryKey;
+    if (Item) {
+      const idByPrimaryKey = Item.SubscriptionId?.S?.trim() || null;
+      return {
+        subscriptionId: idByPrimaryKey,
+        subscriptionActive: Item.SubscriptionActive?.BOOL === true,
+        subscriptionStartedAt: Item.SubscriptionStartedAt?.S?.trim() || undefined,
+      };
     }
   } catch (error) {
     console.error('Error fetching subscription by primary key:', error);
@@ -464,7 +476,7 @@ export async function getUserSubscriptionIdByEmail(
     FilterExpression: '#email = :email',
     ExpressionAttributeNames: { '#email': 'Email' },
     ExpressionAttributeValues: { ':email': { S: normalizedEmail } },
-    ProjectionExpression: 'SubscriptionId',
+    ProjectionExpression: 'SubscriptionId, SubscriptionActive, SubscriptionStartedAt',
     Limit: 100,
   };
 
@@ -474,15 +486,29 @@ export async function getUserSubscriptionIdByEmail(
     const { Items, LastEvaluatedKey } = await client.send(
       new ScanCommand({ ...scanParams, ExclusiveStartKey: lastEvaluatedKey }),
     );
-    const match = Items?.find((item) => item?.SubscriptionId?.S?.trim());
-    const idByEmail = match?.SubscriptionId?.S?.trim();
-    if (idByEmail) {
-      return idByEmail;
+    const match = Items?.find(
+      (item) =>
+        item?.SubscriptionId?.S?.trim() ||
+        item?.SubscriptionActive?.BOOL === true,
+    );
+    if (match) {
+      return {
+        subscriptionId: match.SubscriptionId?.S?.trim() || null,
+        subscriptionActive: match.SubscriptionActive?.BOOL === true,
+        subscriptionStartedAt: match.SubscriptionStartedAt?.S?.trim() || undefined,
+      };
     }
     lastEvaluatedKey = LastEvaluatedKey;
   } while (lastEvaluatedKey);
 
   return null;
+}
+
+export async function getUserSubscriptionIdByEmail(
+  email: string,
+): Promise<string | null> {
+  const subscription = await getUserSubscriptionStatusByEmail(email);
+  return subscription?.subscriptionId ?? null;
 }
 
 async function findUserByUnsubscribeToken(

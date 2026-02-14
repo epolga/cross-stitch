@@ -18,11 +18,16 @@ type Props = {
   isMissing?: boolean;
 };
 
+type SubscriptionStatusResponse = {
+  active?: boolean;
+};
+
 const PDF_BASE = 'https://d2o1uvvg91z7o4.cloudfront.net/pdfs';
 
 export default function DownloadPdfLink({ design, className, formatLabel, formatNumber, isMissing }: Props) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [referrerBypass, setReferrerBypass] = useState(false);
+  const [isCheckingPaidAccess, setIsCheckingPaidAccess] = useState(false);
 
   const [mode, setMode] = useState<DownloadMode>(() => resolveDownloadMode());
 
@@ -171,6 +176,49 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
     window.dispatchEvent(evt);
   }, [design]);
 
+  const hasActiveSubscriptionForCurrentUser = useCallback(async (): Promise<boolean> => {
+    if (typeof window === 'undefined') return false;
+
+    const email = (localStorage.getItem('userEmail') || '').trim().toLowerCase();
+    if (!email) return false;
+
+    try {
+      const response = await fetch('/api/subscription/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = (await response
+        .json()
+        .catch(() => null)) as SubscriptionStatusResponse | null;
+
+      return response.ok && data?.active === true;
+    } catch (error) {
+      console.error('[DownloadPdfLink] failed to check subscription status', error);
+      return false;
+    }
+  }, []);
+
+  const handlePaidClick = useCallback(async () => {
+    if (!loggedIn) {
+      openPayPal();
+      return;
+    }
+
+    setIsCheckingPaidAccess(true);
+    try {
+      const hasActiveSubscription = await hasActiveSubscriptionForCurrentUser();
+      if (hasActiveSubscription) {
+        handleDownload();
+        return;
+      }
+      openPayPal();
+    } finally {
+      setIsCheckingPaidAccess(false);
+    }
+  }, [loggedIn, openPayPal, hasActiveSubscriptionForCurrentUser, handleDownload]);
+
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
@@ -235,10 +283,13 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
   // 3) Paid mode: open PayPal modal
   return (
     <button
-      onClick={openPayPal}
+      onClick={() => {
+        void handlePaidClick();
+      }}
       className={className ?? 'inline-block text-gray-600 text-sm leading-tight underline cursor-pointer'}
       aria-label="Open PayPal checkout"
       type="button"
+      disabled={isCheckingPaidAccess}
     >
       {labelContent}
     </button>

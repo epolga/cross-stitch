@@ -6,6 +6,7 @@ import Link from 'next/link';
 import RegisterNewsletterLink from '@/app/components/RegisterNewsletterLink';
 import { updateLastEmailEntryInUsersTable } from '@/lib/users';
 import { buildCanonicalUrl } from '@/lib/url-helper';
+import { isPaidDownloadMode } from '@/lib/download-mode';
 import AdSlot from '@/app/components/AdSlot';
 
 export const dynamic = 'force-dynamic';
@@ -158,6 +159,7 @@ export default async function Home({ searchParams }: Props) {
   const searchText = resolvedSearchParams?.searchText?.toString() || '';
   const eid = resolvedSearchParams?.eid?.toString() || '';
   const cid = resolvedSearchParams?.cid?.toString() || '';
+  const adsEnabled = !isPaidDownloadMode();
   const adSlotTop =
     process.env.NEXT_PUBLIC_AD_SLOT_HOME_TOP ??
     process.env.NEXT_PUBLIC_AD_SLOT_DESIGN_TOP ??
@@ -217,7 +219,7 @@ export default async function Home({ searchParams }: Props) {
           <p className="text-gray-700 mb-6">
             Browse hundreds of free downloadable charts, filter by size or colors, and find your next stitching project.
           </p>
-          {adSlotTop && (
+          {adsEnabled && adSlotTop && (
             <div className="my-4">
               <AdSlot slot={adSlotTop} minHeight={250} minHeightDesktop={280} />
             </div>
@@ -259,7 +261,7 @@ export default async function Home({ searchParams }: Props) {
               baseUrl="/"
             />
           </div>
-          {adSlotBottom && (
+          {adsEnabled && adSlotBottom && (
             <div className="my-6">
               <AdSlot slot={adSlotBottom} minHeight={250} minHeightDesktop={280} />
             </div>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { DesignList } from '@/app/components/DesignList'; // Adjust path
 import type { DesignsResponse } from '@/app/types/design';
 import { buildCanonicalUrl, CreateAlbumUrl } from '@/lib/url-helper';
+import { isPaidDownloadMode } from '@/lib/download-mode';
 import Link from 'next/link';
 import AdSlot from '@/app/components/AdSlot';
 
@@ -98,6 +99,7 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
   const searchParamsRes = await searchParams;
   const pageSize = parseInt(searchParamsRes.pageSize as string || '10');
   const page = parseInt(searchParamsRes.nPage as string || '1');
+  const adsEnabled = !isPaidDownloadMode();
   const adSlotTop =
     process.env.NEXT_PUBLIC_AD_SLOT_ALBUMS_TOP ??
     process.env.NEXT_PUBLIC_AD_SLOT_DESIGN_TOP ??
@@ -144,7 +146,7 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
           Explore free cross-stitch bookmark patterns with slim, ready-to-print PDF charts—ideal for quick gifts and travel-friendly stitching.
         </p>
       ) : null}
-      {adSlotTop && (
+      {adsEnabled && adSlotTop && (
         <div className="my-6">
           <AdSlot slot={adSlotTop} minHeight={250} minHeightDesktop={280} />
         </div>
@@ -170,7 +172,7 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
         baseUrl={`${baseUrl}`}
         isLoggedIn={false} // Assuming user is logged in for this example
       />
-      {adSlotBottom && (
+      {adsEnabled && adSlotBottom && (
         <div className="my-6">
           <AdSlot slot={adSlotBottom} minHeight={250} minHeightDesktop={280} />
         </div>

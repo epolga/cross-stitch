@@ -62,7 +62,8 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
     registerPassword === confirmPassword;
 
   useEffect(() => {
-    console.log('RegisterForm component mounted');
+    if (!isOpen) return;
+
     const fetchPlans = async () => {
       try {
         const response = await fetch('/api/subscription/plan', { method: 'POST' });
@@ -96,8 +97,8 @@ export function RegisterForm({ isOpen, onClose, onLoginClick, onRegisterSuccess 
         setErrorMessage('Error loading payment plans. Please try again.');
       }
     };
-    fetchPlans();
-  }, []);
+    void fetchPlans();
+  }, [isOpen]);
 
   useEffect(() => {
     console.log('RegisterForm isOpen changed:', isOpen);

@@ -2,6 +2,7 @@ import Image from 'next/image';
 import type { Design } from '@/app/types/design';
 import type { Metadata } from 'next';
 import { buildCanonicalUrl, CreateDesignUrl } from '@/lib/url-helper';
+import { isPaidDownloadMode } from '@/lib/download-mode';
 import { DesignDownloadControls } from './DesignDownloadControls';
 import AdSlot from '@/app/components/AdSlot';
 import { promises as fs } from 'fs';
@@ -120,6 +121,7 @@ console.log("Generating metadata for designId:", designId);
 
 export default async function DesignPage({ params }: Props) {
   const { designId } = await params;
+  const adsEnabled = !isPaidDownloadMode();
   const adSlotTop = process.env.NEXT_PUBLIC_AD_SLOT_DESIGN_TOP ?? '';
   const adSlotBottom = process.env.NEXT_PUBLIC_AD_SLOT_DESIGN_BOTTOM ?? '';
 
@@ -169,7 +171,7 @@ export default async function DesignPage({ params }: Props) {
           <DesignDownloadControls design={design} align="center" isMissingOverride={isMissing} />
           <p className="text-sm text-gray-600 mb-4">Download the free PDF chart once you sign in.</p>
 
-          {adSlotTop && (
+          {adsEnabled && adSlotTop && (
             <div className="my-4">
               <AdSlot slot={adSlotTop} minHeight={250} minHeightDesktop={280} />
             </div>
@@ -231,7 +233,7 @@ export default async function DesignPage({ params }: Props) {
           ))}
          </div>
 
-          {adSlotBottom && (
+          {adsEnabled && adSlotBottom && (
             <div className="my-4">
               <AdSlot slot={adSlotBottom} minHeight={250} minHeightDesktop={280} />
             </div>
