@@ -4,6 +4,7 @@ import Script from 'next/script';
 import { getSiteBaseUrl } from '@/lib/url-helper';
 import { isPaidDownloadMode } from '@/lib/download-mode';
 import ClientNav from './components/ClientNav';
+import PaidModeBanner from './components/PaidModeBanner';
 import PrivacyPolicyFooterLink from './components/PrivacyPolicyFooterLink';
 import './globals.css';
 
@@ -66,6 +67,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
       <body className={`min-h-screen flex flex-col bg-white text-black ${adsEnabled ? 'ads-enabled' : ''}`}>
         <ClientNav />
+        {!adsEnabled && <PaidModeBanner />}
         <main className="flex-grow">{children}</main>
 
         <footer
