@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import '@/lib/global-error-handler';
 import Script from 'next/script';
+import Link from 'next/link';
 import { getSiteBaseUrl } from '@/lib/url-helper';
 import { isPaidDownloadMode } from '@/lib/download-mode';
 import ClientNav from './components/ClientNav';
@@ -99,6 +100,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
             <p>Ann Logan</p>
             <p>Krivoklatska 271, Praha, 19900, CZECH REPUBLIC</p>
+            <p className="mt-2">
+              <Link
+                href="/etsy-uploader"
+                className="text-blue-600 hover:underline"
+                aria-label="Open Etsy API app details page"
+              >
+                Etsy API app details
+              </Link>
+            </p>
             <PrivacyPolicyFooterLink />
           </div>
         </footer>
