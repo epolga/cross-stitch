@@ -28,12 +28,80 @@ export interface NewUserRegistration {
   subscriptionId?: string;
   receiveUpdates?: boolean;
   idOverride?: string;
+  startTrial?: boolean;
+  trialDownloadLimit?: number;
+  trialDurationDays?: number;
 }
 
 export interface UserSubscriptionStatus {
   subscriptionId: string | null;
   subscriptionActive: boolean;
   subscriptionStartedAt?: string;
+}
+
+export type TrialStatus = 'NOT_STARTED' | 'ACTIVE' | 'LIMIT_REACHED' | 'EXPIRED';
+
+export interface UserTrialStatus {
+  status: TrialStatus;
+  available: boolean;
+  startedAt?: string;
+  endsAt?: string;
+  downloadLimit: number;
+  downloadsUsed: number;
+  downloadsRemaining: number;
+}
+
+export interface UserEntitlementStatus {
+  subscription: UserSubscriptionStatus;
+  trial: UserTrialStatus;
+}
+
+interface UserRecordSnapshot {
+  id: string;
+  subscriptionId: string | null;
+  subscriptionActive: boolean;
+  subscriptionStartedAt?: string;
+  trialStartedAt?: string;
+  trialEndsAt?: string;
+  trialDownloadLimit: number;
+  trialDownloadsUsed: number;
+  trialDownloadedDesignIds: Set<string>;
+}
+
+const DEFAULT_TRIAL_DOWNLOAD_LIMIT = 10;
+const DEFAULT_TRIAL_DURATION_DAYS = 30;
+
+function parsePositiveInteger(value: string | undefined, fallback: number): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return fallback;
+  const rounded = Math.floor(numeric);
+  return rounded > 0 ? rounded : fallback;
+}
+
+function getConfiguredTrialDownloadLimit(): number {
+  return parsePositiveInteger(
+    process.env.TRIAL_DOWNLOAD_LIMIT,
+    DEFAULT_TRIAL_DOWNLOAD_LIMIT,
+  );
+}
+
+function getConfiguredTrialDurationDays(): number {
+  return parsePositiveInteger(
+    process.env.TRIAL_DURATION_DAYS,
+    DEFAULT_TRIAL_DURATION_DAYS,
+  );
+}
+
+export function getTrialDownloadLimit(): number {
+  return getConfiguredTrialDownloadLimit();
+}
+
+export function getTrialDurationDays(): number {
+  return getConfiguredTrialDurationDays();
+}
+
+function addDaysToIso(isoDate: string, days: number): string {
+  return new Date(new Date(isoDate).getTime() + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
 /** Error thrown when email already exists in the users table */
@@ -44,6 +112,161 @@ export class EmailExistsError extends Error {
     super(message);
     this.name = 'EmailExistsError';
   }
+}
+
+const USER_ENTITLEMENT_PROJECTION =
+  'ID, SubscriptionId, SubscriptionActive, SubscriptionStartedAt, TrialStartedAt, TrialEndsAt, TrialDownloadLimit, TrialDownloadsUsed, TrialDownloadedDesignIds';
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function normalizeTrialLimit(limit?: number): number {
+  if (!Number.isFinite(limit)) return getConfiguredTrialDownloadLimit();
+  const rounded = Math.floor(limit as number);
+  return rounded > 0 ? rounded : getConfiguredTrialDownloadLimit();
+}
+
+function normalizeTrialDurationDays(days?: number): number {
+  if (!Number.isFinite(days)) return getConfiguredTrialDurationDays();
+  const rounded = Math.floor(days as number);
+  return rounded > 0 ? rounded : getConfiguredTrialDurationDays();
+}
+
+function parseUserRecord(item: Record<string, AttributeValue> | undefined): UserRecordSnapshot | null {
+  if (!item?.ID?.S) return null;
+
+  const trialDownloadedDesignIds = new Set(
+    (item.TrialDownloadedDesignIds?.SS || [])
+      .map((value) => value.trim())
+      .filter(Boolean),
+  );
+
+  const configuredLimit = getConfiguredTrialDownloadLimit();
+  const trialDownloadLimitRaw = item.TrialDownloadLimit?.N
+    ? parseInt(item.TrialDownloadLimit.N, 10)
+    : configuredLimit;
+  const trialDownloadLimit = Number.isFinite(trialDownloadLimitRaw) && trialDownloadLimitRaw > 0
+    ? trialDownloadLimitRaw
+    : configuredLimit;
+
+  const trialDownloadsUsedRaw = item.TrialDownloadsUsed?.N
+    ? parseInt(item.TrialDownloadsUsed.N, 10)
+    : trialDownloadedDesignIds.size;
+  const trialDownloadsUsed = Number.isFinite(trialDownloadsUsedRaw) && trialDownloadsUsedRaw >= 0
+    ? trialDownloadsUsedRaw
+    : trialDownloadedDesignIds.size;
+
+  return {
+    id: item.ID.S,
+    subscriptionId: item.SubscriptionId?.S?.trim() || null,
+    subscriptionActive: item.SubscriptionActive?.BOOL === true,
+    subscriptionStartedAt: item.SubscriptionStartedAt?.S?.trim() || undefined,
+    trialStartedAt: item.TrialStartedAt?.S?.trim() || undefined,
+    trialEndsAt: item.TrialEndsAt?.S?.trim() || undefined,
+    trialDownloadLimit,
+    trialDownloadsUsed,
+    trialDownloadedDesignIds,
+  };
+}
+
+function computeTrialStatus(record: UserRecordSnapshot): TrialStatus {
+  const hasStarted = Boolean(record.trialStartedAt && record.trialEndsAt);
+  if (!hasStarted) return 'NOT_STARTED';
+
+  const endsAtMs = new Date(record.trialEndsAt as string).getTime();
+  if (!Number.isFinite(endsAtMs) || endsAtMs < Date.now()) return 'EXPIRED';
+
+  if (record.trialDownloadsUsed >= record.trialDownloadLimit) {
+    return 'LIMIT_REACHED';
+  }
+
+  return 'ACTIVE';
+}
+
+function toTrialStatus(record: UserRecordSnapshot): UserTrialStatus {
+  const status = computeTrialStatus(record);
+  const downloadsRemaining = Math.max(
+    0,
+    record.trialDownloadLimit - record.trialDownloadsUsed,
+  );
+
+  return {
+    status,
+    available: status === 'NOT_STARTED',
+    startedAt: record.trialStartedAt,
+    endsAt: record.trialEndsAt,
+    downloadLimit: record.trialDownloadLimit,
+    downloadsUsed: record.trialDownloadsUsed,
+    downloadsRemaining,
+  };
+}
+
+function isConditionalCheckFailure(error: unknown): boolean {
+  const name = error instanceof Error ? error.name : '';
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    name === 'ConditionalCheckFailedException' ||
+    message.includes('ConditionalCheckFailed') ||
+    message.includes('ConditionalCheckFailedException')
+  );
+}
+
+async function getUserRecordByEmail(
+  email: string,
+): Promise<UserRecordSnapshot | null> {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return null;
+
+  const primaryId = `USR#${normalizedEmail}`;
+
+  try {
+    const { Item } = await client.send(
+      new GetItemCommand({
+        TableName: USERS_TABLE_NAME,
+        Key: { ID: { S: primaryId } },
+        ProjectionExpression: USER_ENTITLEMENT_PROJECTION,
+      }),
+    );
+
+    const parsedByPrimaryKey = parseUserRecord(Item);
+    if (parsedByPrimaryKey) {
+      return parsedByPrimaryKey;
+    }
+  } catch (error) {
+    console.error('Error fetching user by primary key:', error);
+  }
+
+  const scanParams: ScanCommandInput = {
+    TableName: USERS_TABLE_NAME,
+    FilterExpression: '#email = :email',
+    ExpressionAttributeNames: { '#email': 'Email' },
+    ExpressionAttributeValues: { ':email': { S: normalizedEmail } },
+    ProjectionExpression: USER_ENTITLEMENT_PROJECTION,
+    Limit: 100,
+  };
+
+  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+
+  do {
+    const { Items, LastEvaluatedKey } = await client.send(
+      new ScanCommand({
+        ...scanParams,
+        ExclusiveStartKey: lastEvaluatedKey,
+      }),
+    );
+
+    const parsed = Items?.map((item) => parseUserRecord(item)).find(
+      (value): value is UserRecordSnapshot => Boolean(value),
+    );
+    if (parsed) {
+      return parsed;
+    }
+
+    lastEvaluatedKey = LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  return null;
 }
 
 
@@ -81,6 +304,10 @@ export async function saveUserToDynamoDB(
   const overrideId = input.idOverride?.trim();
   const id = overrideId || `USR#${email}`;
   const createdAt = new Date().toISOString();
+  const shouldStartTrial = input.startTrial === true;
+  const trialDownloadLimit = normalizeTrialLimit(input.trialDownloadLimit);
+  const trialDurationDays = normalizeTrialDurationDays(input.trialDurationDays);
+  const trialEndsAt = addDaysToIso(createdAt, trialDurationDays);
 
   const item: Record<string, AttributeValue> = {
     ID: { S: id },
@@ -97,6 +324,13 @@ export async function saveUserToDynamoDB(
     Verified: { BOOL: false },
     VerifiedAt: { S: '' },
   };
+
+  if (shouldStartTrial) {
+    item.TrialStartedAt = { S: createdAt };
+    item.TrialEndsAt = { S: trialEndsAt };
+    item.TrialDownloadLimit = { N: String(trialDownloadLimit) };
+    item.TrialDownloadsUsed = { N: '0' };
+  }
 
   if (subscriptionId) {
     item.SubscriptionId = { S: subscriptionId };
@@ -445,63 +679,14 @@ export async function getUserSubscriptionStatusByEmail(
     return null;
   }
 
-  const normalizedEmail = email.trim().toLowerCase();
-  if (!normalizedEmail) return null;
+  const user = await getUserRecordByEmail(email);
+  if (!user) return null;
 
-  const primaryId = `USR#${normalizedEmail}`;
-
-  try {
-    const { Item } = await client.send(
-      new GetItemCommand({
-        TableName: tableName,
-        Key: { ID: { S: primaryId } },
-        ProjectionExpression: 'SubscriptionId, SubscriptionActive, SubscriptionStartedAt',
-      }),
-    );
-
-    if (Item) {
-      const idByPrimaryKey = Item.SubscriptionId?.S?.trim() || null;
-      return {
-        subscriptionId: idByPrimaryKey,
-        subscriptionActive: Item.SubscriptionActive?.BOOL === true,
-        subscriptionStartedAt: Item.SubscriptionStartedAt?.S?.trim() || undefined,
-      };
-    }
-  } catch (error) {
-    console.error('Error fetching subscription by primary key:', error);
-  }
-
-  const scanParams: ScanCommandInput = {
-    TableName: tableName,
-    FilterExpression: '#email = :email',
-    ExpressionAttributeNames: { '#email': 'Email' },
-    ExpressionAttributeValues: { ':email': { S: normalizedEmail } },
-    ProjectionExpression: 'SubscriptionId, SubscriptionActive, SubscriptionStartedAt',
-    Limit: 100,
+  return {
+    subscriptionId: user.subscriptionId,
+    subscriptionActive: user.subscriptionActive,
+    subscriptionStartedAt: user.subscriptionStartedAt,
   };
-
-  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
-
-  do {
-    const { Items, LastEvaluatedKey } = await client.send(
-      new ScanCommand({ ...scanParams, ExclusiveStartKey: lastEvaluatedKey }),
-    );
-    const match = Items?.find(
-      (item) =>
-        item?.SubscriptionId?.S?.trim() ||
-        item?.SubscriptionActive?.BOOL === true,
-    );
-    if (match) {
-      return {
-        subscriptionId: match.SubscriptionId?.S?.trim() || null,
-        subscriptionActive: match.SubscriptionActive?.BOOL === true,
-        subscriptionStartedAt: match.SubscriptionStartedAt?.S?.trim() || undefined,
-      };
-    }
-    lastEvaluatedKey = LastEvaluatedKey;
-  } while (lastEvaluatedKey);
-
-  return null;
 }
 
 export async function getUserSubscriptionIdByEmail(
@@ -509,6 +694,465 @@ export async function getUserSubscriptionIdByEmail(
 ): Promise<string | null> {
   const subscription = await getUserSubscriptionStatusByEmail(email);
   return subscription?.subscriptionId ?? null;
+}
+
+function toEntitlementStatus(record: UserRecordSnapshot): UserEntitlementStatus {
+  return {
+    subscription: {
+      subscriptionId: record.subscriptionId,
+      subscriptionActive: record.subscriptionActive,
+      subscriptionStartedAt: record.subscriptionStartedAt,
+    },
+    trial: toTrialStatus(record),
+  };
+}
+
+export async function getUserEntitlementStatusByEmail(
+  email: string,
+): Promise<UserEntitlementStatus | null> {
+  if (!USERS_TABLE_NAME) {
+    console.warn('DDB_USERS_TABLE not set; cannot check entitlement status');
+    return null;
+  }
+
+  const record = await getUserRecordByEmail(email);
+  if (!record) return null;
+  return toEntitlementStatus(record);
+}
+
+export interface StartTrialInput {
+  email: string;
+  password?: string;
+  firstName?: string;
+  username?: string;
+  receiveUpdates?: boolean;
+  trialDownloadLimit?: number;
+  trialDurationDays?: number;
+}
+
+export type StartTrialOutcome =
+  | 'USER_CREATED_AND_STARTED'
+  | 'STARTED'
+  | 'ALREADY_STARTED'
+  | 'SUBSCRIPTION_ACTIVE'
+  | 'SUBSCRIPTION_INACTIVE'
+  | 'MISSING_REGISTRATION_FIELDS';
+
+export interface StartTrialResult {
+  outcome: StartTrialOutcome;
+  entitlement: UserEntitlementStatus | null;
+}
+
+export async function startTrialForEmail(
+  input: StartTrialInput,
+): Promise<StartTrialResult> {
+  if (!USERS_TABLE_NAME) {
+    console.warn('DDB_USERS_TABLE not set; cannot start trial');
+    return { outcome: 'MISSING_REGISTRATION_FIELDS', entitlement: null };
+  }
+
+  const normalizedEmail = normalizeEmail(input.email);
+  if (!normalizedEmail) {
+    throw new Error('Email is required');
+  }
+
+  const existing = await getUserRecordByEmail(normalizedEmail);
+  if (!existing) {
+    const password = input.password?.trim() || '';
+    const firstName = input.firstName?.trim() || '';
+    if (!password || !firstName) {
+      return { outcome: 'MISSING_REGISTRATION_FIELDS', entitlement: null };
+    }
+
+    try {
+      await saveUserToDynamoDB({
+        email: normalizedEmail,
+        firstName,
+        password,
+        username: input.username,
+        receiveUpdates: input.receiveUpdates,
+        startTrial: true,
+        trialDownloadLimit: input.trialDownloadLimit,
+        trialDurationDays: input.trialDurationDays,
+      });
+    } catch (error) {
+      if (!isConditionalCheckFailure(error)) {
+        throw error;
+      }
+    }
+
+    const created = await getUserRecordByEmail(normalizedEmail);
+    return {
+      outcome: 'USER_CREATED_AND_STARTED',
+      entitlement: created ? toEntitlementStatus(created) : null,
+    };
+  }
+
+  if (existing.subscriptionActive) {
+    return {
+      outcome: 'SUBSCRIPTION_ACTIVE',
+      entitlement: toEntitlementStatus(existing),
+    };
+  }
+
+  if (existing.subscriptionId && !existing.subscriptionActive) {
+    return {
+      outcome: 'SUBSCRIPTION_INACTIVE',
+      entitlement: toEntitlementStatus(existing),
+    };
+  }
+
+  if (existing.trialStartedAt) {
+    return {
+      outcome: 'ALREADY_STARTED',
+      entitlement: toEntitlementStatus(existing),
+    };
+  }
+
+  const trialStartedAt = new Date().toISOString();
+  const trialDurationDays = normalizeTrialDurationDays(input.trialDurationDays);
+  const trialEndsAt = addDaysToIso(trialStartedAt, trialDurationDays);
+  const trialDownloadLimit = normalizeTrialLimit(input.trialDownloadLimit);
+
+  try {
+    await client.send(
+      new UpdateItemCommand({
+        TableName: USERS_TABLE_NAME,
+        Key: { ID: { S: existing.id } },
+        UpdateExpression:
+          'SET TrialStartedAt = :startedAt, TrialEndsAt = :endsAt, TrialDownloadLimit = if_not_exists(TrialDownloadLimit, :limit), TrialDownloadsUsed = if_not_exists(TrialDownloadsUsed, :zero)',
+        ConditionExpression:
+          'attribute_exists(ID) AND (attribute_not_exists(TrialStartedAt) OR TrialStartedAt = :emptyString)',
+        ExpressionAttributeValues: {
+          ':startedAt': { S: trialStartedAt },
+          ':endsAt': { S: trialEndsAt },
+          ':limit': { N: String(trialDownloadLimit) },
+          ':zero': { N: '0' },
+          ':emptyString': { S: '' },
+        },
+      }),
+    );
+  } catch (error) {
+    if (!isConditionalCheckFailure(error)) {
+      throw error;
+    }
+  }
+
+  const refreshed = await getUserRecordByEmail(normalizedEmail);
+  return {
+    outcome: 'STARTED',
+    entitlement: refreshed ? toEntitlementStatus(refreshed) : null,
+  };
+}
+
+export async function setSubscriptionActiveByEmail(
+  email: string,
+  subscriptionId: string,
+): Promise<boolean> {
+  if (!USERS_TABLE_NAME) {
+    console.warn('DDB_USERS_TABLE not set; cannot activate subscription');
+    return false;
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return false;
+
+  const normalizedSubscriptionId = subscriptionId.trim();
+  if (!normalizedSubscriptionId) return false;
+
+  const user = await getUserRecordByEmail(normalizedEmail);
+  if (!user) return false;
+
+  const now = new Date().toISOString();
+  await client.send(
+    new UpdateItemCommand({
+      TableName: USERS_TABLE_NAME,
+      Key: { ID: { S: user.id } },
+      UpdateExpression:
+        'SET SubscriptionId = :subscriptionId, SubscriptionActive = :active, SubscriptionStartedAt = :startedAt',
+      ExpressionAttributeValues: {
+        ':subscriptionId': { S: normalizedSubscriptionId },
+        ':active': { BOOL: true },
+        ':startedAt': { S: now },
+      },
+    }),
+  );
+
+  return true;
+}
+
+export async function setSubscriptionActiveBySubscriptionId(
+  subscriptionId: string,
+  subscriptionActive: boolean,
+): Promise<boolean> {
+  if (!USERS_TABLE_NAME) {
+    console.warn('DDB_USERS_TABLE not set; cannot update subscription state');
+    return false;
+  }
+
+  const normalizedSubscriptionId = subscriptionId.trim();
+  if (!normalizedSubscriptionId) return false;
+
+  const scanParams: ScanCommandInput = {
+    TableName: USERS_TABLE_NAME,
+    FilterExpression: '#subscriptionId = :subscriptionId',
+    ExpressionAttributeNames: { '#subscriptionId': 'SubscriptionId' },
+    ExpressionAttributeValues: { ':subscriptionId': { S: normalizedSubscriptionId } },
+    ProjectionExpression: 'ID',
+    Limit: 100,
+  };
+
+  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+  let userId: string | undefined;
+
+  do {
+    const { Items, LastEvaluatedKey } = await client.send(
+      new ScanCommand({
+        ...scanParams,
+        ExclusiveStartKey: lastEvaluatedKey,
+      }),
+    );
+
+    const match = Items?.find((item) => item?.ID?.S);
+    if (match?.ID?.S) {
+      userId = match.ID.S;
+      break;
+    }
+
+    lastEvaluatedKey = LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  if (!userId) return false;
+
+  const now = new Date().toISOString();
+  await client.send(
+    new UpdateItemCommand({
+      TableName: USERS_TABLE_NAME,
+      Key: { ID: { S: userId } },
+      UpdateExpression:
+        'SET SubscriptionActive = :active, SubscriptionStatusUpdatedAt = :updatedAt',
+      ExpressionAttributeValues: {
+        ':active': { BOOL: subscriptionActive },
+        ':updatedAt': { S: now },
+      },
+    }),
+  );
+
+  return true;
+}
+
+export type DownloadAccessReason =
+  | 'SUBSCRIPTION_ACTIVE'
+  | 'SUBSCRIPTION_INACTIVE'
+  | 'TRIAL_ACTIVE'
+  | 'TRIAL_NOT_STARTED'
+  | 'TRIAL_LIMIT_REACHED'
+  | 'TRIAL_EXPIRED'
+  | 'USER_NOT_FOUND';
+
+export interface DownloadAccessResult {
+  allowed: boolean;
+  reason: DownloadAccessReason;
+  subscriptionActive: boolean;
+  counted: boolean;
+  trial: UserTrialStatus;
+}
+
+function buildMissingUserTrialStatus(): UserTrialStatus {
+  const limit = getConfiguredTrialDownloadLimit();
+  return {
+    status: 'NOT_STARTED',
+    available: true,
+    downloadLimit: limit,
+    downloadsUsed: 0,
+    downloadsRemaining: limit,
+  };
+}
+
+function mapBlockedTrialReason(status: TrialStatus): DownloadAccessReason {
+  if (status === 'LIMIT_REACHED') return 'TRIAL_LIMIT_REACHED';
+  if (status === 'EXPIRED') return 'TRIAL_EXPIRED';
+  return 'TRIAL_NOT_STARTED';
+}
+
+function toDownloadAccessResultFromRecord(
+  record: UserRecordSnapshot,
+): DownloadAccessResult {
+  const trial = toTrialStatus(record);
+  if (record.subscriptionActive) {
+    return {
+      allowed: true,
+      reason: 'SUBSCRIPTION_ACTIVE',
+      subscriptionActive: true,
+      counted: false,
+      trial,
+    };
+  }
+
+  if (record.subscriptionId && trial.status !== 'ACTIVE') {
+    return {
+      allowed: false,
+      reason: 'SUBSCRIPTION_INACTIVE',
+      subscriptionActive: false,
+      counted: false,
+      trial,
+    };
+  }
+
+  if (trial.status !== 'ACTIVE') {
+    return {
+      allowed: false,
+      reason: mapBlockedTrialReason(trial.status),
+      subscriptionActive: false,
+      counted: false,
+      trial,
+    };
+  }
+
+  return {
+    allowed: true,
+    reason: 'TRIAL_ACTIVE',
+    subscriptionActive: false,
+    counted: false,
+    trial,
+  };
+}
+
+export async function getDownloadAccessByEmail(
+  email: string,
+): Promise<DownloadAccessResult> {
+  const user = await getUserRecordByEmail(email);
+  if (!user) {
+    return {
+      allowed: false,
+      reason: 'USER_NOT_FOUND',
+      subscriptionActive: false,
+      counted: false,
+      trial: buildMissingUserTrialStatus(),
+    };
+  }
+  return toDownloadAccessResultFromRecord(user);
+}
+
+export async function consumeTrialDownloadByEmail(
+  email: string,
+  designId: number,
+): Promise<DownloadAccessResult> {
+  const user = await getUserRecordByEmail(email);
+  if (!user) {
+    return {
+      allowed: false,
+      reason: 'USER_NOT_FOUND',
+      subscriptionActive: false,
+      counted: false,
+      trial: buildMissingUserTrialStatus(),
+    };
+  }
+
+  if (user.subscriptionActive) {
+    return {
+      allowed: true,
+      reason: 'SUBSCRIPTION_ACTIVE',
+      subscriptionActive: true,
+      counted: false,
+      trial: toTrialStatus(user),
+    };
+  }
+
+  const trial = toTrialStatus(user);
+  if (user.subscriptionId && trial.status !== 'ACTIVE') {
+    return {
+      allowed: false,
+      reason: 'SUBSCRIPTION_INACTIVE',
+      subscriptionActive: false,
+      counted: false,
+      trial,
+    };
+  }
+
+  if (trial.status !== 'ACTIVE') {
+    return {
+      allowed: false,
+      reason: mapBlockedTrialReason(trial.status),
+      subscriptionActive: false,
+      counted: false,
+      trial,
+    };
+  }
+
+  const designToken = String(designId);
+  if (user.trialDownloadedDesignIds.has(designToken)) {
+    return {
+      allowed: true,
+      reason: 'TRIAL_ACTIVE',
+      subscriptionActive: false,
+      counted: false,
+      trial,
+    };
+  }
+
+  try {
+    await client.send(
+      new UpdateItemCommand({
+        TableName: USERS_TABLE_NAME,
+        Key: { ID: { S: user.id } },
+        UpdateExpression:
+          'SET TrialDownloadsUsed = if_not_exists(TrialDownloadsUsed, :zero) + :inc, TrialDownloadLimit = if_not_exists(TrialDownloadLimit, :limit) ADD TrialDownloadedDesignIds :designSet',
+        ConditionExpression:
+          'attribute_exists(ID) AND attribute_exists(TrialStartedAt) AND TrialEndsAt >= :now AND (attribute_not_exists(TrialDownloadsUsed) OR TrialDownloadsUsed < :limit) AND (attribute_not_exists(TrialDownloadedDesignIds) OR NOT contains(TrialDownloadedDesignIds, :designToken))',
+        ExpressionAttributeValues: {
+          ':zero': { N: '0' },
+          ':inc': { N: '1' },
+          ':limit': { N: String(user.trialDownloadLimit) },
+          ':designSet': { SS: [designToken] },
+          ':designToken': { S: designToken },
+          ':now': { S: new Date().toISOString() },
+        },
+      }),
+    );
+
+    const updatedRecord: UserRecordSnapshot = {
+      ...user,
+      trialDownloadsUsed: user.trialDownloadsUsed + 1,
+      trialDownloadedDesignIds: new Set([
+        ...Array.from(user.trialDownloadedDesignIds),
+        designToken,
+      ]),
+    };
+
+    return {
+      allowed: true,
+      reason: 'TRIAL_ACTIVE',
+      subscriptionActive: false,
+      counted: true,
+      trial: toTrialStatus(updatedRecord),
+    };
+  } catch (error) {
+    if (!isConditionalCheckFailure(error)) {
+      throw error;
+    }
+
+    const refreshed = await getUserRecordByEmail(email);
+    if (!refreshed) {
+      return {
+        allowed: false,
+        reason: 'USER_NOT_FOUND',
+        subscriptionActive: false,
+        counted: false,
+        trial: buildMissingUserTrialStatus(),
+      };
+    }
+
+    const fallback = toDownloadAccessResultFromRecord(refreshed);
+    if (fallback.allowed && fallback.reason === 'TRIAL_ACTIVE') {
+      return {
+        ...fallback,
+        counted: false,
+      };
+    }
+
+    return fallback;
+  }
 }
 
 async function findUserByUnsubscribeToken(

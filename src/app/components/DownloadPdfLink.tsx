@@ -18,8 +18,21 @@ type Props = {
   isMissing?: boolean;
 };
 
-type SubscriptionStatusResponse = {
-  active?: boolean;
+type PaidDownloadAccessResponse = {
+  allowed: boolean;
+  reason:
+    | 'SUBSCRIPTION_ACTIVE'
+    | 'SUBSCRIPTION_INACTIVE'
+    | 'TRIAL_ACTIVE'
+    | 'TRIAL_NOT_STARTED'
+    | 'TRIAL_LIMIT_REACHED'
+    | 'TRIAL_EXPIRED'
+    | 'USER_NOT_FOUND';
+  counted: boolean;
+  trial: {
+    downloadsRemaining: number;
+    downloadLimit: number;
+  };
 };
 
 const PDF_BASE = 'https://d2o1uvvg91z7o4.cloudfront.net/pdfs';
@@ -28,6 +41,7 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
   const [loggedIn, setLoggedIn] = useState(false);
   const [referrerBypass, setReferrerBypass] = useState(false);
   const [isCheckingPaidAccess, setIsCheckingPaidAccess] = useState(false);
+  const [accessFeedback, setAccessFeedback] = useState('');
 
   const [mode, setMode] = useState<DownloadMode>(() => resolveDownloadMode());
 
@@ -106,6 +120,10 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
 
     recordDownload();
     if (typeof window !== 'undefined') {
+      const pendingDownload = localStorage.getItem('pendingDownload');
+      if (pendingDownload && pendingDownload === resolvedPdfUrl) {
+        localStorage.removeItem('pendingDownload');
+      }
       window.open(resolvedPdfUrl, '_blank', 'noopener,noreferrer');
     }
   }, [
@@ -127,7 +145,8 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
       if (newLoggedIn && !loggedIn) {
         const pendingDownload = localStorage.getItem('pendingDownload');
         if (pendingDownload && pendingDownload === resolvedPdfUrl) {
-          window.open(pendingDownload, '_blank');
+          if (mode === 'paid') return;
+          window.open(pendingDownload, '_blank', 'noopener,noreferrer');
           localStorage.removeItem('pendingDownload');
         }
       }
@@ -145,7 +164,7 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
       window.removeEventListener('authStateChange', onAuthChange as EventListener);
       window.removeEventListener('storage', onStorage);
     };
-  }, [loggedIn, resolvedPdfUrl]);
+  }, [loggedIn, mode, resolvedPdfUrl]);
 
   // Dispatch event to open registration modal, and store pending download URL
   const openRegister = useCallback(() => {
@@ -172,52 +191,114 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
 
   // Dispatch event to open PayPal modal (handled elsewhere)
   const openPayPal = useCallback(() => {
+    if (resolvedPdfUrl) {
+      localStorage.setItem('pendingDownload', resolvedPdfUrl);
+    }
     const evt = new CustomEvent('openPayPalModal', { detail: { design } });
     window.dispatchEvent(evt);
-  }, [design]);
+  }, [design, resolvedPdfUrl]);
 
-  const hasActiveSubscriptionForCurrentUser = useCallback(async (): Promise<boolean> => {
-    if (typeof window === 'undefined') return false;
-
-    const email = (localStorage.getItem('userEmail') || '').trim().toLowerCase();
-    if (!email) return false;
-
-    try {
-      const response = await fetch('/api/subscription/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = (await response
-        .json()
-        .catch(() => null)) as SubscriptionStatusResponse | null;
-
-      return response.ok && data?.active === true;
-    } catch (error) {
-      console.error('[DownloadPdfLink] failed to check subscription status', error);
-      return false;
-    }
-  }, []);
+  const describePaidAccessResult = useCallback(
+    (result: PaidDownloadAccessResponse): string => {
+      if (result.reason === 'TRIAL_ACTIVE') {
+        return `${result.trial.downloadsRemaining} downloads left in your trial.`;
+      }
+      if (result.reason === 'SUBSCRIPTION_INACTIVE') {
+        return 'Subscription expired. Renew to continue.';
+      }
+      if (result.reason === 'TRIAL_LIMIT_REACHED') {
+        return 'Trial limit reached. Subscribe for unlimited access.';
+      }
+      if (result.reason === 'TRIAL_EXPIRED') {
+        return 'Trial expired. Subscribe for unlimited access.';
+      }
+      if (result.reason === 'TRIAL_NOT_STARTED') {
+        return `Start free trial (${result.trial.downloadLimit} downloads) or subscribe for unlimited access.`;
+      }
+      if (result.reason === 'USER_NOT_FOUND') {
+        return 'Create account to download patterns. Start free trial or subscribe.';
+      }
+      return '';
+    },
+    [],
+  );
 
   const handlePaidClick = useCallback(async () => {
     if (!loggedIn) {
+      setAccessFeedback('Create account to download patterns. Start free trial or subscribe.');
+      openPayPal();
+      return;
+    }
+
+    if (typeof window === 'undefined') return;
+
+    const email = (localStorage.getItem('userEmail') || '').trim().toLowerCase();
+    if (!email) {
+      setAccessFeedback('Create account to download patterns. Start free trial or subscribe.');
       openPayPal();
       return;
     }
 
     setIsCheckingPaidAccess(true);
     try {
-      const hasActiveSubscription = await hasActiveSubscriptionForCurrentUser();
-      if (hasActiveSubscription) {
+      const response = await fetch('/api/subscription/download-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          designId: design.DesignID,
+          consume: true,
+        }),
+      });
+
+      const result = (await response
+        .json()
+        .catch(() => null)) as PaidDownloadAccessResponse | null;
+
+      if (response.ok && result?.allowed) {
+        const feedback = describePaidAccessResult(result);
+        setAccessFeedback(feedback);
         handleDownload();
         return;
       }
+
+      if (result) {
+        setAccessFeedback(describePaidAccessResult(result));
+      } else {
+        setAccessFeedback('Unable to verify paid access. Please try again.');
+      }
+
+      openPayPal();
+    } catch (error) {
+      console.error('[DownloadPdfLink] failed to check paid access', error);
+      setAccessFeedback('Unable to verify paid access. Please try again.');
       openPayPal();
     } finally {
       setIsCheckingPaidAccess(false);
     }
-  }, [loggedIn, openPayPal, hasActiveSubscriptionForCurrentUser, handleDownload]);
+  }, [
+    loggedIn,
+    openPayPal,
+    design.DesignID,
+    handleDownload,
+    describePaidAccessResult,
+  ]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (mode !== 'paid' || !loggedIn) return;
+
+    const pendingDownload = localStorage.getItem('pendingDownload');
+    const pendingPaidAccessGranted =
+      localStorage.getItem('pendingPaidAccessGranted') === 'true';
+
+    if (!pendingPaidAccessGranted || pendingDownload !== resolvedPdfUrl) {
+      return;
+    }
+
+    localStorage.removeItem('pendingPaidAccessGranted');
+    void handlePaidClick();
+  }, [loggedIn, mode, resolvedPdfUrl, handlePaidClick]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -282,16 +363,21 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
 
   // 3) Paid mode: open PayPal modal
   return (
-    <button
-      onClick={() => {
-        void handlePaidClick();
-      }}
-      className={className ?? 'inline-block text-gray-600 text-sm leading-tight underline cursor-pointer'}
-      aria-label="Open PayPal checkout"
-      type="button"
-      disabled={isCheckingPaidAccess}
-    >
-      {labelContent}
-    </button>
+    <div className="inline-flex flex-col items-start gap-1">
+      <button
+        onClick={() => {
+          void handlePaidClick();
+        }}
+        className={className ?? 'inline-block text-gray-600 text-sm leading-tight underline cursor-pointer'}
+        aria-label="Open PayPal checkout"
+        type="button"
+        disabled={isCheckingPaidAccess}
+      >
+        {labelContent}
+      </button>
+      {accessFeedback && (
+        <p className="text-xs text-gray-600 leading-snug">{accessFeedback}</p>
+      )}
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { setSubscriptionActiveBySubscriptionId } from '@/lib/users';
 
 export async function POST(req) {
   try {
@@ -48,12 +49,11 @@ export async function POST(req) {
         console.error('Failed to send email notification to admin:', error);
       }
     };
-const now = new Date();
-const timeString = now.toTimeString().substring(0, 8);
+    const eventType = body.event_type;
+    const now = new Date();
+    const timeString = now.toTimeString().substring(0, 8);
     const bodyMessage =
     `Received PayPal webhook event: ${eventType}\n${JSON.stringify(body, null, 2)}\nHeaders: ${JSON.stringify(Object.fromEntries(headers), null, 2)} \nSimulated: ${isSimulated} Time: ${timeString}`;
-
-    const eventType = body.event_type;
     await notifyAdmin('Webhook received', bodyMessage);
 
     let verifyResponse;
@@ -127,6 +127,27 @@ const timeString = now.toTimeString().substring(0, 8);
     }
 
     console.log(`Received PayPal webhook event: ${eventType}`, body);
+
+    const subscriptionId = body?.resource?.id;
+    if (typeof subscriptionId === 'string' && subscriptionId.trim().length > 0) {
+      let shouldActivate = null;
+      if (eventType === 'BILLING.SUBSCRIPTION.ACTIVATED' || eventType === 'BILLING.SUBSCRIPTION.RE-ACTIVATED') {
+        shouldActivate = true;
+      } else if (
+        eventType === 'BILLING.SUBSCRIPTION.CANCELLED' ||
+        eventType === 'BILLING.SUBSCRIPTION.SUSPENDED' ||
+        eventType === 'BILLING.SUBSCRIPTION.EXPIRED'
+      ) {
+        shouldActivate = false;
+      }
+
+      if (shouldActivate !== null) {
+        const updated = await setSubscriptionActiveBySubscriptionId(subscriptionId, shouldActivate);
+        console.log(
+          `[paypal-webhook] Updated subscription state for ${subscriptionId}: ${updated}, active=${shouldActivate}`,
+        );
+      }
+    }
     // Process the webhook event
 /*
     // Handle specific event types

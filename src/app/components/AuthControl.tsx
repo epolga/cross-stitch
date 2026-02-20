@@ -108,6 +108,7 @@ export const fetchRuntimeDownloadMode = async (): Promise<DownloadMode> => {
 
 export function AuthControl() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentEmail, setCurrentEmail] = useState('');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false); // RegisterForm (PayPal)
   const [isRegisterOnlyOpen, setIsRegisterOnlyOpen] = useState(false); // RegisterOnlyDialog
@@ -153,6 +154,9 @@ export function AuthControl() {
   useEffect(() => {
     const loggedIn = isUserLoggedIn();
     setIsLoggedIn(loggedIn);
+    if (typeof window !== 'undefined') {
+      setCurrentEmail((localStorage.getItem('userEmail') || '').trim().toLowerCase());
+    }
     console.log('AuthControl component mounted, isLoggedIn from storage:', loggedIn);
   }, []);
 
@@ -277,6 +281,7 @@ export function AuthControl() {
           localStorage.setItem('isLoggedIn', 'true');
           localStorage.setItem('userEmail', loginUsername);
         }
+        setCurrentEmail(loginUsername.trim().toLowerCase());
         setIsLoggedIn(true);
         setIsLoginModalOpen(false);
         setLoginUsername('');
@@ -346,6 +351,7 @@ export function AuthControl() {
       localStorage.removeItem('isLoggedIn');
       localStorage.removeItem('userEmail');
     }
+    setCurrentEmail('');
     setIsLoggedIn(false);
     dispatchAuthStateChange();
   };
@@ -384,14 +390,26 @@ export function AuthControl() {
     setForgotEmail('');
   };
 
-  const handleRegisterSuccess = (): void => {
+  const handleRegisterOnlySuccess = (): void => {
     setIsRegisterModalOpen(false);
     closeRegisterOnly();
     setShowVerifyNotice(true);
   };
 
+  const handlePaidModalSuccess = (): void => {
+    setIsRegisterModalOpen(false);
+    if (typeof window !== 'undefined') {
+      const loggedIn = isUserLoggedIn();
+      setIsLoggedIn(loggedIn);
+      setCurrentEmail((localStorage.getItem('userEmail') || '').trim().toLowerCase());
+    }
+  };
+
   const handleAutoLoginSuccess = (): void => {
     setIsLoggedIn(true);
+    if (typeof window !== 'undefined') {
+      setCurrentEmail((localStorage.getItem('userEmail') || '').trim().toLowerCase());
+    }
   };
 
   console.log(
@@ -618,7 +636,9 @@ export function AuthControl() {
         isOpen={isRegisterModalOpen}
         onClose={() => setIsRegisterModalOpen(false)}
         onLoginClick={handleLoginClick}
-        onRegisterSuccess={handleRegisterSuccess}
+        onRegisterSuccess={handlePaidModalSuccess}
+        isLoggedIn={isLoggedIn}
+        currentEmail={currentEmail}
       />
 
       {/* Register-only dialog */}
@@ -628,7 +648,7 @@ export function AuthControl() {
           closeRegisterOnly();
           setRegistrationSource(null);
         }}
-        onSuccess={handleRegisterSuccess}
+        onSuccess={handleRegisterOnlySuccess}
         sourceInfo={registrationSource}
       />
     </div>
