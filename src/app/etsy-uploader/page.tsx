@@ -91,6 +91,15 @@ export default function EtsyUploaderPage() {
             </Link>
           </li>
           <li>
+            Example category page:{' '}
+            <Link
+              href="/Free-Animals-Charts.aspx"
+              className="text-blue-600 hover:underline"
+            >
+              https://cross-stitch.com/Free-Animals-Charts.aspx
+            </Link>
+          </li>
+          <li>
             Example product page:{' '}
             <Link
               href="/Baby-7-52-Free-Design.aspx"
