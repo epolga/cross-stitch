@@ -213,10 +213,10 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
         return 'Trial expired. Subscribe for unlimited access.';
       }
       if (result.reason === 'TRIAL_NOT_STARTED') {
-        return 'Start free trial or subscribe for unlimited access.';
+        return 'Start for free or subscribe for unlimited access.';
       }
       if (result.reason === 'USER_NOT_FOUND') {
-        return 'Create account to download patterns. Start free trial or subscribe.';
+        return 'Create account to download patterns. Start for free or subscribe.';
       }
       return '';
     },
@@ -225,7 +225,7 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
 
   const handlePaidClick = useCallback(async () => {
     if (!loggedIn) {
-      setAccessFeedback('Create account to download patterns. Start free trial or subscribe.');
+      setAccessFeedback('Create account to download patterns. Start for free or subscribe.');
       openPayPal();
       return;
     }
@@ -234,7 +234,7 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
 
     const email = (localStorage.getItem('userEmail') || '').trim().toLowerCase();
     if (!email) {
-      setAccessFeedback('Create account to download patterns. Start free trial or subscribe.');
+      setAccessFeedback('Create account to download patterns. Start for free or subscribe.');
       openPayPal();
       return;
     }

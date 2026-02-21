@@ -470,6 +470,7 @@ export function RegisterForm({
   };
 
   if (!isOpen) return null;
+  const trialDays = trialStatus?.durationDays ?? DEFAULT_TRIAL_DURATION_DAYS;
 
   return (
     <PayPalScriptProvider
@@ -496,8 +497,8 @@ export function RegisterForm({
           </div>
 
           <p className="text-sm text-gray-700 mb-4">
-            Create account to download patterns. Start free trial or
-            subscribe monthly/yearly for unlimited access. Cancel anytime.
+            Start for free today (no charge today).
+            You get unlimited downloads for {trialDays} days.
           </p>
 
           {isLoggedIn && normalizedCurrentEmail && (
@@ -649,13 +650,16 @@ export function RegisterForm({
               disabled={isProcessing || isCheckingSubscription || !isFormValid}
               className="mt-5 w-full rounded-md bg-gray-700 px-3 py-2 text-white hover:bg-gray-800 disabled:opacity-50"
             >
-              Start Free Trial
+              Start for Free
             </button>
           )}
 
           {!hasActiveSubscription && (
             <div className="mt-6">
               <h3 className="text-lg font-medium text-gray-700 mb-2">Choose a Subscription Plan</h3>
+              <p className="text-sm text-gray-600 mb-3">
+                Both plans begin with a free {trialDays}-day trial.
+              </p>
               {plans.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {plans.map((plan) => (
