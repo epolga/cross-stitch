@@ -5,5 +5,5 @@ export interface RegistrationSourceInfo {
   designId?: number;
   designCaption?: string;
   designUrl?: string;
+  designImageUrl?: string;
 }
-

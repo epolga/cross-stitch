@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import type { RegistrationSourceInfo } from '@/app/types/registration';
 
 interface PayPalData {
   subscriptionID?: string | null;
@@ -58,11 +59,140 @@ interface RegisterFormProps {
   onRegisterSuccess: () => void;
   isLoggedIn?: boolean;
   currentEmail?: string;
+  sourceInfo?: RegistrationSourceInfo | null;
 }
 
 const DEFAULT_TRIAL_DURATION_DAYS = 30;
 const DEFAULT_MONTHLY_PLAN_ID = 'P-4JN53753JF067172ANGILEGY';
 const DEFAULT_YEARLY_PLAN_ID = 'P-4R88162396385170BNGILF7Y';
+
+function escapeHtml(value: string | undefined): string {
+  const raw = value || '';
+  return raw
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function sanitizeHttpUrl(value: string | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function inferSourceInfoFromClient(): RegistrationSourceInfo {
+  if (typeof window === 'undefined') {
+    return { source: 'unknown', label: 'unknown' };
+  }
+
+  const currentUrl = sanitizeHttpUrl(window.location.href);
+  const pendingDownload = localStorage.getItem('pendingDownload') || '';
+  const pendingMatch = pendingDownload.match(/\/pdfs\/(\d+)\/(\d+)\/Stitch(\d+)_/i);
+  const albumId = pendingMatch?.[1];
+  const designIdFromPath = pendingMatch?.[2];
+  const designIdFromName = pendingMatch?.[3];
+  const designId = designIdFromPath || designIdFromName;
+
+  const origin =
+    sanitizeHttpUrl(window.location.origin) || `${window.location.protocol}//${window.location.host}`;
+  const designUrl = designId
+    ? sanitizeHttpUrl(`${origin}/designs/${designId}`)
+    : currentUrl;
+  const designImageUrl =
+    albumId && designId
+      ? sanitizeHttpUrl(
+          `https://d2o1uvvg91z7o4.cloudfront.net/photos/${albumId}/${designId}/4.jpg`,
+        )
+      : null;
+
+  return {
+    source: 'design-download-fallback',
+    label: 'Download modal opened',
+    designId: designId ? Number(designId) : undefined,
+    designUrl: designUrl || undefined,
+    designImageUrl: designImageUrl || undefined,
+  };
+}
+
+function describeOpenTrigger(source: string | undefined): string {
+  const normalized = (source || '').trim().toLowerCase();
+  if (normalized === 'design-download' || normalized === 'design-download-fallback') {
+    return 'Download link on design page';
+  }
+  if (normalized === 'auth-control') {
+    return 'Register link in navbar';
+  }
+  if (normalized === 'newsletter-cta') {
+    return 'Newsletter signup link';
+  }
+  if (!normalized) {
+    return 'Unknown';
+  }
+  return normalized;
+}
+
+function describeArrivalSource(): { label: string; referrerUrl?: string } {
+  if (typeof window === 'undefined') {
+    return { label: 'Unknown' };
+  }
+
+  const pageUrl = new URL(window.location.href);
+  const utmSource = (pageUrl.searchParams.get('utm_source') || '').trim();
+  const utmMedium = (pageUrl.searchParams.get('utm_medium') || '').trim();
+  if (utmSource) {
+    const mediumPart = utmMedium ? ` (${utmMedium})` : '';
+    return { label: `UTM: ${utmSource}${mediumPart}` };
+  }
+
+  const referrerUrl = sanitizeHttpUrl(document.referrer);
+  if (!referrerUrl) {
+    return { label: 'Direct or unknown' };
+  }
+
+  try {
+    const referrerHost = new URL(referrerUrl).hostname.toLowerCase();
+    if (referrerHost.includes('pinterest.')) return { label: 'Pinterest', referrerUrl };
+    if (referrerHost.includes('facebook.') || referrerHost === 'fb.com') {
+      return { label: 'Facebook', referrerUrl };
+    }
+    if (referrerHost.includes('instagram.')) return { label: 'Instagram', referrerUrl };
+    if (referrerHost === 't.co' || referrerHost.includes('twitter.') || referrerHost.includes('x.com')) {
+      return { label: 'X / Twitter', referrerUrl };
+    }
+    if (referrerHost.includes('reddit.')) return { label: 'Reddit', referrerUrl };
+    if (referrerHost.includes('google.')) return { label: 'Google Search', referrerUrl };
+    if (referrerHost.includes('bing.')) return { label: 'Bing Search', referrerUrl };
+    if (referrerHost.includes('duckduckgo.')) return { label: 'DuckDuckGo', referrerUrl };
+    if (
+      referrerHost.includes('mail.') ||
+      referrerHost.includes('outlook.') ||
+      referrerHost.includes('gmail.') ||
+      referrerHost.includes('yahoo.')
+    ) {
+      return { label: 'Email client/provider', referrerUrl };
+    }
+
+    if (referrerHost.includes('cross-stitch.com')) {
+      return { label: 'Internal site navigation', referrerUrl };
+    }
+
+    return { label: referrerHost, referrerUrl };
+  } catch {
+    return { label: 'Unknown', referrerUrl };
+  }
+}
 
 export function RegisterForm({
   isOpen,
@@ -71,6 +201,7 @@ export function RegisterForm({
   onRegisterSuccess,
   isLoggedIn = false,
   currentEmail = '',
+  sourceInfo = null,
 }: RegisterFormProps) {
   const [registerEmail, setRegisterEmail] = useState('');
   const [confirmEmail, setConfirmEmail] = useState('');
@@ -87,6 +218,7 @@ export function RegisterForm({
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] =
     useState<SubscriptionStatusResponse | null>(null);
+  const hasSentOpenNotificationRef = useRef(false);
 
   const isValidEmail = (email: string): boolean =>
     email.includes('@') && email.includes('.');
@@ -218,18 +350,77 @@ export function RegisterForm({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      hasSentOpenNotificationRef.current = false;
+      return;
+    }
 
     const notifyAdmin = async (): Promise<void> => {
+      if (hasSentOpenNotificationRef.current) {
+        return;
+      }
+
       try {
-        await fetch('/api/notify-admin', { method: 'POST' });
+        const resolvedSource = sourceInfo ?? inferSourceInfoFromClient();
+        const designUrl = sanitizeHttpUrl(resolvedSource?.designUrl);
+        const designImageUrl = sanitizeHttpUrl(resolvedSource?.designImageUrl);
+        const caption = escapeHtml(resolvedSource?.designCaption || 'Selected design');
+        const openTrigger = escapeHtml(describeOpenTrigger(resolvedSource?.source));
+        const arrival = describeArrivalSource();
+        const arrivalLabel = escapeHtml(arrival.label);
+        const now = new Date().toISOString();
+        const detailRows = [
+          `<p><strong>Form opened from:</strong> ${openTrigger}</p>`,
+          `<p><strong>Arrival source:</strong> ${arrivalLabel}</p>`,
+          `<p><strong>Time (UTC):</strong> ${now}</p>`,
+        ];
+        if (arrival.referrerUrl) {
+          detailRows.push(
+            `<p><strong>Referrer:</strong> <a href="${arrival.referrerUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(arrival.referrerUrl)}</a></p>`,
+          );
+        }
+        if (resolvedSource?.designId) {
+          detailRows.push(`<p><strong>Design ID:</strong> ${resolvedSource.designId}</p>`);
+        }
+        if (designUrl) {
+          detailRows.push(
+            `<p><strong>Design:</strong> <a href="${designUrl}" target="_blank" rel="noopener noreferrer">${caption}</a></p>`,
+          );
+        }
+        const hasSpecificDesignContext =
+          Boolean(resolvedSource?.designId) || Boolean(designImageUrl);
+        if (!hasSpecificDesignContext) {
+          detailRows.push(
+            '<p><strong>Design context:</strong> not detected automatically.</p>',
+          );
+        }
+
+        const imageHtml = designUrl && designImageUrl
+          ? `<p><a href="${designUrl}" target="_blank" rel="noopener noreferrer"><img src="${designImageUrl}" alt="${caption}" style="max-width:100px;max-height:100px;width:auto;height:auto;object-fit:contain;border:1px solid #ddd;border-radius:6px;" /></a></p>`
+          : '';
+        const message = `
+          <p>A user has opened the registration form.</p>
+          ${detailRows.join('\n')}
+          ${imageHtml}
+        `;
+
+        await fetch('/api/notify-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subject: 'Registration Form Opened',
+            message,
+            html: true,
+          }),
+        });
+        hasSentOpenNotificationRef.current = true;
       } catch (error) {
         console.error('Failed to send email notification to admin:', error);
       }
     };
 
     void notifyAdmin();
-  }, [isOpen]);
+  }, [isOpen, sourceInfo]);
 
   useEffect(() => {
     if (!isOpen) return;

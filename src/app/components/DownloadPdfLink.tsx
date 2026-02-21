@@ -184,19 +184,38 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
         designId: design.DesignID,
         designCaption: design.Caption,
         designUrl: absoluteDesignUrl,
+        designImageUrl: design.ImageUrl || undefined,
       },
     });
     window.dispatchEvent(evt);
-  }, [design.DesignID, design.Caption, resolvedPdfUrl, formatLabel]);
+  }, [design.DesignID, design.Caption, design.ImageUrl, resolvedPdfUrl, formatLabel]);
 
   // Dispatch event to open PayPal modal (handled elsewhere)
   const openPayPal = useCallback(() => {
     if (resolvedPdfUrl) {
       localStorage.setItem('pendingDownload', resolvedPdfUrl);
     }
-    const evt = new CustomEvent('openPayPalModal', { detail: { design } });
+    const designPath = `/designs/${design.DesignID}`;
+    const absoluteDesignUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}${designPath}`
+        : designPath;
+
+    const evt = new CustomEvent('openPayPalModal', {
+      detail: {
+        sourceInfo: {
+          source: 'design-download',
+          label: `Download attempt for ${design.Caption}${formatLabel ? ` (${formatLabel})` : ''}`,
+          designId: design.DesignID,
+          designCaption: design.Caption,
+          designUrl: absoluteDesignUrl,
+          designImageUrl: design.ImageUrl || undefined,
+        },
+        design,
+      },
+    });
     window.dispatchEvent(evt);
-  }, [design, resolvedPdfUrl]);
+  }, [design, formatLabel, resolvedPdfUrl]);
 
   const describePaidAccessResult = useCallback(
     (result: PaidDownloadAccessResponse): string => {

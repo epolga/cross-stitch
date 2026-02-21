@@ -125,7 +125,6 @@ export function AuthControl() {
 
   const closeRegisterOnly = (): void => {
     setIsRegisterOnlyOpen(false);
-    setRegistrationSource(null);
   };
 
   const [mode, setMode] = useState<DownloadMode>(() => resolveDownloadMode());
@@ -206,9 +205,29 @@ export function AuthControl() {
   // Listen for openPayPalModal → open PayPal dialog (RegisterForm) in paid mode
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const handleOpenPayPal = () => {
+      const handleOpenPayPal = (event: Event) => {
         console.log('Received openPayPalModal event');
         if (mode === 'paid') {
+          const detail = (
+            event as CustomEvent<{
+              sourceInfo?: RegistrationSourceInfo | null;
+              design?: { DesignID?: number; Caption?: string; ImageUrl?: string | null };
+            }>
+          ).detail;
+
+          let sourceInfo = detail?.sourceInfo ?? null;
+          if (!sourceInfo && detail?.design?.DesignID) {
+            sourceInfo = {
+              source: 'design-download',
+              label: `Download attempt for ${detail.design.Caption || `design ${detail.design.DesignID}`}`,
+              designId: detail.design.DesignID,
+              designCaption: detail.design.Caption,
+              designUrl: `${window.location.origin}/designs/${detail.design.DesignID}`,
+              designImageUrl: detail.design.ImageUrl || undefined,
+            };
+          }
+
+          setRegistrationSource(sourceInfo);
           setIsRegisterModalOpen(true);
           closeRegisterOnly();
           setIsLoginModalOpen(false);
@@ -248,6 +267,7 @@ export function AuthControl() {
     setIsLoginModalOpen(true);
     setIsRegisterModalOpen(false);
     closeRegisterOnly();
+    setRegistrationSource(null);
     setErrorMessage('');
     setForgotMessage('');
     setIsForgotMode(false);
@@ -393,11 +413,13 @@ export function AuthControl() {
   const handleRegisterOnlySuccess = (): void => {
     setIsRegisterModalOpen(false);
     closeRegisterOnly();
+    setRegistrationSource(null);
     setShowVerifyNotice(true);
   };
 
   const handlePaidModalSuccess = (): void => {
     setIsRegisterModalOpen(false);
+    setRegistrationSource(null);
     if (typeof window !== 'undefined') {
       const loggedIn = isUserLoggedIn();
       setIsLoggedIn(loggedIn);
@@ -634,11 +656,15 @@ export function AuthControl() {
       {/* PayPal / full registration modal */}
       <RegisterForm
         isOpen={isRegisterModalOpen}
-        onClose={() => setIsRegisterModalOpen(false)}
+        onClose={() => {
+          setIsRegisterModalOpen(false);
+          setRegistrationSource(null);
+        }}
         onLoginClick={handleLoginClick}
         onRegisterSuccess={handlePaidModalSuccess}
         isLoggedIn={isLoggedIn}
         currentEmail={currentEmail}
+        sourceInfo={registrationSource}
       />
 
       {/* Register-only dialog */}

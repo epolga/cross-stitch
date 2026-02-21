@@ -2,9 +2,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmailToAdmin } from '@/lib/email-service'; 
 
+interface NotifyAdminBody {
+  subject?: string;
+  message?: string;
+  html?: boolean;
+}
+
 export async function POST(req: NextRequest) {
   try {
-    let body = null;
+    let body: NotifyAdminBody | null = null;
     try {
       body = await req.json();
     } catch {
@@ -19,7 +25,11 @@ export async function POST(req: NextRequest) {
     if (body && body.subject && body.message) {
       // Use provided subject and message for custom notification
       console.log('Sending custom admin notification with subject:', body.subject);
-      await sendEmailToAdmin(body.subject, `${body.message}\n Client IP: ${clientIp}`, false);
+      const htmlMode = body.html === true;
+      const decoratedMessage = htmlMode
+        ? `${body.message}<p><strong>Client IP:</strong> ${clientIp}</p>`
+        : `${body.message}\n Client IP: ${clientIp}`;
+      await sendEmailToAdmin(body.subject, decoratedMessage, htmlMode);
     } else {
       console.log('Sending default admin notification for registration form opened');
       // Default behavior: Notification for registration form opened
