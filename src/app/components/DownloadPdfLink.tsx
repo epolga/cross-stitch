@@ -201,19 +201,19 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
   const describePaidAccessResult = useCallback(
     (result: PaidDownloadAccessResponse): string => {
       if (result.reason === 'TRIAL_ACTIVE') {
-        return `${result.trial.downloadsRemaining} downloads left in your trial.`;
+        return 'Trial active.';
       }
       if (result.reason === 'SUBSCRIPTION_INACTIVE') {
         return 'Subscription expired. Renew to continue.';
       }
       if (result.reason === 'TRIAL_LIMIT_REACHED') {
-        return 'Trial limit reached. Subscribe for unlimited access.';
+        return 'Trial ended. Subscribe for unlimited access.';
       }
       if (result.reason === 'TRIAL_EXPIRED') {
         return 'Trial expired. Subscribe for unlimited access.';
       }
       if (result.reason === 'TRIAL_NOT_STARTED') {
-        return `Start free trial (${result.trial.downloadLimit} downloads) or subscribe for unlimited access.`;
+        return 'Start free trial or subscribe for unlimited access.';
       }
       if (result.reason === 'USER_NOT_FOUND') {
         return 'Create account to download patterns. Start free trial or subscribe.';

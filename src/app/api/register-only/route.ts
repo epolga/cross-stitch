@@ -49,6 +49,7 @@ export async function POST(req: Request): Promise<Response> {
       password: body.password,
       verificationToken,
       verificationTokenExpiresAt,
+      startTrial: true,
     });
 
     const baseUrl = resolveBaseUrl(req);

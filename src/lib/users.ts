@@ -93,6 +93,10 @@ function getConfiguredTrialDurationDays(): number {
   );
 }
 
+function isTrialDownloadLimitEnabled(): boolean {
+  return (process.env.TRIAL_DOWNLOAD_LIMIT_ENABLED || '').trim().toLowerCase() === 'true';
+}
+
 export function getTrialDownloadLimit(): number {
   return getConfiguredTrialDownloadLimit();
 }
@@ -179,7 +183,10 @@ function computeTrialStatus(record: UserRecordSnapshot): TrialStatus {
   const endsAtMs = new Date(record.trialEndsAt as string).getTime();
   if (!Number.isFinite(endsAtMs) || endsAtMs < Date.now()) return 'EXPIRED';
 
-  if (record.trialDownloadsUsed >= record.trialDownloadLimit) {
+  if (
+    isTrialDownloadLimitEnabled() &&
+    record.trialDownloadsUsed >= record.trialDownloadLimit
+  ) {
     return 'LIMIT_REACHED';
   }
 
@@ -1145,6 +1152,10 @@ export async function consumeTrialDownloadByEmail(
   }
 
   try {
+    const limitCondition = isTrialDownloadLimitEnabled()
+      ? ' AND (attribute_not_exists(TrialDownloadsUsed) OR TrialDownloadsUsed < :limit)'
+      : '';
+
     await client.send(
       new UpdateItemCommand({
         TableName: USERS_TABLE_NAME,
@@ -1152,7 +1163,7 @@ export async function consumeTrialDownloadByEmail(
         UpdateExpression:
           'SET TrialDownloadsUsed = if_not_exists(TrialDownloadsUsed, :zero) + :inc, TrialDownloadLimit = if_not_exists(TrialDownloadLimit, :limit) ADD TrialDownloadedDesignIds :designSet',
         ConditionExpression:
-          'attribute_exists(ID) AND attribute_exists(TrialStartedAt) AND TrialEndsAt >= :now AND (attribute_not_exists(TrialDownloadsUsed) OR TrialDownloadsUsed < :limit) AND (attribute_not_exists(TrialDownloadedDesignIds) OR NOT contains(TrialDownloadedDesignIds, :designToken))',
+          `attribute_exists(ID) AND attribute_exists(TrialStartedAt) AND TrialEndsAt >= :now${limitCondition} AND (attribute_not_exists(TrialDownloadedDesignIds) OR NOT contains(TrialDownloadedDesignIds, :designToken))`,
         ExpressionAttributeValues: {
           ':zero': { N: '0' },
           ':inc': { N: '1' },

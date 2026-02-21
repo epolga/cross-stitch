@@ -60,7 +60,6 @@ interface RegisterFormProps {
   currentEmail?: string;
 }
 
-const DEFAULT_TRIAL_LIMIT = 10;
 const DEFAULT_TRIAL_DURATION_DAYS = 30;
 const DEFAULT_MONTHLY_PLAN_ID = 'P-4JN53753JF067172ANGILEGY';
 const DEFAULT_YEARLY_PLAN_ID = 'P-4R88162396385170BNGILF7Y';
@@ -404,9 +403,8 @@ export function RegisterForm({
 
       persistLogin(effectiveEmail);
 
-      const limit = result?.trial?.downloadLimit ?? DEFAULT_TRIAL_LIMIT;
       const days = result?.trial?.durationDays ?? DEFAULT_TRIAL_DURATION_DAYS;
-      setInfoMessage(`Trial started: ${limit} downloads available for ${days} days.`);
+      setInfoMessage(`Trial started for ${days} days.`);
 
       onRegisterSuccess();
     } catch (error) {
@@ -473,9 +471,6 @@ export function RegisterForm({
 
   if (!isOpen) return null;
 
-  const trialRemaining = trialStatus?.downloadsRemaining ?? DEFAULT_TRIAL_LIMIT;
-  const trialLimit = trialStatus?.downloadLimit ?? DEFAULT_TRIAL_LIMIT;
-
   return (
     <PayPalScriptProvider
       options={{
@@ -501,7 +496,7 @@ export function RegisterForm({
           </div>
 
           <p className="text-sm text-gray-700 mb-4">
-            Create account to download patterns. Start free trial ({trialLimit} downloads) or
+            Create account to download patterns. Start free trial or
             subscribe monthly/yearly for unlimited access. Cancel anytime.
           </p>
 
@@ -617,13 +612,7 @@ export function RegisterForm({
 
           {!hasActiveSubscription && trialStatus?.status === 'ACTIVE' && (
             <p className="text-blue-700 text-sm text-center mt-4" role="status">
-              Trial active: {trialRemaining} downloads left.
-            </p>
-          )}
-
-          {!hasActiveSubscription && trialStatus?.status === 'LIMIT_REACHED' && (
-            <p className="text-amber-700 text-sm text-center mt-4" role="status">
-              Trial limit reached. Subscribe for unlimited access.
+              Trial active.
             </p>
           )}
 
@@ -660,7 +649,7 @@ export function RegisterForm({
               disabled={isProcessing || isCheckingSubscription || !isFormValid}
               className="mt-5 w-full rounded-md bg-gray-700 px-3 py-2 text-white hover:bg-gray-800 disabled:opacity-50"
             >
-              Start Free Trial ({trialLimit} downloads)
+              Start Free Trial
             </button>
           )}
 

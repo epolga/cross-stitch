@@ -19,10 +19,6 @@ export default function PaidModeBanner() {
     process.env.PAYPAL_YEARLY_PRICE || process.env.NEXT_PUBLIC_PAYPAL_YEARLY_PRICE,
     '27',
   );
-  const trialDownloads = readPositiveInteger(
-    process.env.TRIAL_DOWNLOAD_LIMIT || process.env.NEXT_PUBLIC_TRIAL_DOWNLOAD_LIMIT,
-    10,
-  );
   const trialDays = readPositiveInteger(
     process.env.TRIAL_DURATION_DAYS || process.env.NEXT_PUBLIC_TRIAL_DURATION_DAYS,
     30,
@@ -31,7 +27,7 @@ export default function PaidModeBanner() {
   return (
     <div className="sticky top-0 z-30 border-b border-amber-200 bg-amber-50">
       <div className="mx-auto max-w-6xl px-4 py-2 text-center text-sm text-amber-950">
-        <span className="font-semibold">{`Free trial: ${trialDownloads} downloads for ${trialDays} days`}</span>
+        <span className="font-semibold">{`Free trial: ${trialDays} days`}</span>
         <span>{` | Then unlimited access for $${monthlyPrice}/month or $${yearlyPrice}/year | Cancel anytime`}</span>
       </div>
     </div>
