@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createUser, createTestUser } from '@/lib/data-access';
 import { sendEmailToAdmin } from '@/lib/email-service';
-import { setSubscriptionActiveByEmail } from '@/lib/users';
+import {
+  getSubscriptionUserSnapshotBySubscriptionId,
+  getUserEntitlementStatusByEmail,
+  setSubscriptionActiveByEmail,
+} from '@/lib/users';
+import {
+  recordSubscriptionEvent,
+  toRecordedSubscriptionStatus,
+} from '@/lib/subscription-events';
 
 interface ConfirmSubscriptionRequestBody {
   email?: string;
@@ -54,6 +62,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
     }
 
+    const previousEntitlement = await getUserEntitlementStatusByEmail(email);
+    const previousStatus = toRecordedSubscriptionStatus({
+      subscriptionId: previousEntitlement?.subscription.subscriptionId,
+      subscriptionActive: previousEntitlement?.subscription.subscriptionActive,
+    });
+
     const activated = await setSubscriptionActiveByEmail(email, subscriptionId);
     if (!activated) {
       return NextResponse.json(
@@ -67,17 +81,45 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'Unknown';
+    const snapshot = await getSubscriptionUserSnapshotBySubscriptionId(
+      subscriptionId,
+    );
+    const status = toRecordedSubscriptionStatus(snapshot);
+    const statusChanged = previousStatus !== status;
+
+    await recordSubscriptionEvent({
+      source: 'SUBSCRIPTION_CONFIRM',
+      eventType: 'SUBSCRIPTION_CONFIRMED',
+      status,
+      previousStatus,
+      subscriptionId,
+      userId: snapshot?.userId,
+      email: snapshot?.email || email,
+      trialStartedAt: snapshot?.trialStartedAt,
+      notes: `receiveUpdates=${receiveUpdates}; ip=${ip}`,
+    });
 
     const emailBody = `
-      <h2>New Subscription Notification</h2>
+      <h2>Subscription Confirmation</h2>
       <p><strong>Email:</strong> ${email}</p>
       <p><strong>Username:</strong> ${username}</p>
       <p><strong>Subscription ID:</strong> ${subscriptionId}</p>
+      <p><strong>User ID:</strong> ${snapshot?.userId ?? 'Not found'}</p>
+      <p><strong>Previous Status:</strong> ${previousStatus}</p>
+      <p><strong>Current Status:</strong> ${status}</p>
+      <p><strong>Status Changed:</strong> ${statusChanged}</p>
+      <p><strong>Trial Start Date:</strong> ${snapshot?.trialStartedAt ?? 'Not started'}</p>
       <p><strong>Receive Updates:</strong> ${receiveUpdates}</p>
       <p><strong>IP:</strong> ${ip}</p>
     `;
 
-    await sendEmailToAdmin('New Subscription Notification', emailBody, true);
+    await sendEmailToAdmin(
+      statusChanged
+        ? 'Subscription Status Changed'
+        : 'Subscription Confirmation Received',
+      emailBody,
+      true,
+    );
 
     return NextResponse.json(
       { message: 'Subscription stored and notification email sent' },

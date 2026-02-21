@@ -1,5 +1,12 @@
 import axios from 'axios';
-import { setSubscriptionActiveBySubscriptionId } from '@/lib/users';
+import {
+  getSubscriptionUserSnapshotBySubscriptionId,
+  setSubscriptionActiveBySubscriptionId,
+} from '@/lib/users';
+import {
+  recordSubscriptionEvent,
+  toRecordedSubscriptionStatus,
+} from '@/lib/subscription-events';
 
 export async function POST(req) {
   try {
@@ -142,10 +149,53 @@ export async function POST(req) {
       }
 
       if (shouldActivate !== null) {
+        const beforeSnapshot =
+          await getSubscriptionUserSnapshotBySubscriptionId(subscriptionId);
+        const previousStatus = toRecordedSubscriptionStatus(beforeSnapshot);
+
         const updated = await setSubscriptionActiveBySubscriptionId(subscriptionId, shouldActivate);
         console.log(
           `[paypal-webhook] Updated subscription state for ${subscriptionId}: ${updated}, active=${shouldActivate}`,
         );
+
+        const afterSnapshot =
+          await getSubscriptionUserSnapshotBySubscriptionId(subscriptionId);
+        const currentStatus = toRecordedSubscriptionStatus(afterSnapshot);
+        const statusChanged = previousStatus !== currentStatus;
+
+        await recordSubscriptionEvent({
+          source: 'PAYPAL_WEBHOOK',
+          eventType,
+          status: currentStatus,
+          previousStatus,
+          subscriptionId,
+          userId: afterSnapshot?.userId || beforeSnapshot?.userId,
+          email: afterSnapshot?.email || beforeSnapshot?.email,
+          trialStartedAt:
+            afterSnapshot?.trialStartedAt || beforeSnapshot?.trialStartedAt,
+          paypalEventId: typeof body?.id === 'string' ? body.id : undefined,
+          rawStatus:
+            typeof body?.resource?.status === 'string'
+              ? body.resource.status
+              : undefined,
+          notes: `simulated=${isSimulated}; userUpdated=${updated}; shouldActivate=${shouldActivate}`,
+        });
+
+        if (statusChanged) {
+          const statusMessage = [
+            'Subscription status changed from PayPal webhook.',
+            `Event: ${eventType}`,
+            `Subscription ID: ${subscriptionId}`,
+            `User ID: ${afterSnapshot?.userId || beforeSnapshot?.userId || 'Unknown'}`,
+            `Email: ${afterSnapshot?.email || beforeSnapshot?.email || 'Unknown'}`,
+            `Previous status: ${previousStatus}`,
+            `Current status: ${currentStatus}`,
+            `Trial start date: ${afterSnapshot?.trialStartedAt || beforeSnapshot?.trialStartedAt || 'Not started'}`,
+            `Updated local record: ${updated}`,
+            `Simulated: ${isSimulated}`,
+          ].join('\n');
+          await notifyAdmin('Subscription status changed', statusMessage);
+        }
       }
     }
     // Process the webhook event

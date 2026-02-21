@@ -58,6 +58,7 @@ export interface UserEntitlementStatus {
 
 interface UserRecordSnapshot {
   id: string;
+  email?: string;
   subscriptionId: string | null;
   subscriptionActive: boolean;
   subscriptionStartedAt?: string;
@@ -115,7 +116,7 @@ export class EmailExistsError extends Error {
 }
 
 const USER_ENTITLEMENT_PROJECTION =
-  'ID, SubscriptionId, SubscriptionActive, SubscriptionStartedAt, TrialStartedAt, TrialEndsAt, TrialDownloadLimit, TrialDownloadsUsed, TrialDownloadedDesignIds';
+  'ID, Email, SubscriptionId, SubscriptionActive, SubscriptionStartedAt, TrialStartedAt, TrialEndsAt, TrialDownloadLimit, TrialDownloadsUsed, TrialDownloadedDesignIds';
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -159,6 +160,7 @@ function parseUserRecord(item: Record<string, AttributeValue> | undefined): User
 
   return {
     id: item.ID.S,
+    email: item.Email?.S?.trim() || undefined,
     subscriptionId: item.SubscriptionId?.S?.trim() || null,
     subscriptionActive: item.SubscriptionActive?.BOOL === true,
     subscriptionStartedAt: item.SubscriptionStartedAt?.S?.trim() || undefined,
@@ -743,6 +745,83 @@ export interface StartTrialResult {
   entitlement: UserEntitlementStatus | null;
 }
 
+export interface SubscriptionUserSnapshot {
+  userId: string;
+  email?: string;
+  subscriptionId: string;
+  subscriptionActive: boolean;
+  subscriptionStartedAt?: string;
+  trialStartedAt?: string;
+}
+
+function parseSubscriptionUserSnapshot(
+  item: Record<string, AttributeValue> | undefined,
+): SubscriptionUserSnapshot | null {
+  if (!item) {
+    return null;
+  }
+
+  const userId = item?.ID?.S?.trim();
+  const subscriptionId = item?.SubscriptionId?.S?.trim();
+  if (!userId || !subscriptionId) {
+    return null;
+  }
+
+  return {
+    userId,
+    email: item.Email?.S?.trim() || undefined,
+    subscriptionId,
+    subscriptionActive: item.SubscriptionActive?.BOOL === true,
+    subscriptionStartedAt: item.SubscriptionStartedAt?.S?.trim() || undefined,
+    trialStartedAt: item.TrialStartedAt?.S?.trim() || undefined,
+  };
+}
+
+export async function getSubscriptionUserSnapshotBySubscriptionId(
+  subscriptionId: string,
+): Promise<SubscriptionUserSnapshot | null> {
+  if (!USERS_TABLE_NAME) {
+    console.warn('DDB_USERS_TABLE not set; cannot resolve subscription state');
+    return null;
+  }
+
+  const normalizedSubscriptionId = subscriptionId.trim();
+  if (!normalizedSubscriptionId) return null;
+
+  const scanParams: ScanCommandInput = {
+    TableName: USERS_TABLE_NAME,
+    FilterExpression: '#subscriptionId = :subscriptionId',
+    ExpressionAttributeNames: { '#subscriptionId': 'SubscriptionId' },
+    ExpressionAttributeValues: { ':subscriptionId': { S: normalizedSubscriptionId } },
+    ProjectionExpression:
+      'ID, Email, SubscriptionId, SubscriptionActive, SubscriptionStartedAt, TrialStartedAt',
+    ConsistentRead: true,
+    Limit: 100,
+  };
+
+  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+
+  do {
+    const { Items, LastEvaluatedKey } = await client.send(
+      new ScanCommand({
+        ...scanParams,
+        ExclusiveStartKey: lastEvaluatedKey,
+      }),
+    );
+
+    const parsed = Items?.map((item) => parseSubscriptionUserSnapshot(item)).find(
+      (value): value is SubscriptionUserSnapshot => Boolean(value),
+    );
+    if (parsed) {
+      return parsed;
+    }
+
+    lastEvaluatedKey = LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  return null;
+}
+
 export async function startTrialForEmail(
   input: StartTrialInput,
 ): Promise<StartTrialResult> {
@@ -893,42 +972,16 @@ export async function setSubscriptionActiveBySubscriptionId(
   const normalizedSubscriptionId = subscriptionId.trim();
   if (!normalizedSubscriptionId) return false;
 
-  const scanParams: ScanCommandInput = {
-    TableName: USERS_TABLE_NAME,
-    FilterExpression: '#subscriptionId = :subscriptionId',
-    ExpressionAttributeNames: { '#subscriptionId': 'SubscriptionId' },
-    ExpressionAttributeValues: { ':subscriptionId': { S: normalizedSubscriptionId } },
-    ProjectionExpression: 'ID',
-    Limit: 100,
-  };
-
-  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
-  let userId: string | undefined;
-
-  do {
-    const { Items, LastEvaluatedKey } = await client.send(
-      new ScanCommand({
-        ...scanParams,
-        ExclusiveStartKey: lastEvaluatedKey,
-      }),
-    );
-
-    const match = Items?.find((item) => item?.ID?.S);
-    if (match?.ID?.S) {
-      userId = match.ID.S;
-      break;
-    }
-
-    lastEvaluatedKey = LastEvaluatedKey;
-  } while (lastEvaluatedKey);
-
-  if (!userId) return false;
+  const user = await getSubscriptionUserSnapshotBySubscriptionId(
+    normalizedSubscriptionId,
+  );
+  if (!user?.userId) return false;
 
   const now = new Date().toISOString();
   await client.send(
     new UpdateItemCommand({
       TableName: USERS_TABLE_NAME,
-      Key: { ID: { S: userId } },
+      Key: { ID: { S: user.userId } },
       UpdateExpression:
         'SET SubscriptionActive = :active, SubscriptionStatusUpdatedAt = :updatedAt',
       ExpressionAttributeValues: {
