@@ -62,6 +62,20 @@ interface RegisterFormProps {
   sourceInfo?: RegistrationSourceInfo | null;
 }
 
+interface EngagementSnapshot {
+  timeOnPageMs: number;
+  mouseMoves: number;
+  pointerDowns: number;
+  clicks: number;
+  keyDowns: number;
+  touchStarts: number;
+  interactionEvents: number;
+  maxScrollDepthPct: number;
+  webdriver: boolean;
+}
+
+type HumanLikelihood = 'LIKELY_HUMAN' | 'LIKELY_BOT' | 'UNKNOWN';
+
 const DEFAULT_TRIAL_DURATION_DAYS = 30;
 const DEFAULT_MONTHLY_PLAN_ID = 'P-4JN53753JF067172ANGILEGY';
 const DEFAULT_YEARLY_PLAN_ID = 'P-4R88162396385170BNGILF7Y';
@@ -194,6 +208,67 @@ function describeArrivalSource(): { label: string; referrerUrl?: string } {
   }
 }
 
+function classifyHumanLikelihood(snapshot: EngagementSnapshot): {
+  likelihood: HumanLikelihood;
+  score: number;
+  reasons: string[];
+} {
+  let score = 0;
+  const reasons: string[] = [];
+
+  if (snapshot.webdriver) {
+    score -= 4;
+    reasons.push('navigator.webdriver=true');
+  }
+
+  if (snapshot.timeOnPageMs >= 15000) {
+    score += 2;
+    reasons.push('time_on_page>=15s');
+  } else if (snapshot.timeOnPageMs < 2000) {
+    score -= 1;
+    reasons.push('time_on_page<2s');
+  }
+
+  if (snapshot.pointerDowns > 0) {
+    score += 2;
+    reasons.push('pointer_down');
+  }
+  if (snapshot.clicks > 0) {
+    score += 2;
+    reasons.push('click');
+  }
+  if (snapshot.mouseMoves >= 4) {
+    score += 1;
+    reasons.push('mouse_moves>=4');
+  }
+  if (snapshot.keyDowns > 0) {
+    score += 1;
+    reasons.push('key_down');
+  }
+  if (snapshot.touchStarts > 0) {
+    score += 1;
+    reasons.push('touch_start');
+  }
+  if (snapshot.maxScrollDepthPct >= 15) {
+    score += 1;
+    reasons.push('scroll>=15%');
+  }
+
+  if (snapshot.interactionEvents === 0) {
+    score -= 2;
+    reasons.push('no_interactions');
+  }
+
+  let likelihood: HumanLikelihood = 'UNKNOWN';
+  if (score >= 3) {
+    likelihood = 'LIKELY_HUMAN';
+  } else if (score <= -2) {
+    likelihood = 'LIKELY_BOT';
+  }
+
+  return { likelihood, score, reasons };
+}
+
 export function RegisterForm({
   isOpen,
   onClose,
@@ -219,6 +294,53 @@ export function RegisterForm({
   const [subscriptionStatus, setSubscriptionStatus] =
     useState<SubscriptionStatusResponse | null>(null);
   const hasSentOpenNotificationRef = useRef(false);
+  const engagementRef = useRef({
+    mountedAtMs: 0,
+    mouseMoves: 0,
+    pointerDowns: 0,
+    clicks: 0,
+    keyDowns: 0,
+    touchStarts: 0,
+    maxScrollDepthPct: 0,
+  });
+
+  const getEngagementSnapshot = useCallback((): EngagementSnapshot => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return {
+        timeOnPageMs: 0,
+        mouseMoves: 0,
+        pointerDowns: 0,
+        clicks: 0,
+        keyDowns: 0,
+        touchStarts: 0,
+        interactionEvents: 0,
+        maxScrollDepthPct: 0,
+        webdriver: false,
+      };
+    }
+
+    const now = Date.now();
+    const mountedAtMs = engagementRef.current.mountedAtMs || now;
+    const timeOnPageMs = Math.max(0, now - mountedAtMs);
+    const interactionEvents =
+      engagementRef.current.mouseMoves +
+      engagementRef.current.pointerDowns +
+      engagementRef.current.clicks +
+      engagementRef.current.keyDowns +
+      engagementRef.current.touchStarts;
+
+    return {
+      timeOnPageMs,
+      mouseMoves: engagementRef.current.mouseMoves,
+      pointerDowns: engagementRef.current.pointerDowns,
+      clicks: engagementRef.current.clicks,
+      keyDowns: engagementRef.current.keyDowns,
+      touchStarts: engagementRef.current.touchStarts,
+      interactionEvents,
+      maxScrollDepthPct: engagementRef.current.maxScrollDepthPct,
+      webdriver: typeof navigator !== 'undefined' && navigator.webdriver === true,
+    };
+  }, []);
 
   const isValidEmail = (email: string): boolean =>
     email.includes('@') && email.includes('.');
@@ -307,6 +429,70 @@ export function RegisterForm({
   }, [isOpen, isLoggedIn, normalizedCurrentEmail]);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
+    if (!engagementRef.current.mountedAtMs) {
+      engagementRef.current.mountedAtMs = Date.now();
+    }
+
+    const clampCounter = (current: number): number => Math.min(current + 1, 5000);
+
+    const updateScrollDepth = (): void => {
+      const doc = document.documentElement;
+      const scrollable = Math.max(1, doc.scrollHeight - window.innerHeight);
+      const scrolled = Math.max(0, window.scrollY || window.pageYOffset || 0);
+      const pct = Math.max(
+        0,
+        Math.min(100, Math.round((scrolled / scrollable) * 100)),
+      );
+      engagementRef.current.maxScrollDepthPct = Math.max(
+        engagementRef.current.maxScrollDepthPct,
+        pct,
+      );
+    };
+
+    const onMouseMove = (): void => {
+      engagementRef.current.mouseMoves = clampCounter(engagementRef.current.mouseMoves);
+    };
+    const onPointerDown = (): void => {
+      engagementRef.current.pointerDowns = clampCounter(
+        engagementRef.current.pointerDowns,
+      );
+    };
+    const onClick = (): void => {
+      engagementRef.current.clicks = clampCounter(engagementRef.current.clicks);
+    };
+    const onKeyDown = (): void => {
+      engagementRef.current.keyDowns = clampCounter(engagementRef.current.keyDowns);
+    };
+    const onTouchStart = (): void => {
+      engagementRef.current.touchStarts = clampCounter(
+        engagementRef.current.touchStarts,
+      );
+    };
+
+    updateScrollDepth();
+
+    window.addEventListener('scroll', updateScrollDepth, { passive: true });
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    window.addEventListener('click', onClick, { passive: true });
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', updateScrollDepth);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('click', onClick);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('touchstart', onTouchStart);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isOpen) return;
 
     const fetchPlans = async (): Promise<void> => {
@@ -368,12 +554,23 @@ export function RegisterForm({
         const openTrigger = escapeHtml(describeOpenTrigger(resolvedSource?.source));
         const arrival = describeArrivalSource();
         const arrivalLabel = escapeHtml(arrival.label);
+        const engagement = getEngagementSnapshot();
+        const classified = classifyHumanLikelihood(engagement);
         const now = new Date().toISOString();
         const detailRows = [
           `<p><strong>Form opened from:</strong> ${openTrigger}</p>`,
           `<p><strong>Arrival source:</strong> ${arrivalLabel}</p>`,
+          `<p><strong>Human likelihood:</strong> ${classified.likelihood} (score ${classified.score})</p>`,
           `<p><strong>Time (UTC):</strong> ${now}</p>`,
         ];
+        detailRows.push(
+          `<p><strong>Engagement:</strong> time_on_page=${engagement.timeOnPageMs}ms; clicks=${engagement.clicks}; pointer_downs=${engagement.pointerDowns}; mouse_moves=${engagement.mouseMoves}; key_downs=${engagement.keyDowns}; touch_starts=${engagement.touchStarts}; max_scroll=${engagement.maxScrollDepthPct}%; webdriver=${engagement.webdriver}</p>`,
+        );
+        if (classified.reasons.length > 0) {
+          detailRows.push(
+            `<p><strong>Scoring signals:</strong> ${escapeHtml(classified.reasons.join(', '))}</p>`,
+          );
+        }
         if (arrival.referrerUrl) {
           detailRows.push(
             `<p><strong>Referrer:</strong> <a href="${arrival.referrerUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(arrival.referrerUrl)}</a></p>`,
@@ -420,7 +617,7 @@ export function RegisterForm({
     };
 
     void notifyAdmin();
-  }, [isOpen, sourceInfo]);
+  }, [getEngagementSnapshot, isOpen, sourceInfo]);
 
   useEffect(() => {
     if (!isOpen) return;
