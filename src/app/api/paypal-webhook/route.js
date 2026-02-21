@@ -10,6 +10,9 @@ import {
 
 export async function POST(req) {
   try {
+    const skipSignatureVerification =
+      process.env.PAYPAL_WEBHOOK_SKIP_SIGNATURE_VERIFICATION === 'true';
+
     // Parse the incoming webhook request body
     const body = await req.json();
 
@@ -27,8 +30,11 @@ export async function POST(req) {
     const isSimulated = headers.get('user-agent') === 'PayPal/AUHD-1.0-1';
 
     console.log('isSimulated:', isSimulated);
-    // Validate environment variables
-    if (!webhookId || !process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+    // Validate environment variables (unless verification is intentionally bypassed)
+    if (
+      !skipSignatureVerification &&
+      (!webhookId || !process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET)
+    ) {
       console.error('Missing required environment variables: PAYPAL_WEBHOOK_ID, PAYPAL_CLIENT_ID, or PAYPAL_CLIENT_SECRET');
       return new Response(JSON.stringify({ error: 'Server configuration error' }), {
         status: 500,
@@ -64,7 +70,7 @@ export async function POST(req) {
     await notifyAdmin('Webhook received', bodyMessage);
 
     let verifyResponse;
-    if (!isSimulated) {
+    if (!isSimulated && !skipSignatureVerification) {
       // Obtain PayPal access token (production endpoint)
       const authResponse = await axios.post(
         'https://api-m.paypal.com/v1/oauth2/token',
@@ -128,6 +134,12 @@ export async function POST(req) {
           headers: { 'Content-Type': 'application/json' },
         });
       }
+    } else if (skipSignatureVerification) {
+      console.warn('PAYPAL_WEBHOOK_SKIP_SIGNATURE_VERIFICATION=true; signature verification is bypassed.');
+      await notifyAdmin(
+        'Webhook signature verification bypassed',
+        `Event ${body?.event_type || 'UNKNOWN'} accepted without PayPal signature verification.`,
+      );
     } else {
       console.log('Simulated event detected, skipping signature verification.');
       await notifyAdmin('Simulated Webhook Received', 'A simulated PayPal webhook event has been received for testing purposes.');
