@@ -12,6 +12,18 @@ type Props = {
 const ADSENSE_CLIENT_ID =
   process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID ?? 'ca-pub-8273546332414099';
 
+function isTrackingDisabledInBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const doNotTrack =
+    navigator.doNotTrack === '1' ||
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).doNotTrack === '1';
+  const globalPrivacyControl =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (navigator as any).globalPrivacyControl === true;
+  return doNotTrack || globalPrivacyControl;
+}
+
 export default function AdSlot({
   slot,
   className,
@@ -20,6 +32,7 @@ export default function AdSlot({
 }: Props) {
   useEffect(() => {
     if (!slot || !ADSENSE_CLIENT_ID) return;
+    if (isTrackingDisabledInBrowser()) return;
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (error) {

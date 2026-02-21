@@ -77,6 +77,12 @@ export default function EtsyUploaderPage() {
             https://cross-stitch.com/privacy-policy
           </Link>
         </p>
+        <p className="text-gray-800">
+          Terms of service:{' '}
+          <Link href="/terms" className="text-blue-600 hover:underline">
+            https://cross-stitch.com/terms
+          </Link>
+        </p>
       </section>
 
       <section className="rounded-lg border border-gray-200 bg-white p-5 space-y-3">

@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import '@/lib/global-error-handler';
 import Script from 'next/script';
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { getSiteBaseUrl } from '@/lib/url-helper';
 import { isPaidDownloadMode } from '@/lib/download-mode';
 import ClientNav from './components/ClientNav';
@@ -29,9 +30,13 @@ function stripWww(hostname: string): string {
   return hostname.replace(/^www\./i, '');
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
   const currentYear = new Date().getFullYear();
   const adsEnabled = !isPaidDownloadMode();
+  const requestHeaders = await headers();
+  const dntEnabled = requestHeaders.get('dnt') === '1';
+  const gpcEnabled = requestHeaders.get('sec-gpc') === '1';
+  const trackingDisabled = dntEnabled || gpcEnabled;
 
   const siteBaseUrl = getSiteBaseUrl();
   const siteHost = extractHostname(siteBaseUrl);
@@ -43,21 +48,25 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <meta name="p:domain_verify" content="2580531f25c20bbb5e2ac0d45872e2b0" />
 
-        {/* Google Analytics Script */}
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=G-J63NFLQTD1`}
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-J63NFLQTD1');
-          `}
-        </Script>
+        {!trackingDisabled && (
+          <>
+            {/* Google Analytics Script */}
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=G-J63NFLQTD1`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', 'G-J63NFLQTD1');
+              `}
+            </Script>
+          </>
+        )}
 
-        {adsEnabled && (
+        {!trackingDisabled && adsEnabled && (
           <Script
             src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8273546332414099"
             strategy="afterInteractive"
