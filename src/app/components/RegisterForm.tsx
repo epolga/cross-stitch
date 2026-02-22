@@ -556,12 +556,30 @@ export function RegisterForm({
         const arrivalLabel = escapeHtml(arrival.label);
         const engagement = getEngagementSnapshot();
         const classified = classifyHumanLikelihood(engagement);
-        const now = new Date().toISOString();
+        const nowDate = new Date();
+        const dateTimeFormatOptions: Intl.DateTimeFormatOptions = {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        };
+        const nowUtc = new Intl.DateTimeFormat('en-GB', {
+          ...dateTimeFormatOptions,
+          timeZone: 'UTC',
+        }).format(nowDate);
+        const nowIl = new Intl.DateTimeFormat('en-GB', {
+          ...dateTimeFormatOptions,
+          timeZone: 'Asia/Jerusalem',
+        }).format(nowDate);
         const detailRows = [
           `<p><strong>Form opened from:</strong> ${openTrigger}</p>`,
           `<p><strong>Arrival source:</strong> ${arrivalLabel}</p>`,
           `<p><strong>Human likelihood:</strong> ${classified.likelihood} (score ${classified.score})</p>`,
-          `<p><strong>Time (UTC):</strong> ${now}</p>`,
+          `<p><strong>Time (UTC):</strong> ${nowUtc}</p>`,
+          `<p><strong>Time (IL):</strong> ${nowIl}</p>`,
         ];
         detailRows.push(
           `<p><strong>Engagement:</strong> time_on_page=${engagement.timeOnPageMs}ms; clicks=${engagement.clicks}; pointer_downs=${engagement.pointerDowns}; mouse_moves=${engagement.mouseMoves}; key_downs=${engagement.keyDowns}; touch_starts=${engagement.touchStarts}; max_scroll=${engagement.maxScrollDepthPct}%; webdriver=${engagement.webdriver}</p>`,
