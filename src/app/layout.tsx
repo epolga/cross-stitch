@@ -4,7 +4,7 @@ import Script from 'next/script';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { getSiteBaseUrl } from '@/lib/url-helper';
-import { isPaidDownloadMode } from '@/lib/download-mode';
+import { resolveServerDownloadMode } from '@/lib/download-mode';
 import ClientNav from './components/ClientNav';
 import PaidModeBanner from './components/PaidModeBanner';
 import PrivacyPolicyFooterLink from './components/PrivacyPolicyFooterLink';
@@ -32,7 +32,8 @@ function stripWww(hostname: string): string {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const currentYear = new Date().getFullYear();
-  const adsEnabled = !isPaidDownloadMode();
+  const downloadMode = resolveServerDownloadMode();
+  const adsEnabled = downloadMode !== 'paid';
   const requestHeaders = await headers();
   const dntEnabled = requestHeaders.get('dnt') === '1';
   const gpcEnabled = requestHeaders.get('sec-gpc') === '1';
@@ -77,7 +78,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
       <body className={`min-h-screen flex flex-col bg-white text-black ${adsEnabled ? 'ads-enabled' : ''}`}>
         <ClientNav />
-        {!adsEnabled && <PaidModeBanner />}
+        {(downloadMode === 'paid' || downloadMode === 'register') && (
+          <PaidModeBanner mode={downloadMode} />
+        )}
         <main className="flex-grow">{children}</main>
 
         <footer
