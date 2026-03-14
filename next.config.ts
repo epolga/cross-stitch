@@ -5,6 +5,7 @@ const nextConfig = {
   /*output: "standalone",*/
   productionBrowserSourceMaps: false,
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',

@@ -33,7 +33,11 @@ export async function POST(req: Request): Promise<Response> {
     }
 
     return NextResponse.json(
-      { success: true, email: verifiedUser.email ?? '' },
+      {
+        success: true,
+        email: verifiedUser.email ?? '',
+        firstName: verifiedUser.firstName ?? '',
+      },
       { status: 200 },
     );
   } catch (error) {

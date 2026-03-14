@@ -6,6 +6,44 @@ import { RegisterOnlyDialog } from './RegisterOnlyDialog';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { RegistrationSourceInfo } from '@/app/types/registration';
 
+const USER_FIRST_NAME_STORAGE_KEY = 'userFirstName';
+
+const normalizeStoredFirstName = (value: string | undefined): string => {
+  const trimmed = (value || '').trim();
+  return trimmed;
+};
+
+const persistStoredFirstName = (value: string | undefined): string => {
+  const normalized = normalizeStoredFirstName(value);
+  if (typeof window === 'undefined') {
+    return normalized;
+  }
+
+  if (normalized) {
+    localStorage.setItem(USER_FIRST_NAME_STORAGE_KEY, normalized);
+  } else {
+    localStorage.removeItem(USER_FIRST_NAME_STORAGE_KEY);
+  }
+
+  return normalized;
+};
+
+const readStoredFirstName = (): string => {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return '';
+  }
+
+  return normalizeStoredFirstName(localStorage.getItem(USER_FIRST_NAME_STORAGE_KEY) || '');
+};
+
+const normalizeInternalReturnPath = (value: string | undefined): string | null => {
+  const trimmed = (value || '').trim();
+  if (!trimmed || !trimmed.startsWith('/') || trimmed.startsWith('//')) {
+    return null;
+  }
+  return trimmed;
+};
+
 // Utility function to check login status globally
 export const isUserLoggedIn = (): boolean => {
   if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -42,12 +80,13 @@ function AutoLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
             body: JSON.stringify({ eid, cid }),
           });
 
-          const data: { success?: boolean; email?: string } = await response.json();
+          const data: { success?: boolean; email?: string; firstName?: string } = await response.json();
 
           if (response.ok && data.success) {
             if (typeof window !== 'undefined') {
               localStorage.setItem('isLoggedIn', 'true');
               localStorage.setItem('userEmail', data.email ?? '');
+              persistStoredFirstName(data.firstName);
             }
             onLoginSuccess();
             dispatchAuthStateChange();
@@ -109,6 +148,7 @@ export const fetchRuntimeDownloadMode = async (): Promise<DownloadMode> => {
 export function AuthControl() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentEmail, setCurrentEmail] = useState('');
+  const [currentFirstName, setCurrentFirstName] = useState('');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false); // RegisterForm (PayPal)
   const [isRegisterOnlyOpen, setIsRegisterOnlyOpen] = useState(false); // RegisterOnlyDialog
@@ -155,6 +195,7 @@ export function AuthControl() {
     setIsLoggedIn(loggedIn);
     if (typeof window !== 'undefined') {
       setCurrentEmail((localStorage.getItem('userEmail') || '').trim().toLowerCase());
+      setCurrentFirstName(readStoredFirstName());
     }
     console.log('AuthControl component mounted, isLoggedIn from storage:', loggedIn);
   }, []);
@@ -274,6 +315,24 @@ export function AuthControl() {
     setForgotEmail('');
   };
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleOpenLoginModal = () => {
+      setIsLoginModalOpen(true);
+      setIsRegisterModalOpen(false);
+      closeRegisterOnly();
+      setRegistrationSource(null);
+      setErrorMessage('');
+      setForgotMessage('');
+      setIsForgotMode(false);
+      setForgotEmail('');
+    };
+
+    window.addEventListener('openLoginModal', handleOpenLoginModal);
+    return () => window.removeEventListener('openLoginModal', handleOpenLoginModal);
+  }, []);
+
   const handleLoginSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     console.log('Form submitted, starting login process');
@@ -292,16 +351,19 @@ export function AuthControl() {
         body: JSON.stringify({ email: loginUsername, password: loginPassword }),
       });
 
-      const data: { success?: boolean; error?: string } = await response.json();
+      const data: { success?: boolean; error?: string; email?: string; firstName?: string } = await response.json();
       console.log('API response:', data);
 
       if (response.ok && data.success) {
         console.log('Login successful:', { username: loginUsername });
+        const normalizedEmail = (data.email || loginUsername).trim().toLowerCase();
+        const firstName = persistStoredFirstName(data.firstName);
         if (typeof window !== 'undefined') {
           localStorage.setItem('isLoggedIn', 'true');
-          localStorage.setItem('userEmail', loginUsername);
+          localStorage.setItem('userEmail', normalizedEmail);
         }
-        setCurrentEmail(loginUsername.trim().toLowerCase());
+        setCurrentEmail(normalizedEmail);
+        setCurrentFirstName(firstName);
         setIsLoggedIn(true);
         setIsLoginModalOpen(false);
         setLoginUsername('');
@@ -370,8 +432,10 @@ export function AuthControl() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('isLoggedIn');
       localStorage.removeItem('userEmail');
+      localStorage.removeItem(USER_FIRST_NAME_STORAGE_KEY);
     }
     setCurrentEmail('');
+    setCurrentFirstName('');
     setIsLoggedIn(false);
     dispatchAuthStateChange();
   };
@@ -418,12 +482,20 @@ export function AuthControl() {
   };
 
   const handlePaidModalSuccess = (): void => {
+    const returnPath = normalizeInternalReturnPath(registrationSource?.returnPath);
+
     setIsRegisterModalOpen(false);
     setRegistrationSource(null);
     if (typeof window !== 'undefined') {
       const loggedIn = isUserLoggedIn();
       setIsLoggedIn(loggedIn);
       setCurrentEmail((localStorage.getItem('userEmail') || '').trim().toLowerCase());
+      setCurrentFirstName(readStoredFirstName());
+      const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+      if (returnPath && currentPath !== returnPath) {
+        window.location.assign(returnPath);
+      }
     }
   };
 
@@ -431,6 +503,7 @@ export function AuthControl() {
     setIsLoggedIn(true);
     if (typeof window !== 'undefined') {
       setCurrentEmail((localStorage.getItem('userEmail') || '').trim().toLowerCase());
+      setCurrentFirstName(readStoredFirstName());
     }
   };
 
@@ -482,13 +555,24 @@ export function AuthControl() {
       )}
 
       {isLoggedIn ? (
-        <button
-          onClick={handleLogout}
-          className="text-gray-700 hover:text-gray-900 text-xl cursor-pointer pointer-events-auto"
-          aria-label="Logout"
-        >
-          Logout
-        </button>
+        <>
+          {currentFirstName && (
+            <span
+              className="-ml-2 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-base font-semibold italic text-amber-900 shadow-sm md:-ml-3 md:text-lg"
+              aria-label={`Logged in as ${currentFirstName}`}
+            >
+              {`Hi ${currentFirstName}!`}
+            </span>
+          )}
+          {currentFirstName && <span className="text-gray-400 text-lg">|</span>}
+          <button
+            onClick={handleLogout}
+            className="text-gray-700 hover:text-gray-900 text-xl cursor-pointer pointer-events-auto"
+            aria-label="Logout"
+          >
+            Logout
+          </button>
+        </>
       ) : (
         <>
           <button

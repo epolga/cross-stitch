@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
-import type { RegistrationSourceInfo } from '@/app/types/registration';
+import type {
+  PreferredSubscriptionPlan,
+  RegistrationSourceInfo,
+} from '@/app/types/registration';
 
 interface PayPalData {
   subscriptionID?: string | null;
@@ -60,6 +63,8 @@ interface RegisterFormProps {
   isLoggedIn?: boolean;
   currentEmail?: string;
   sourceInfo?: RegistrationSourceInfo | null;
+  displayMode?: 'modal' | 'inline';
+  hideLoginPrompt?: boolean;
 }
 
 interface EngagementSnapshot {
@@ -79,6 +84,31 @@ type HumanLikelihood = 'LIKELY_HUMAN' | 'LIKELY_BOT' | 'UNKNOWN';
 const DEFAULT_TRIAL_DURATION_DAYS = 30;
 const DEFAULT_MONTHLY_PLAN_ID = 'P-4JN53753JF067172ANGILEGY';
 const DEFAULT_YEARLY_PLAN_ID = 'P-4R88162396385170BNGILF7Y';
+
+function normalizePreferredPlan(
+  value: PreferredSubscriptionPlan | undefined,
+): PreferredSubscriptionPlan {
+  return value === 'yearly' ? 'yearly' : 'monthly';
+}
+
+function buildDefaultPlans(): SubscriptionPlan[] {
+  return [
+    {
+      id: DEFAULT_MONTHLY_PLAN_ID,
+      name: 'Monthly Plan',
+      price: '$4.50 / month',
+      interval: 'Monthly',
+      recommended: true,
+    },
+    {
+      id: DEFAULT_YEARLY_PLAN_ID,
+      name: 'Yearly Plan',
+      price: '$27 / year',
+      interval: 'Yearly',
+      recommended: false,
+    },
+  ];
+}
 
 function escapeHtml(value: string | undefined): string {
   const raw = value || '';
@@ -277,6 +307,8 @@ export function RegisterForm({
   isLoggedIn = false,
   currentEmail = '',
   sourceInfo = null,
+  displayMode = 'modal',
+  hideLoginPrompt = false,
 }: RegisterFormProps) {
   const [registerEmail, setRegisterEmail] = useState('');
   const [confirmEmail, setConfirmEmail] = useState('');
@@ -287,8 +319,11 @@ export function RegisterForm({
   const [errorMessage, setErrorMessage] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
 
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const initialPreferredPlan = normalizePreferredPlan(sourceInfo?.preferredPlan);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>(() => buildDefaultPlans());
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(() =>
+    initialPreferredPlan === 'yearly' ? DEFAULT_YEARLY_PLAN_ID : DEFAULT_MONTHLY_PLAN_ID,
+  );
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] =
@@ -392,11 +427,25 @@ export function RegisterForm({
     window.dispatchEvent(new Event('authStateChange'));
   }, []);
 
+  const markPendingAccessGranted = useCallback((): void => {
+    if (typeof window === 'undefined') return;
+    const pendingDownload = localStorage.getItem('pendingDownload');
+    if (pendingDownload) {
+      localStorage.setItem('pendingPaidAccessGranted', 'true');
+    }
+  }, []);
+
   const persistLogin = useCallback((email: string): void => {
     if (typeof window === 'undefined') return;
     const normalized = email.trim().toLowerCase();
+    const normalizedFirstName = normalized.split('@')[0]?.trim() || '';
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('userEmail', normalized);
+    if (normalizedFirstName) {
+      localStorage.setItem('userFirstName', normalizedFirstName);
+    } else {
+      localStorage.removeItem('userFirstName');
+    }
     dispatchAuthStateChange();
   }, [dispatchAuthStateChange]);
 
@@ -496,6 +545,8 @@ export function RegisterForm({
     if (!isOpen) return;
 
     const fetchPlans = async (): Promise<void> => {
+      const preferredPlan = normalizePreferredPlan(sourceInfo?.preferredPlan);
+
       try {
         const response = await fetch('/api/subscription/plan', { method: 'POST' });
         const data = (await response.json().catch(() => null)) as
@@ -525,7 +576,9 @@ export function RegisterForm({
         ];
 
         setPlans(fetchedPlans);
-        setSelectedPlanId((prev) => prev || fetchedPlans[0]?.id || null);
+        const preferredPlanId =
+          preferredPlan === 'yearly' ? fetchedPlans[1]?.id : fetchedPlans[0]?.id;
+        setSelectedPlanId(preferredPlanId || fetchedPlans[0]?.id || null);
       } catch (error) {
         console.error('Error fetching plans:', error);
         setErrorMessage('Error loading payment plans. Please try again.');
@@ -533,7 +586,7 @@ export function RegisterForm({
     };
 
     void fetchPlans();
-  }, [isOpen]);
+  }, [isOpen, sourceInfo?.preferredPlan]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -738,13 +791,7 @@ export function RegisterForm({
         return;
       }
 
-      if (typeof window !== 'undefined') {
-        const pendingDownload = localStorage.getItem('pendingDownload');
-        if (pendingDownload) {
-          localStorage.setItem('pendingPaidAccessGranted', 'true');
-        }
-      }
-
+      markPendingAccessGranted();
       persistLogin(effectiveEmail);
       resetFormState();
       onRegisterSuccess();
@@ -801,12 +848,14 @@ export function RegisterForm({
       }
 
       if (result?.outcome === 'SUBSCRIPTION_ACTIVE') {
+        markPendingAccessGranted();
         persistLogin(effectiveEmail);
         setInfoMessage('Subscription active. You have unlimited downloads.');
         onRegisterSuccess();
         return;
       }
 
+      markPendingAccessGranted();
       persistLogin(effectiveEmail);
 
       const days = result?.trial?.durationDays ?? DEFAULT_TRIAL_DURATION_DAYS;
@@ -824,6 +873,7 @@ export function RegisterForm({
     isLoggedIn,
     isFormValid,
     onRegisterSuccess,
+    markPendingAccessGranted,
     persistLogin,
     receiveUpdates,
     registerPassword,
@@ -877,6 +927,262 @@ export function RegisterForm({
 
   if (!isOpen) return null;
   const trialDays = trialStatus?.durationDays ?? DEFAULT_TRIAL_DURATION_DAYS;
+  const TitleTag = displayMode === 'inline' ? 'h1' : 'h2';
+  const panelContent = (
+    <div
+      className={
+        displayMode === 'inline'
+          ? 'w-full max-w-3xl rounded-3xl border border-amber-200 bg-white p-6 shadow-sm sm:p-8'
+          : 'bg-white p-8 rounded-lg shadow-md w-full max-w-lg max-h-[90vh] overflow-y-auto'
+      }
+    >
+      <div className="flex justify-between items-center mb-4">
+        <TitleTag className="text-2xl font-bold text-gray-900">Download Access</TitleTag>
+        {displayMode === 'modal' && (
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 text-xl"
+            aria-label="Close modal"
+          >
+            x
+          </button>
+        )}
+      </div>
+
+      <p className="text-sm text-gray-700 mb-4">
+        Start for free today (no charge today).
+        You get unlimited downloads for {trialDays} days.
+      </p>
+
+      {isLoggedIn && normalizedCurrentEmail && (
+        <p className="text-sm text-gray-700 mb-4">
+          Logged in as <span className="font-medium">{normalizedCurrentEmail}</span>
+        </p>
+      )}
+
+      {!isLoggedIn && (
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="register-email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              id="register-email"
+              type="email"
+              value={registerEmail}
+              onChange={(e) => handleEmailChange(e.target.value)}
+              className="mt-1 w-full p-2 border border-gray-300 rounded-md"
+              placeholder="Enter your email"
+              aria-label="Email"
+              disabled={isProcessing}
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="confirm-email" className="block text-sm font-medium text-gray-700">
+              Confirm Email
+            </label>
+            <input
+              id="confirm-email"
+              type="email"
+              value={confirmEmail}
+              onChange={(e) => handleConfirmEmailChange(e.target.value)}
+              className="mt-1 w-full p-2 border border-gray-300 rounded-md"
+              placeholder="Confirm your email"
+              aria-label="Confirm Email"
+              disabled={isProcessing}
+              required
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="register-password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Password
+            </label>
+            <input
+              id="register-password"
+              type="password"
+              value={registerPassword}
+              onChange={(e) => handlePasswordChange(e.target.value)}
+              className="mt-1 w-full p-2 border border-gray-300 rounded-md"
+              placeholder="Enter your password"
+              aria-label="Password"
+              disabled={isProcessing}
+              required
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="confirm-password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Confirm Password
+            </label>
+            <input
+              id="confirm-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => handleConfirmPasswordChange(e.target.value)}
+              className="mt-1 w-full p-2 border border-gray-300 rounded-md"
+              placeholder="Confirm your password"
+              aria-label="Confirm Password"
+              disabled={isProcessing}
+              required
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center mt-4">
+        <input
+          id="receive-updates"
+          type="checkbox"
+          checked={receiveUpdates}
+          onChange={(e) => setReceiveUpdates(e.target.checked)}
+          className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+          disabled={isProcessing}
+        />
+        <label htmlFor="receive-updates" className="ml-2 block text-sm text-gray-700">
+          Send me updates on new designs
+        </label>
+      </div>
+
+      {isCheckingSubscription && isValidEmail(effectiveEmail) && (
+        <p className="text-gray-600 text-sm text-center mt-4" role="status">
+          Checking subscription status...
+        </p>
+      )}
+
+      {hasActiveSubscription && (
+        <p className="text-green-700 text-sm text-center mt-4" role="status">
+          Subscription active. You have unlimited downloads.
+        </p>
+      )}
+
+      {!hasActiveSubscription && trialStatus?.status === 'ACTIVE' && (
+        <p className="text-blue-700 text-sm text-center mt-4" role="status">
+          Trial active.
+        </p>
+      )}
+
+      {!hasActiveSubscription && trialStatus?.status === 'EXPIRED' && (
+        <p className="text-amber-700 text-sm text-center mt-4" role="status">
+          Trial expired. Subscribe for unlimited access.
+        </p>
+      )}
+
+      {!hasActiveSubscription && subscriptionStatus?.status === 'INACTIVE_RECORDED' && (
+        <p className="text-amber-700 text-sm text-center mt-4" role="status">
+          Subscription expired. Renew to continue.
+        </p>
+      )}
+
+      {errorMessage && (
+        <p className="text-red-500 text-sm text-center mt-4" role="alert">
+          {errorMessage}
+        </p>
+      )}
+
+      {infoMessage && (
+        <p className="text-green-700 text-sm text-center mt-4" role="status">
+          {infoMessage}
+        </p>
+      )}
+
+      {!hasActiveSubscription && canStartTrial && (
+        <button
+          type="button"
+          onClick={() => {
+            void handleStartTrial();
+          }}
+          disabled={isProcessing || isCheckingSubscription || !isFormValid}
+          className="mt-5 w-full rounded-md bg-gray-700 px-3 py-2 text-white hover:bg-gray-800 disabled:opacity-50"
+        >
+          Start for Free
+        </button>
+      )}
+
+      {!hasActiveSubscription && (
+        <div className="mt-6">
+          <h3 className="text-lg font-medium text-gray-700 mb-2">Choose a Subscription Plan</h3>
+          <p className="text-sm text-gray-600 mb-3">
+            Both plans begin with a free {trialDays}-day trial.
+          </p>
+          {plans.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {plans.map((plan) => (
+                <div
+                  key={plan.id}
+                  className={`relative p-4 border rounded-lg cursor-pointer transition-all ${
+                    selectedPlanId === plan.id
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 hover:border-gray-400'
+                  } ${plan.recommended ? 'border-2 border-blue-500' : ''}`}
+                  onClick={() => setSelectedPlanId(plan.id)}
+                >
+                  {plan.recommended && (
+                    <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                      Recommended
+                    </span>
+                  )}
+                  <h4 className="text-lg font-semibold">{plan.name}</h4>
+                  <p className="text-xl font-bold text-gray-900">{plan.price}</p>
+                  <p className="text-sm text-gray-600">Billed {plan.interval}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600 text-sm text-center">Loading payment plans...</p>
+          )}
+        </div>
+      )}
+
+      {!hasActiveSubscription && !hasPayPalClientId && (
+        <p className="text-red-500 text-sm text-center mt-4" role="alert">
+          Payment configuration error: missing NEXT_PUBLIC_PAYPAL_CLIENT_ID.
+        </p>
+      )}
+
+      {selectedPlanId &&
+        isFormValid &&
+        !hasActiveSubscription &&
+        !isCheckingSubscription &&
+        hasPayPalClientId && (
+          <div className="mt-4">
+            <PayPalButtons
+              createSubscription={handlePayPalSubscription}
+              onApprove={handlePayPalApprove}
+              onError={(error) => {
+                console.error('PayPal error:', error);
+                setErrorMessage('Failed to process payment. Please try again.');
+                setIsProcessing(false);
+              }}
+              style={{ layout: 'vertical' }}
+              disabled={isProcessing}
+            />
+          </div>
+        )}
+
+      {!isLoggedIn && !hideLoginPrompt && (
+        <p className="mt-4 text-center text-sm text-gray-600">
+          Already have an account?{' '}
+          <button
+            onClick={onLoginClick}
+            className="px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm"
+            aria-label="Login"
+            disabled={isProcessing}
+          >
+            Login
+          </button>
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <PayPalScriptProvider
@@ -886,256 +1192,16 @@ export function RegisterForm({
         intent: 'subscription',
       }}
     >
-      <div
-        className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50"
-        style={{ backgroundColor: 'rgba(17, 24, 39, 0.5)' }}
-      >
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">Download Access</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-xl"
-              aria-label="Close modal"
-            >
-              x
-            </button>
-          </div>
-
-          <p className="text-sm text-gray-700 mb-4">
-            Start for free today (no charge today).
-            You get unlimited downloads for {trialDays} days.
-          </p>
-
-          {isLoggedIn && normalizedCurrentEmail && (
-            <p className="text-sm text-gray-700 mb-4">
-              Logged in as <span className="font-medium">{normalizedCurrentEmail}</span>
-            </p>
-          )}
-
-          {!isLoggedIn && (
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="register-email" className="block text-sm font-medium text-gray-700">
-                  Email
-                </label>
-                <input
-                  id="register-email"
-                  type="email"
-                  value={registerEmail}
-                  onChange={(e) => handleEmailChange(e.target.value)}
-                  className="mt-1 w-full p-2 border border-gray-300 rounded-md"
-                  placeholder="Enter your email"
-                  aria-label="Email"
-                  disabled={isProcessing}
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="confirm-email" className="block text-sm font-medium text-gray-700">
-                  Confirm Email
-                </label>
-                <input
-                  id="confirm-email"
-                  type="email"
-                  value={confirmEmail}
-                  onChange={(e) => handleConfirmEmailChange(e.target.value)}
-                  className="mt-1 w-full p-2 border border-gray-300 rounded-md"
-                  placeholder="Confirm your email"
-                  aria-label="Confirm Email"
-                  disabled={isProcessing}
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="register-password"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Password
-                </label>
-                <input
-                  id="register-password"
-                  type="password"
-                  value={registerPassword}
-                  onChange={(e) => handlePasswordChange(e.target.value)}
-                  className="mt-1 w-full p-2 border border-gray-300 rounded-md"
-                  placeholder="Enter your password"
-                  aria-label="Password"
-                  disabled={isProcessing}
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="confirm-password"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Confirm Password
-                </label>
-                <input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => handleConfirmPasswordChange(e.target.value)}
-                  className="mt-1 w-full p-2 border border-gray-300 rounded-md"
-                  placeholder="Confirm your password"
-                  aria-label="Confirm Password"
-                  disabled={isProcessing}
-                  required
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center mt-4">
-            <input
-              id="receive-updates"
-              type="checkbox"
-              checked={receiveUpdates}
-              onChange={(e) => setReceiveUpdates(e.target.checked)}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-              disabled={isProcessing}
-            />
-            <label htmlFor="receive-updates" className="ml-2 block text-sm text-gray-700">
-              Send me updates on new designs
-            </label>
-          </div>
-
-          {isCheckingSubscription && isValidEmail(effectiveEmail) && (
-            <p className="text-gray-600 text-sm text-center mt-4" role="status">
-              Checking subscription status...
-            </p>
-          )}
-
-          {hasActiveSubscription && (
-            <p className="text-green-700 text-sm text-center mt-4" role="status">
-              Subscription active. You have unlimited downloads.
-            </p>
-          )}
-
-          {!hasActiveSubscription && trialStatus?.status === 'ACTIVE' && (
-            <p className="text-blue-700 text-sm text-center mt-4" role="status">
-              Trial active.
-            </p>
-          )}
-
-          {!hasActiveSubscription && trialStatus?.status === 'EXPIRED' && (
-            <p className="text-amber-700 text-sm text-center mt-4" role="status">
-              Trial expired. Subscribe for unlimited access.
-            </p>
-          )}
-
-          {!hasActiveSubscription && subscriptionStatus?.status === 'INACTIVE_RECORDED' && (
-            <p className="text-amber-700 text-sm text-center mt-4" role="status">
-              Subscription expired. Renew to continue.
-            </p>
-          )}
-
-          {errorMessage && (
-            <p className="text-red-500 text-sm text-center mt-4" role="alert">
-              {errorMessage}
-            </p>
-          )}
-
-          {infoMessage && (
-            <p className="text-green-700 text-sm text-center mt-4" role="status">
-              {infoMessage}
-            </p>
-          )}
-
-          {!hasActiveSubscription && canStartTrial && (
-            <button
-              type="button"
-              onClick={() => {
-                void handleStartTrial();
-              }}
-              disabled={isProcessing || isCheckingSubscription || !isFormValid}
-              className="mt-5 w-full rounded-md bg-gray-700 px-3 py-2 text-white hover:bg-gray-800 disabled:opacity-50"
-            >
-              Start for Free
-            </button>
-          )}
-
-          {!hasActiveSubscription && (
-            <div className="mt-6">
-              <h3 className="text-lg font-medium text-gray-700 mb-2">Choose a Subscription Plan</h3>
-              <p className="text-sm text-gray-600 mb-3">
-                Both plans begin with a free {trialDays}-day trial.
-              </p>
-              {plans.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {plans.map((plan) => (
-                    <div
-                      key={plan.id}
-                      className={`relative p-4 border rounded-lg cursor-pointer transition-all ${
-                        selectedPlanId === plan.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-300 hover:border-gray-400'
-                      } ${plan.recommended ? 'border-2 border-blue-500' : ''}`}
-                      onClick={() => setSelectedPlanId(plan.id)}
-                    >
-                      {plan.recommended && (
-                        <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                          Recommended
-                        </span>
-                      )}
-                      <h4 className="text-lg font-semibold">{plan.name}</h4>
-                      <p className="text-xl font-bold text-gray-900">{plan.price}</p>
-                      <p className="text-sm text-gray-600">Billed {plan.interval}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-600 text-sm text-center">Loading payment plans...</p>
-              )}
-            </div>
-          )}
-
-          {!hasActiveSubscription && !hasPayPalClientId && (
-            <p className="text-red-500 text-sm text-center mt-4" role="alert">
-              Payment configuration error: missing NEXT_PUBLIC_PAYPAL_CLIENT_ID.
-            </p>
-          )}
-
-          {selectedPlanId &&
-            isFormValid &&
-            !hasActiveSubscription &&
-            !isCheckingSubscription &&
-            hasPayPalClientId && (
-              <div className="mt-4">
-                <PayPalButtons
-                  createSubscription={handlePayPalSubscription}
-                  onApprove={handlePayPalApprove}
-                  onError={(error) => {
-                    console.error('PayPal error:', error);
-                    setErrorMessage('Failed to process payment. Please try again.');
-                    setIsProcessing(false);
-                  }}
-                  style={{ layout: 'vertical' }}
-                  disabled={isProcessing}
-                />
-              </div>
-            )}
-
-          {!isLoggedIn && (
-            <p className="mt-4 text-center text-sm text-gray-600">
-              Already have an account?{' '}
-              <button
-                onClick={onLoginClick}
-                className="px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm"
-                aria-label="Login"
-                disabled={isProcessing}
-              >
-                Login
-              </button>
-            </p>
-          )}
+      {displayMode === 'modal' ? (
+        <div
+          className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50"
+          style={{ backgroundColor: 'rgba(17, 24, 39, 0.5)' }}
+        >
+          {panelContent}
         </div>
-      </div>
+      ) : (
+        panelContent
+      )}
     </PayPalScriptProvider>
   );
 }

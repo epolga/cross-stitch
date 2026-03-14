@@ -1,3 +1,5 @@
+export type PreferredSubscriptionPlan = 'monthly' | 'yearly';
+
 export interface RegistrationSourceInfo {
   source: string;
   label?: string;
@@ -6,4 +8,6 @@ export interface RegistrationSourceInfo {
   designCaption?: string;
   designUrl?: string;
   designImageUrl?: string;
+  returnPath?: string;
+  preferredPlan?: PreferredSubscriptionPlan;
 }

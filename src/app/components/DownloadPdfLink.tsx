@@ -217,6 +217,30 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
     window.dispatchEvent(evt);
   }, [design, formatLabel, resolvedPdfUrl]);
 
+  const redirectToPaidAccessPage = useCallback(() => {
+    if (typeof window === 'undefined') return;
+
+    if (resolvedPdfUrl) {
+      localStorage.setItem('pendingDownload', resolvedPdfUrl);
+    }
+
+    const params = new URLSearchParams();
+    const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+    params.set('returnTo', returnPath);
+    params.set('designId', String(design.DesignID));
+
+    if (design.Caption) {
+      params.set('caption', design.Caption);
+    }
+
+    if (design.ImageUrl) {
+      params.set('image', design.ImageUrl);
+    }
+
+    window.location.assign(`/download-access?${params.toString()}`);
+  }, [design.Caption, design.DesignID, design.ImageUrl, resolvedPdfUrl]);
+
   const describePaidAccessResult = useCallback(
     (result: PaidDownloadAccessResponse): string => {
       if (result.reason === 'TRIAL_ACTIVE') {
@@ -244,8 +268,7 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
 
   const handlePaidClick = useCallback(async () => {
     if (!loggedIn) {
-      setAccessFeedback('Create account to download patterns. Start for free or subscribe.');
-      openPayPal();
+      redirectToPaidAccessPage();
       return;
     }
 
@@ -253,8 +276,7 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
 
     const email = (localStorage.getItem('userEmail') || '').trim().toLowerCase();
     if (!email) {
-      setAccessFeedback('Create account to download patterns. Start for free or subscribe.');
-      openPayPal();
+      redirectToPaidAccessPage();
       return;
     }
 
@@ -298,6 +320,7 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
   }, [
     loggedIn,
     openPayPal,
+    redirectToPaidAccessPage,
     design.DesignID,
     handleDownload,
     describePaidAccessResult,
@@ -388,7 +411,7 @@ export default function DownloadPdfLink({ design, className, formatLabel, format
           void handlePaidClick();
         }}
         className={className ?? 'inline-block text-gray-600 text-sm leading-tight underline cursor-pointer'}
-        aria-label="Open PayPal checkout"
+        aria-label={loggedIn ? 'Open subscription checkout' : 'Review download plans'}
         type="button"
         disabled={isCheckingPaidAccess}
       >

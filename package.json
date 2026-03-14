@@ -8,7 +8,9 @@
         "start": "next start",
         "lint": "next lint",
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "test:e2e": "playwright test",
+        "test:e2e:paid-download": "playwright test tests/paid-download-flow.smoke.spec.ts"
     },
     "dependencies": {
         "@aws-sdk/client-dynamodb": "^3.803.0",
@@ -29,6 +31,7 @@
     },
     "devDependencies": {
         "@eslint/eslintrc": "^3",
+        "@playwright/test": "^1.58.2",
         "@tailwindcss/postcss": "^4",
         "@types/node": "^20",
         "@types/react": "^19",

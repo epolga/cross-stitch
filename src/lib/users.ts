@@ -386,7 +386,7 @@ export type UnsubscribeResult =
  */
 export async function getVerifiedUserByCid(
   cid: string,
-): Promise<{ id: string; email?: string } | null> {
+): Promise<{ id: string; email?: string; firstName?: string } | null> {
   const tableName = process.env.DDB_USERS_TABLE;
   if (!tableName) {
     console.warn('DDB_USERS_TABLE not set; cannot fetch verified user by cid');
@@ -401,12 +401,19 @@ export async function getVerifiedUserByCid(
     FilterExpression: '#cid = :cid',
     ExpressionAttributeNames: { '#cid': 'cid' },
     ExpressionAttributeValues: { ':cid': { S: trimmedCid } },
-    ProjectionExpression: 'ID, Email, Verified, VerifiedAt',
+    ProjectionExpression: 'ID, Email, FirstName, Verified, VerifiedAt',
   };
 
   let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
-  let match: { id: string; email?: string; verified?: boolean; verifiedAt?: string } | null =
-    null;
+  let match:
+    | {
+        id: string;
+        email?: string;
+        firstName?: string;
+        verified?: boolean;
+        verifiedAt?: string;
+      }
+    | null = null;
 
   do {
     const { Items, LastEvaluatedKey } = await client.send(
@@ -417,6 +424,7 @@ export async function getVerifiedUserByCid(
       match = {
         id: found.ID.S,
         email: found.Email?.S,
+        firstName: found.FirstName?.S,
         verified: found.Verified?.BOOL,
         verifiedAt: found.VerifiedAt?.S,
       };
@@ -427,7 +435,7 @@ export async function getVerifiedUserByCid(
 
   if (!match) return null;
   if (match.verified || (match.verifiedAt && match.verifiedAt.length > 0)) {
-    return { id: match.id, email: match.email };
+    return { id: match.id, email: match.email, firstName: match.firstName };
   }
   return null;
 }

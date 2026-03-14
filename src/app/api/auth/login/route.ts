@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyUser } from '@/lib/data-access';
+import { verifyUserWithProfile } from '@/lib/data-access';
 import { updateLastSeenAtByEmail } from '@/lib/users';
 
 export async function POST(request: NextRequest) {
@@ -15,16 +15,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isValid = await verifyUser(email, password);
-    console.log('API: verifyUser result:', isValid);
+    const user = await verifyUserWithProfile(email, password);
+    console.log('API: verifyUser result:', Boolean(user));
 
-    if (isValid) {
+    if (user) {
       try {
-        await updateLastSeenAtByEmail(email);
+        await updateLastSeenAtByEmail(user.email);
       } catch (err) {
         console.error('[login] Failed to update LastSeenAt:', err);
       }
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true, email: user.email, firstName: user.firstName });
     } else {
       return NextResponse.json(
         { error: 'Invalid email or password' },

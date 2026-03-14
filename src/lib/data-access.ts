@@ -18,6 +18,16 @@ const dynamoDBClient = new DynamoDBClient({
   region: process.env.AWS_REGION,
 });
 
+export type VerifiedUserProfile = {
+  email: string;
+  firstName?: string;
+};
+
+function normalizeDisplayName(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
 /**
  * Helper: check whether a user with given Email and Password exists
  * in the secondary users table (DDB_USERS_TABLE).
@@ -25,11 +35,11 @@ const dynamoDBClient = new DynamoDBClient({
 async function verifyUserInSecondaryTable(
   email: string,
   password: string,
-): Promise<boolean> {
+): Promise<VerifiedUserProfile | null> {
   const tableName = process.env.DDB_USERS_TABLE;
   if (!tableName) {
     console.warn('DDB_USERS_TABLE is not set. Skipping secondary table check.');
-    return false;
+    return null;
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -47,7 +57,7 @@ async function verifyUserInSecondaryTable(
 
     const { Items } = await dynamoDBClient.send(new ScanCommand(scanParams));
     if (!Items || Items.length === 0) {
-      return false;
+      return null;
     }
 
     // 2) Email MUST be matched case-insensitively here in code
@@ -55,14 +65,18 @@ async function verifyUserInSecondaryTable(
       const dbEmail = item.Email?.S?.trim().toLowerCase();
       if (dbEmail === normalizedEmail) {
         console.log('User found in secondary table (case-insensitive match)');
-        return true;
+        return {
+          email: normalizedEmail,
+          firstName: normalizeDisplayName(item.FirstName?.S || item.UserName?.S),
+        };
       }
     }
 
-    return false;
+    return null;
   } catch (err) {
     console.error('Error checking secondary table:', err);
-    return false;  }
+    return null;
+  }
 }
 
 // In-memory caches for designs and albums
@@ -603,10 +617,14 @@ export async function incrementDesignDownloadCount(designId: number): Promise<vo
 }
 
 // Verify user credentials by email and password
-export async function verifyUser(email: string, password: string): Promise<boolean> {
+export async function verifyUserWithProfile(
+  email: string,
+  password: string,
+): Promise<VerifiedUserProfile | null> {
   try {
     console.log('verifyUser called with:', { email, password });
     const userId = `USR#${email}`;
+    const normalizedEmail = email.trim().toLowerCase();
     console.log('Querying primary DynamoDB table with ID:', userId);
     const queryParams = {
       TableName: process.env.DYNAMODB_TABLE_NAME,
@@ -627,11 +645,11 @@ export async function verifyUser(email: string, password: string): Promise<boole
       const secondaryMatch = await verifyUserInSecondaryTable(email, password);
       if (secondaryMatch) {
         console.log('User validated via secondary users table');
-        return true;
+        return secondaryMatch;
       }
 
       console.log('User not found in secondary users table either');
-      return false;
+      return null;
     }
 
     // Found in primary table → use original password logic
@@ -639,16 +657,30 @@ export async function verifyUser(email: string, password: string): Promise<boole
     console.log('Stored password:', storedPassword);
     if (!storedPassword) {
       console.log(`No OpenPwd found for ID ${userId}`);
-      return false;
+      return null;
     }
 
     const isMatch = storedPassword === password;
     console.log('Password match:', isMatch);
-    return isMatch;
+    if (!isMatch) {
+      return null;
+    }
+
+    return {
+      email: normalizedEmail,
+      firstName: normalizeDisplayName(
+        Items[0].FName?.S || Items[0].FirstName?.S || Items[0].UserName?.S,
+      ),
+    };
   } catch (error) {
     console.error(`Error verifying user for ID USR#${email}:`, error);
-    return false;
+    return null;
   }
+}
+
+export async function verifyUser(email: string, password: string): Promise<boolean> {
+  const user = await verifyUserWithProfile(email, password);
+  return Boolean(user);
 }
 
 // Create a new user in DynamoDB
