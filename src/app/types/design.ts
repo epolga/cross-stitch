@@ -14,6 +14,8 @@ export interface Design {
     NPage: number;
     ImageUrl?: string | null;
     PdfUrl?: string | null;
+    PinterestPinId?: string | null;
+    PinterestPinUrl?: string | null;
     NGlobalPage: number;
 }
 

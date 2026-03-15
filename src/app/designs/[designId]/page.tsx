@@ -1,17 +1,46 @@
 import Image from 'next/image';
 import type { Design } from '@/app/types/design';
 import type { Metadata } from 'next';
-import { buildCanonicalUrl, CreateDesignUrl } from '@/lib/url-helper';
+import { buildCanonicalUrl, CreateDesignUrl, getSiteBaseUrl } from '@/lib/url-helper';
 import { isPaidDownloadMode } from '@/lib/download-mode';
 import { DesignDownloadControls } from './DesignDownloadControls';
 import AdSlot from '@/app/components/AdSlot';
+import PinterestSaveLink from '@/app/components/PinterestSaveLink';
 import { promises as fs } from 'fs';
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
+const DEFAULT_OG_IMAGE = 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
+
 interface Props {
   params: Promise<{ designId: string }>;
+}
+
+function toAbsoluteUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+
+  try {
+    return new URL(url).toString();
+  } catch {
+    return new URL(url.startsWith('/') ? url : `/${url}`, `${getSiteBaseUrl()}/`).toString();
+  }
+}
+
+function buildPinterestShareUrl(pageUrl: string, imageUrl: string | null, description: string): string {
+  const shareUrl = new URL('https://www.pinterest.com/pin/create/button/');
+  shareUrl.searchParams.set('url', pageUrl);
+  shareUrl.searchParams.set('description', description);
+
+  if (imageUrl) {
+    shareUrl.searchParams.set('media', imageUrl);
+  }
+
+  return shareUrl.toString();
+}
+
+function buildPinterestPinUrl(pinId: string): string {
+  return `https://www.pinterest.com/pin/${encodeURIComponent(pinId)}/`;
 }
 
 async function getMissingDesigns(): Promise<Set<number>> {
@@ -52,7 +81,7 @@ console.log("Generating metadata for designId:", designId);
   }
 
   const canonicalUrl = buildCanonicalUrl(await CreateDesignUrl(design));
-  const ogImage = design.ImageUrl || 'https://d2o1uvvg91z7o4.cloudfront.net/images/default.jpg';
+  const ogImage = toAbsoluteUrl(design.ImageUrl) || DEFAULT_OG_IMAGE;
 
   const featureParts = [
     design.Width && design.Height ? `${design.Width}x${design.Height} stitches` : null,
@@ -159,13 +188,37 @@ export default async function DesignPage({ params }: Props) {
     design.Width && design.Height && design.Width > 0 && design.Height > 0
       ? `${design.Width} / ${design.Height}`
       : '1 / 1';
+  const canonicalUrl = buildCanonicalUrl(CreateDesignUrl(design));
+  const pinterestImageUrl = toAbsoluteUrl(design.ImageUrl) || DEFAULT_OG_IMAGE;
+  const pinterestPinUrl =
+    toAbsoluteUrl(design.PinterestPinUrl) ||
+    (design.PinterestPinId ? buildPinterestPinUrl(design.PinterestPinId) : null);
+  const pinterestShareUrl = buildPinterestShareUrl(
+    canonicalUrl,
+    pinterestImageUrl,
+    `${design.Caption} - free cross-stitch pattern`
+  );
+  const pinterestHref = pinterestPinUrl || pinterestShareUrl;
+  const pinterestLabel = pinterestPinUrl ? 'Open on Pinterest' : 'Save on Pinterest';
+  const pinterestTrackingMode = pinterestPinUrl ? 'existing_pin' : 'create_pin';
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">{design.Caption}</h1>
+      <h1 className="text-center text-3xl font-bold mb-6">{design.Caption}</h1>
       <div className="max-w-3xl mx-auto">
         <div className="border border-gray-500 rounded-lg shadow hover:shadow-lg p-5 text-center">
-          <h2 className="text-lg font-semibold mb-2">{design.Caption}</h2>
+          <div className="mb-2 flex items-center justify-center gap-2">
+            <h2 className="text-lg font-semibold">{design.Caption}</h2>
+            <PinterestSaveLink
+              href={pinterestHref}
+              designId={design.DesignID}
+              designCaption={design.Caption}
+              label={pinterestLabel}
+              trackingMode={pinterestTrackingMode}
+              compact
+              className="h-8 w-8 shrink-0 transition hover:-translate-y-0.5"
+            />
+          </div>
 
           {/* TOP download control (gated) */}
           <DesignDownloadControls design={design} align="center" isMissingOverride={isMissing} />

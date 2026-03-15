@@ -1,6 +1,6 @@
 branch-defaults:
   main:
-    environment: cross-stitch-com-env
+    environment: cross-stitch-com-env-clone
 
 global:
   application_name: cross-stitch-com

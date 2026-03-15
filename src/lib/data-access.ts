@@ -28,6 +28,19 @@ function normalizeDisplayName(value: string | undefined): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+function readOptionalAttributeString(value?: AttributeValue): string | null {
+  if (!value) return null;
+  if ('S' in value && typeof value.S === 'string') {
+    const normalized = value.S.trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+  if ('N' in value && typeof value.N === 'string') {
+    const normalized = value.N.trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+  return null;
+}
+
 /**
  * Helper: check whether a user with given Email and Password exists
  * in the secondary users table (DDB_USERS_TABLE).
@@ -141,6 +154,21 @@ async function initializeCache(): Promise<void> {
                 ? `https://d2o1uvvg91z7o4.cloudfront.net/photos/${item.AlbumID.N}/${item.DesignID.N}/4.jpg`
                 : null),
               PdfUrl: getPDFUrl(item.AlbumID, item.DesignID),
+              PinterestPinId:
+                readOptionalAttributeString(item.PinterestPinId) ||
+                readOptionalAttributeString(item.PinterestPinID) ||
+                readOptionalAttributeString(item.PinterestID) ||
+                readOptionalAttributeString(item.PinterestId) ||
+                readOptionalAttributeString(item.PinID) ||
+                readOptionalAttributeString(item.PinId) ||
+                null,
+              PinterestPinUrl:
+                readOptionalAttributeString(item.PinterestPinUrl) ||
+                readOptionalAttributeString(item.PinterestPinURL) ||
+                readOptionalAttributeString(item.PinterestUrl) ||
+                readOptionalAttributeString(item.PinUrl) ||
+                readOptionalAttributeString(item.PinURL) ||
+                null,
               NGlobalPage: item.NGlobalPage?.N ? parseInt(item.NGlobalPage.N) : 0
             };
             if (design.DesignID > 0) {
