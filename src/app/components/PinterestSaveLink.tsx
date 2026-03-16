@@ -1,6 +1,6 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 
 type Props = {
   href: string;
@@ -35,12 +35,17 @@ export default function PinterestSaveLink({
   compact = false,
   style,
 }: Props) {
+  const [isHovered, setIsHovered] = useState(false);
+
   const resolvedStyle: CSSProperties | undefined = compact
     ? {
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
         textDecoration: 'none',
+        transform: isHovered ? 'translateY(-2px) scale(1.25)' : 'translateY(0) scale(1)',
+        transformOrigin: 'center',
+        transition: 'transform 150ms ease-out',
         ...style,
       }
     : style;
@@ -72,6 +77,8 @@ export default function PinterestSaveLink({
       aria-label={`${label} for ${designCaption}`}
       title={label}
       onClick={handleClick}
+      onMouseEnter={compact ? () => setIsHovered(true) : undefined}
+      onMouseLeave={compact ? () => setIsHovered(false) : undefined}
     >
       {compact ? (
         <span className="flex h-full w-full items-center justify-center" aria-hidden="true">

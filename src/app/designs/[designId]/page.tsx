@@ -216,7 +216,7 @@ export default async function DesignPage({ params }: Props) {
               label={pinterestLabel}
               trackingMode={pinterestTrackingMode}
               compact
-              className="h-8 w-8 shrink-0 transition hover:-translate-y-0.5"
+              className="h-8 w-8 shrink-0"
             />
           </div>
 
