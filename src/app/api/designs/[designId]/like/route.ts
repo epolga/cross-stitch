@@ -2,10 +2,51 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDesignById } from '@/lib/data-access';
 import {
   getDesignLikeState,
+  getUserDesignVote,
   isResourceNotFound,
   removeDesignLike,
   setDesignVote,
 } from '@/lib/design-likes';
+import { sendEmailToAdmin } from '@/lib/email-service';
+import { buildCanonicalUrl, CreateDesignUrl } from '@/lib/url-helper';
+
+function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+
+  return request.headers.get('x-real-ip') || 'Unknown';
+}
+
+async function sendVoteNotification(params: {
+  request: NextRequest;
+  design: NonNullable<Awaited<ReturnType<typeof getDesignById>>>;
+  email: string;
+  previousVote: 'up' | 'down' | null;
+  currentVote: 'up' | 'down' | null;
+  count: number;
+  requestedDirection: 'up' | 'down';
+}): Promise<void> {
+  const { request, design, email, previousVote, currentVote, count, requestedDirection } = params;
+  const designUrl = buildCanonicalUrl(CreateDesignUrl(design));
+  const clientIp = getClientIp(request);
+  const subject = currentVote === null ? 'Design vote cleared' : 'New design vote';
+  const body = [
+    `Design: ${design.Caption}`,
+    `Design ID: ${design.DesignID}`,
+    `Design URL: ${designUrl}`,
+    `User email: ${email}`,
+    `Requested direction: ${requestedDirection}`,
+    `Previous vote: ${previousVote ?? 'none'}`,
+    `Current vote: ${currentVote ?? 'none'}`,
+    `Current score: ${count}`,
+    `Client IP: ${clientIp}`,
+    `Timestamp: ${new Date().toISOString()}`,
+  ].join('\n');
+
+  await sendEmailToAdmin(subject, body, false);
+}
 
 async function resolveDesignId(params: Promise<{ designId: string }>): Promise<number | null> {
   const { designId } = await params;
@@ -61,7 +102,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   try {
+    const previousVote = await getUserDesignVote(designId, email);
     const state = await setDesignVote(designId, email, body.direction);
+
+    if (previousVote !== state.currentUserVote) {
+      void sendVoteNotification({
+        request,
+        design,
+        email,
+        previousVote,
+        currentVote: state.currentUserVote,
+        count: state.count,
+        requestedDirection: body.direction,
+      }).catch((notificationError) => {
+        console.error('[design-like][POST] Failed to send admin vote notification:', notificationError);
+      });
+    }
+
     return NextResponse.json({ designId, ...state }, { status: 200 });
   } catch (error) {
     console.error('[design-like][POST] Failed to update vote:', error);

@@ -140,10 +140,13 @@ export default function DesignLikeButton({ designId }: Props) {
 
   return (
     <div
-      className="inline-flex min-h-[88px] w-14 flex-col items-center justify-center gap-1 rounded-2xl border border-gray-300 bg-white px-2 py-2 text-center shadow-sm"
+      className="inline-flex min-h-[118px] w-[92px] flex-col items-center justify-center gap-1 rounded-2xl border border-gray-300 bg-white px-2 py-2 text-center shadow-sm"
       style={{ marginLeft: 'auto' }}
       aria-label="Pattern voting controls"
     >
+      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-600">
+        Vote
+      </span>
       <button
         type="button"
         className={`rounded-md p-1 transition ${
@@ -183,6 +186,9 @@ export default function DesignLikeButton({ designId }: Props) {
       >
         <ArrowIcon direction="down" />
       </button>
+      <span className="text-[10px] leading-tight text-gray-500">
+        Rate this pattern
+      </span>
     </div>
   );
 }
