@@ -6,6 +6,7 @@ import { isPaidDownloadMode } from '@/lib/download-mode';
 import { DesignDownloadControls } from './DesignDownloadControls';
 import AdSlot from '@/app/components/AdSlot';
 import PinterestSaveLink from '@/app/components/PinterestSaveLink';
+import DesignLikeButton from '@/app/components/DesignLikeButton';
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -207,7 +208,17 @@ export default async function DesignPage({ params }: Props) {
       <h1 className="text-center text-3xl font-bold mb-6">{design.Caption}</h1>
       <div className="max-w-3xl mx-auto">
         <div className="border border-gray-500 rounded-lg shadow hover:shadow-lg p-5 text-center">
-          <div className="mb-2 flex items-center justify-center gap-2">
+          <div
+            className="mb-3"
+            style={{
+              width: '100%',
+              display: 'block',
+              textAlign: 'right',
+            }}
+          >
+            <DesignLikeButton designId={design.DesignID} />
+          </div>
+          <div className="mb-3 flex items-center justify-center gap-2">
             <h2 className="text-lg font-semibold">{design.Caption}</h2>
             <PinterestSaveLink
               href={pinterestHref}
