@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import Link from 'next/link';
 import { RegisterForm } from './RegisterForm';
 import { RegisterOnlyDialog } from './RegisterOnlyDialog';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { RegistrationSourceInfo } from '@/app/types/registration';
 
 const USER_FIRST_NAME_STORAGE_KEY = 'userFirstName';
+export const USER_VOTES_CHANGED_EVENT = 'userVotesChanged';
 
 const normalizeStoredFirstName = (value: string | undefined): string => {
   const trimmed = (value || '').trim();
@@ -149,6 +151,7 @@ export function AuthControl() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentEmail, setCurrentEmail] = useState('');
   const [currentFirstName, setCurrentFirstName] = useState('');
+  const [currentUserVotesCount, setCurrentUserVotesCount] = useState(0);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false); // RegisterForm (PayPal)
   const [isRegisterOnlyOpen, setIsRegisterOnlyOpen] = useState(false); // RegisterOnlyDialog
@@ -199,6 +202,56 @@ export function AuthControl() {
     }
     console.log('AuthControl component mounted, isLoggedIn from storage:', loggedIn);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (!isLoggedIn || !currentEmail) {
+      setCurrentUserVotesCount(0);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadCurrentUserVotesCount = async (): Promise<void> => {
+      try {
+        const response = await fetch('/api/profile/votes?includeDesigns=false', {
+          cache: 'no-store',
+          headers: {
+            'x-user-email': currentEmail,
+          },
+        });
+        const data = (await response.json().catch(() => null)) as { votesCount?: number; error?: string } | null;
+
+        if (!response.ok) {
+          throw new Error(data?.error || 'Failed to load voted design count');
+        }
+
+        if (isMounted) {
+          setCurrentUserVotesCount(Math.max(0, data?.votesCount ?? 0));
+        }
+      } catch (error) {
+        console.error('Failed to load voted design count:', error);
+        if (isMounted) {
+          setCurrentUserVotesCount(0);
+        }
+      }
+    };
+
+    const handleVotesChanged = (): void => {
+      void loadCurrentUserVotesCount();
+    };
+
+    void loadCurrentUserVotesCount();
+    window.addEventListener(USER_VOTES_CHANGED_EVENT, handleVotesChanged);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener(USER_VOTES_CHANGED_EVENT, handleVotesChanged);
+    };
+  }, [currentEmail, isLoggedIn]);
 
   // Update LastSeenAt at most once per day while logged in
   useEffect(() => {
@@ -436,6 +489,7 @@ export function AuthControl() {
     }
     setCurrentEmail('');
     setCurrentFirstName('');
+    setCurrentUserVotesCount(0);
     setIsLoggedIn(false);
     dispatchAuthStateChange();
   };
@@ -521,6 +575,11 @@ export function AuthControl() {
     return null;
   }
 
+  const firstNameBadgeClass =
+    '-ml-2 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-base font-semibold italic text-amber-900 underline decoration-amber-500 underline-offset-4 shadow-sm md:-ml-3 md:text-lg';
+  const firstNameBadgeLinkClass =
+    `${firstNameBadgeClass} cursor-pointer transition-all duration-150 ease-out hover:scale-110 hover:border-amber-400 hover:bg-amber-100 hover:text-amber-950 hover:shadow-md focus-visible:scale-110 focus-visible:border-amber-400 focus-visible:bg-amber-100 focus-visible:text-amber-950 focus-visible:shadow-md focus-visible:outline-none`;
+
   return (
     <div className="flex items-center space-x-2">
       <Suspense fallback={null}>
@@ -557,12 +616,23 @@ export function AuthControl() {
       {isLoggedIn ? (
         <>
           {currentFirstName && (
-            <span
-              className="-ml-2 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-base font-semibold italic text-amber-900 shadow-sm md:-ml-3 md:text-lg"
-              aria-label={`Logged in as ${currentFirstName}`}
-            >
-              {`Hi ${currentFirstName}!`}
-            </span>
+            currentUserVotesCount > 0 ? (
+              <Link
+                href="/profile/votes"
+                className={firstNameBadgeLinkClass}
+                aria-label={`Open profile for ${currentFirstName}`}
+                title={`Open your private profile with ${currentUserVotesCount} voted design${currentUserVotesCount === 1 ? '' : 's'}`}
+              >
+                {`Hi ${currentFirstName}!`}
+              </Link>
+            ) : (
+              <span
+                className={firstNameBadgeClass}
+                aria-label={`Logged in as ${currentFirstName}`}
+              >
+                {`Hi ${currentFirstName}!`}
+              </span>
+            )
           )}
           {currentFirstName && <span className="text-gray-400 text-lg">|</span>}
           <button

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { isUserLoggedIn } from '@/app/components/AuthControl';
+import { USER_VOTES_CHANGED_EVENT, isUserLoggedIn } from '@/app/components/AuthControl';
 
 type Props = {
   designId: number;
@@ -129,6 +129,7 @@ export default function DesignLikeButton({ designId }: Props) {
       }
       setCount(data.count ?? 0);
       setCurrentUserVote(data.currentUserVote ?? null);
+      window.dispatchEvent(new Event(USER_VOTES_CHANGED_EVENT));
     } catch (error) {
       console.error('[DesignLikeButton] Failed to update vote state:', error);
       setCurrentUserVote(previousVote);

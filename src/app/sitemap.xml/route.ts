@@ -64,7 +64,7 @@ async function generateAndUploadSitemap(baseUrl: string) {
   const albums = (await getAllAlbumCaptions()) || [];
 
   const albumUrls = albums.map(album => ({
-    url: `/${CreateAlbumUrl(album.Caption)}`,
+    url: CreateAlbumUrl(album.Caption),
     changefreq: 'monthly',
     priority: 0.6,
     lastmod: new Date().toISOString(),
@@ -81,7 +81,7 @@ async function generateAndUploadSitemap(baseUrl: string) {
   }
 
   const designUrls = designs.map(design => ({
-    url: `/${CreateDesignUrl(design)}`,
+    url: CreateDesignUrl(design),
     changefreq: 'monthly',
     priority: 0.6,
     lastmod: new Date().toISOString(),

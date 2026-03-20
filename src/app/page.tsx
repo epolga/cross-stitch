@@ -159,6 +159,8 @@ export default async function Home({ searchParams }: Props) {
   const searchText = resolvedSearchParams?.searchText?.toString() || '';
   const eid = resolvedSearchParams?.eid?.toString() || '';
   const cid = resolvedSearchParams?.cid?.toString() || '';
+  const source = resolvedSearchParams?.from?.toString() || '';
+  const showProfileLogoutNotice = source === 'profile-logout';
   const adsEnabled = !isPaidDownloadMode();
   const adSlotTop =
     process.env.NEXT_PUBLIC_AD_SLOT_HOME_TOP ??
@@ -216,6 +218,14 @@ export default async function Home({ searchParams }: Props) {
           <h1 className="text-3xl font-bold mb-4 text-gray-900">
             Free Cross-Stitch PDF Patterns
           </h1>
+          {showProfileLogoutNotice && (
+            <div
+              className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm"
+              role="status"
+            >
+              You have been logged out. The private voting page is only available while you are signed in.
+            </div>
+          )}
           <p className="text-gray-700 mb-6">
             Browse hundreds of free downloadable charts, filter by size or colors, and find your next stitching project.
           </p>

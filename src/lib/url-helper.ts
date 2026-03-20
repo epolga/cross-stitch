@@ -55,7 +55,7 @@ export function CreateDesignUrl(
  Design: Design
 ): string {
     const formattedCaption = Design.Caption.replace(/\s+/g, '-');
-    return `${formattedCaption}-${Design.AlbumID}-${Design.NPage-1}-Free-Design.aspx`;
+  return `/${formattedCaption}-${Design.AlbumID}-${Design.NPage-1}-Free-Design.aspx`;
 }  
 
 // Helper to create image URL based on Caption and DesignId
@@ -72,6 +72,6 @@ export function CreateAlbumUrl(
   Caption:string)
   : string{
   const formattedCaption = Caption?.replace(/\s+/g, '-');
-  return `Free-${formattedCaption}-Charts.aspx`;
+  return `/Free-${formattedCaption}-Charts.aspx`;
 }
     
