@@ -43,6 +43,13 @@ export default function DesignLikeButton({ designId }: Props) {
   const [currentUserVote, setCurrentUserVote] = useState<'up' | 'down' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasPositiveVotes = count > 0;
+  const containerClasses = hasPositiveVotes
+    ? 'border-rose-200 bg-rose-50'
+    : 'border-sky-200 bg-sky-50';
+  const countClasses = hasPositiveVotes
+    ? 'bg-rose-100 text-rose-700'
+    : 'bg-sky-100 text-sky-700';
 
   useEffect(() => {
     const syncAuth = () => {
@@ -141,7 +148,7 @@ export default function DesignLikeButton({ designId }: Props) {
 
   return (
     <div
-      className="inline-flex min-h-[118px] w-[92px] flex-col items-center justify-center gap-1 rounded-2xl border border-gray-300 bg-white px-2 py-2 text-center shadow-sm"
+      className={`inline-flex min-h-[118px] w-[92px] flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-center shadow-sm ${containerClasses}`}
       style={{ marginLeft: 'auto' }}
       aria-label="Pattern voting controls"
     >
@@ -163,13 +170,7 @@ export default function DesignLikeButton({ designId }: Props) {
         <ArrowIcon direction="up" />
       </button>
       <span
-        className={`flex h-8 min-w-8 items-center justify-center rounded-full px-1 text-xs font-semibold ${
-          currentUserVote === 'up'
-            ? 'bg-rose-50 text-rose-700'
-            : currentUserVote === 'down'
-              ? 'bg-slate-100 text-slate-700'
-              : 'bg-gray-100 text-gray-700'
-        }`}
+        className={`flex h-8 min-w-8 items-center justify-center rounded-full px-1 text-xs font-semibold ${countClasses}`}
       >
         {count}
       </span>
