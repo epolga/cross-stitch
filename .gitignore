@@ -60,5 +60,6 @@ next-env.d.ts
 
 # automation secrets & generated reports
 automation/pinterest-agent/.env
+automation/pinterest-agent/pinterest_tokens.json
 automation/pinterest-agent/google-oauth-client.json
 automation/pinterest-agent/reports/
