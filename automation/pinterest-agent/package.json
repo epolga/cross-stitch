@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.96.0",
     "dotenv": "^17.4.2",
     "googleapis": "^171.4.0",
     "open": "^11.0.0"
