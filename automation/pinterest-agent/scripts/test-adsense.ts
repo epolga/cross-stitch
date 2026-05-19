@@ -1,23 +1,8 @@
-import dotenv from "dotenv";
-import path from "path";
-import { google } from "googleapis";
+import "dotenv/config";
+import { adsense } from "../src/services/googleClient";
+import { yesterdayDate, formatDate } from "../src/services/dateUtils";
 
-dotenv.config({ path: path.join(process.cwd(), ".env") });
-
-const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN } = process.env;
-
-if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TOKEN) {
-  console.error("Missing required environment variables in .env");
-  process.exit(1);
-}
-
-const oauth2Client = new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
-oauth2Client.setCredentials({ refresh_token: GOOGLE_REFRESH_TOKEN });
-
-const adsense = google.adsense({ version: "v2", auth: oauth2Client });
-
-async function getYesterdayAdSenseRevenue() {
-  // First, list accounts to get the account ID
+async function main() {
   const accountsResponse = await adsense.accounts.list();
   const accounts = accountsResponse.data.accounts || [];
 
@@ -29,13 +14,9 @@ async function getYesterdayAdSenseRevenue() {
   const accountName = accounts[0].name!;
   console.log(`AdSense account: ${accountName}\n`);
 
-  // Generate a report for yesterday
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
+  const yesterday = yesterdayDate();
 
-  const dateStr = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const dateStr = formatDate(yesterday);
 
   const report = await adsense.accounts.reports.generate({
     account: accountName,
@@ -57,7 +38,7 @@ async function getYesterdayAdSenseRevenue() {
   const rows = report.data.rows || [];
   const totals = report.data.totals;
 
-  console.log(`AdSense report for ${dateStr(yesterday)}:\n`);
+  console.log(`AdSense report for ${dateStr}:\n`);
 
   if (totals?.cells) {
     const earnings = totals.cells[0]?.value ?? "N/A";
@@ -74,7 +55,7 @@ async function getYesterdayAdSenseRevenue() {
   }
 }
 
-getYesterdayAdSenseRevenue().catch((err) => {
+main().catch((err) => {
   console.error("Error fetching AdSense data:", err.message || err);
   process.exit(1);
 });

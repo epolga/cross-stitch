@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "daily": "tsx scripts/daily-business-report.ts",
+    "history": "tsx scripts/build-business-history.ts",
+    "ai:trend": "tsx scripts/test-ai-trend-analysis.ts"
   },
   "keywords": [],
   "author": "",

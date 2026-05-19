@@ -2,25 +2,13 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
+import { yesterdayDateStr } from "../src/services/dateUtils";
+import type { BusinessReport } from "../src/services/types";
 
 const apiKey = process.env.ANTHROPIC_API_KEY;
 if (!apiKey || apiKey === "your-key-here") {
   console.error("Set ANTHROPIC_API_KEY in .env");
   process.exit(1);
-}
-
-function yesterdayDateStr(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-interface BusinessReport {
-  date: string;
-  pinterestAds: { spend: number; clicks: number; outboundClicks: number };
-  ga4PinterestSessions: { paidSocial: number; organic: number; referral: number; total: number };
-  adsense: { estimatedEarnings: number };
-  derived: { revenuePerHundredPinterestSessions: number | null; roughProfitEstimate: number };
 }
 
 async function main() {
