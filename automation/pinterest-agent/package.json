@@ -6,7 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "daily": "tsx scripts/daily-business-report.ts",
     "history": "tsx scripts/build-business-history.ts",
-    "ai:trend": "tsx scripts/test-ai-trend-analysis.ts"
+    "ai:trend": "tsx scripts/test-ai-trend-analysis.ts",
+    "ai:history": "tsx scripts/build-recommendation-history.ts"
   },
   "keywords": [],
   "author": "",
