@@ -20,21 +20,7 @@ As the project grows, documentation is being split into specialized thematic doc
 
 Modularization is complete. The following thematic documents now exist in `plan/`:
 
-## 1. Pinterest AI Agent — VS Code Technical Implementation Plan
-
-Original long-form master planning document. Covers overall architecture, OAuth understanding, Google integrations, Pinterest integrations, AI reasoning concepts, uploader integration concepts, and long-term strategic thinking.
-
-Status:
-
-```text
-
-Large / superseded in part by the specialized documents below
-
-```
-
----
-
-## 2. Pinterest AI Agent — Milestones and Roadmap
+## 1. Pinterest AI Agent — Milestones and Roadmap
 
 Dedicated roadmap and implementation tracking document. Contains the milestone breakdown, timing estimates, implementation phases, completion status, future roadmap, and next planned work.
 
@@ -48,39 +34,53 @@ Active
 
 ---
 
-## 3. Pinterest AI Agent — API Integrations
+## 2. Pinterest AI Agent — API Integrations
 
 Pinterest APIs, Google APIs, Anthropic API, planned Meta / Reddit / Google Ads integrations, OAuth flows, and token lifecycle management.
 
 ---
 
-## 4. Pinterest AI Agent — AI Reasoning
+## 3. Pinterest AI Agent — AI Reasoning
 
 Prompt engineering, recommendation structure, reasoning philosophy, confidence scoring, trend interpretation, and long-term optimization logic.
 
 ---
 
-## 5. Pinterest AI Agent — WPF Uploader Integration
+## 4. Pinterest AI Agent — WPF Uploader Integration
 
 Uploader architecture, recommendation API contracts, publishing workflow, approval flow, and metadata generation.
 
 ---
 
-## 6. Pinterest AI Agent — Memory and Trend Analysis
+## 5. Pinterest AI Agent — Memory and Trend Analysis
 
 Historical memory design, trend calculations, anomaly detection, longitudinal business reasoning, and persistent intelligence concepts.
 
 ---
 
-## 7. Pinterest AI Agent — Design-Level Intelligence
+## 6. Pinterest AI Agent — Design-Level Intelligence
 
 The design ↔ pin relationship, Version 1 of per-design analytics (pinmap / perf / ai:design), categorization strategy, the future data model, and the future creative intelligence loop with Stages 1-4.
 
 ---
 
-## 8. Pinterest AI Agent — AWS Deployment
+## 7. Pinterest AI Agent — AWS Deployment
 
 Lambda deployment, EventBridge scheduling, Secrets Manager, DynamoDB persistence, SES reporting, and operational automation.
+
+---
+
+## 8. Pinterest AI Agent — Practical Setup Notes
+
+Tools to install on a fresh machine, the originally-suggested repo structure (kept as historical reference), and timeless strategic guardrails salvaged from the retired master doc: what NOT to build first, the "don't optimize for clicks alone" business warning, and the first useful AI prompt template.
+
+---
+
+## Retired
+
+### Pinterest AI Agent — VS Code Technical Implementation Plan
+
+The original 4,500-line master planning document. Its content has been redistributed across docs 1-8 above. The file itself is now a stub pointing to where each topic moved; git history preserves the original full content.
 
 ---
 
@@ -88,7 +88,7 @@ Lambda deployment, EventBridge scheduling, Secrets Manager, DynamoDB persistence
 
 ## Architecture
 
-A dedicated cross-cutting architecture document is still planned. Until it exists, architecture content lives inside the VS Code Technical Implementation Plan.
+A dedicated cross-cutting architecture document is still planned. Until it exists, architecture content is split between AWS Deployment.md (target architecture) and the retired master doc's git history (original framing).
 
 Planned contents:
 
