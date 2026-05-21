@@ -4,26 +4,28 @@
 > Edit the sections below — they take effect on the next loop tick, no restart needed.
 
 ## Current goal
-<!-- One sentence: what are we actually trying to accomplish right now? -->
-_e.g. "Wire up the Pinterest-agent watchdog so it alerts on stale reports."_
+Start **Milestone 5 — DynamoDB historical-memory layer**. Reminder set the evening of 2026-05-21 for the next working session (planned 2026-05-22). On reading this, greet Olga, surface the four starting tasks below, and ask which she wants to tackle first.
+
+Reference docs: [Milestones and Roadmap.md → Milestone 5](plan/Pinterest%20AI%20Agent%20%E2%80%94%20Milestones%20and%20Roadmap.md), [Memory and Trend Analysis.md → Milestone 8 (schema names)](plan/Pinterest%20AI%20Agent%20%E2%80%94%20Memory%20and%20Trend%20Analysis.md), saved memory entry `aws-iam-setup` for the least-privilege pattern.
 
 ## Done when
-<!-- Concrete, checkable conditions. When all are true, the goal is done. -->
-- [ ] _e.g. Daily report exists in reports/ with today's date_
-- [ ] _e.g. Stale-report alert sent via SES when missing_
-- [ ] _e.g. Tested end-to-end at least once_
+- [ ] IAM extension approach chosen (extend `pinterest-agent` read-only policy with writes on new analytics tables, **or** create a separate `pinterest-agent-writer` user). Least-privilege pattern recommends the first option.
+- [ ] DynamoDB schemas designed for: `DailyBusinessReport`, `BusinessHistorySnapshot`, `AITrendRecommendation`, `DesignPinMap`, `DesignPerformance`, `AIDesignInsight`.
+- [ ] Daily scripts wired to dual-write (keep local JSON as debug/archive; also persist to DynamoDB): `daily`, `history`, `ai:trend`, `pinmap`, `perf`, `ai:design`.
+- [ ] Anomaly detection added on top of the trend layer (second pending piece of Milestone 5).
+- [ ] End-to-end verified: one day's data flows from APIs → DynamoDB → AI analysis without local JSON being the source of truth.
 
 ## Out of scope (do NOT do, even if tempting)
-<!-- Things that would be reasonable in general but aren't this task. -->
-- _e.g. Refactoring unrelated files_
-- _e.g. Adding new dependencies_
-- _e.g. Touching the production deploy pipeline_
+- Starting Milestone 7 (Lambda + EventBridge) before Milestone 5 schemas stabilize — that's the documented sequence.
+- Migrating credentials to Secrets Manager (belongs to the AWS migration milestone).
+- Restructuring the existing local JSON formats — they stay as debug artifacts; schema design is for the new DynamoDB layer.
+- Adding new pipeline steps beyond what's already in `daily-run.bat`.
 
 ## Working style for this session
-<!-- How Olga wants me to operate right now. -->
-- _e.g. Ask before installing packages_
-- _e.g. Keep PRs small and single-purpose_
-- _e.g. Run tests after every change_
+- Verify before recommending: re-read each script and its current output shape before proposing a schema. Don't assume nothing changed overnight.
+- Ask Olga which subtask to start with (IAM, schema design, or wiring) rather than picking unilaterally.
+- Finish the asked task and stop — see saved memory `feedback-no-unsolicited-suggestions`.
+- When AI claims something causal about the data, verify against raw records before relaying — see saved memory `verify-ai-claims-panda-case`.
 
 ## Drift checks
 <!-- Questions I should ask myself when re-reading this file. -->
@@ -33,4 +35,4 @@ _e.g. "Wire up the Pinterest-agent watchdog so it alerts on stale reports."_
 - Is the goal itself stale? If so, flag it — don't silently invent a new one.
 
 ---
-_Last edited by Olga: <!-- date when you last revised this file --> 2026-05-21_
+_Last edited by Olga (via Claude): 2026-05-21 evening — set the Milestone 5 reminder for next session_
