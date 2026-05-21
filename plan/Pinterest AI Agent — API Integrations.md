@@ -124,6 +124,39 @@ Existing WPF uploader already contains:
 
 ---
 
+## AWS DynamoDB
+
+### Current integration
+
+* Read-only access to `CrossStitchItems` (designs + albums) via scoped IAM user
+
+### Current scopes
+
+```text
+
+dynamodb:GetItem
+dynamodb:BatchGetItem
+dynamodb:Query
+dynamodb:Scan
+dynamodb:DescribeTable
+dynamodb:ListTables
+
+```
+
+### Authentication model
+
+Long-lived programmatic access keys stored in `automation/pinterest-agent/.env` under `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_REGION`.
+
+### Purpose
+
+Source of truth for the design ↔ pin map. `export-design-pin-map.ts` scans the table and surfaces every design that has a `PinterestPinId` attribute, plus the album captions used as temporary themes.
+
+### Planned production migration
+
+A future AWS-deployed agent should access DynamoDB through an IAM role attached to its Lambda execution context, not through long-lived access keys.
+
+---
+
 ## Anthropic API
 
 ### Current integration
@@ -131,6 +164,8 @@ Existing WPF uploader already contains:
 * Claude Sonnet reasoning layer
 
 * AI recommendation generation
+
+* AI design analysis (themes/styles/albums)
 
 ### Current model
 

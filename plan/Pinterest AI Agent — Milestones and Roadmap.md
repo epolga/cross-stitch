@@ -258,6 +258,38 @@ Possible low-quality traffic increase
 
 ---
 
+# Milestone 6b — Design-Level Intelligence V1
+
+## Status
+
+Completed (Version 1). See the matching "Design-Level Intelligence Layer" section in Memory and Trend Analysis for the architectural framing.
+
+## Completed work
+
+* per-pin Pinterest analytics (impressions, clicks, outboundClicks, ctr, saves) over a rolling 30-day window
+
+* design ↔ pin map sourced from DynamoDB (`export-design-pin-map.ts`)
+
+* per-pin metrics enrichment (`build-design-performance.ts`)
+
+* AI design analysis identifying strongest themes, underperforming albums, and design directions to create (`test-ai-design-analysis.ts`)
+
+* operational outputs: `reports/design-pin-map.json`, `reports/design-performance.json`, `reports/design-insights.{md,json}`, dated archive under `reports/ai-analysis/`, append to `reports/ai-recommendations-history.json`
+
+* wired into `daily-run.bat` after the existing trend-analysis chain
+
+## Initial categorization
+
+Album caption is used as the temporary theme/category field. Richer per-design metadata (theme, style, subject, colors) is deferred to a future iteration.
+
+## Remaining work for V2
+
+* richer design categorization beyond album captions
+
+* DynamoDB persistence (see Milestone 8 in Memory and Trend Analysis)
+
+---
+
 # Milestone 7 — Automated Scheduling
 
 ## Status

@@ -106,15 +106,27 @@ Planned contents:
 
 Pinterest Ads API
 
+Pinterest per-pin organic analytics API
+
 GA4 API
 
 AdSense API
 
+DynamoDB read access via scoped IAM user
+
 Unified business reporting
 
-Claude AI analysis
+Multi-day AI trend analysis (Claude Sonnet)
+
+Design-level intelligence V1 (per-pin metrics merged with DynamoDB design data)
+
+AI design recommendations (themes/styles/albums)
 
 Operational recommendation generation
+
+Persistent recommendation history
+
+Automated daily execution via Windows Task Scheduler
 
 ```
 

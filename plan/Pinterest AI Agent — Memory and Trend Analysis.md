@@ -416,6 +416,14 @@ reports/*-confidence.json
 
 reports/ai-recommendations-history.json
 
+reports/design-pin-map.json
+
+reports/design-performance.json
+
+reports/design-insights.md
+
+reports/design-insights.json
+
 ```
 
 The system now preserves:
@@ -1506,9 +1514,9 @@ the agent may miss that horse-specific designs perform unusually well.
 
 ---
 
-## Initial implementation direction
+## Initial implementation status (Version 1 shipped)
 
-Design-level intelligence Version 1 should proceed with available metadata:
+Design-level intelligence Version 1 has shipped. It proceeds with the available metadata predicted in this document:
 
 ```text
 
@@ -1524,11 +1532,23 @@ designTitle
 
 pageUrl
 
-Pinterest metrics
+Pinterest metrics (impressions, clicks, outboundClicks, ctr, saves)
 
 ```
 
-Later versions can improve the analysis by adding richer manual or AI-assisted categorization.
+What was built:
+
+```text
+
+scripts/export-design-pin-map.ts    -> reports/design-pin-map.json
+scripts/build-design-performance.ts -> reports/design-performance.json
+scripts/test-ai-design-analysis.ts  -> reports/design-insights.{md,json}
+
+```
+
+The pipeline is wired into daily-run.bat behind the existing trend-analysis chain and runs unattended each day. Operational outputs are local JSON for now; DynamoDB persistence is still pending under the separate `DesignPinMap` / `DesignPerformance` / `AIDesignInsight` schema names listed under Milestone 8.
+
+Later versions can improve the analysis by adding richer manual or AI-assisted categorization beyond album captions.
 
 ---
 
