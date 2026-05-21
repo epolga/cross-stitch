@@ -21,4 +21,22 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
+call npm run pinmap >> daily-run.log 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo [%date% %time%] ERROR: design-pin map export failed >> daily-run.log
+    exit /b 1
+)
+
+call npm run perf >> daily-run.log 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo [%date% %time%] ERROR: design performance build failed >> daily-run.log
+    exit /b 1
+)
+
+call npm run ai:design >> daily-run.log 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo [%date% %time%] ERROR: ai design analysis failed >> daily-run.log
+    exit /b 1
+)
+
 echo [%date% %time%] Pipeline complete >> daily-run.log

@@ -7,7 +7,10 @@
     "daily": "tsx scripts/daily-business-report.ts",
     "history": "tsx scripts/build-business-history.ts",
     "ai:trend": "tsx scripts/test-ai-trend-analysis.ts",
-    "ai:history": "tsx scripts/build-recommendation-history.ts"
+    "ai:history": "tsx scripts/build-recommendation-history.ts",
+    "pinmap": "tsx scripts/export-design-pin-map.ts",
+    "perf": "tsx scripts/build-design-performance.ts",
+    "ai:design": "tsx scripts/test-ai-design-analysis.ts"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +18,7 @@
   "description": "",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
+    "@aws-sdk/client-dynamodb": "^3.1051.0",
     "dotenv": "^17.4.2",
     "googleapis": "^171.4.0",
     "open": "^11.0.0"
