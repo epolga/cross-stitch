@@ -72,7 +72,13 @@ Historical memory design, trend calculations, anomaly detection, longitudinal bu
 
 ---
 
-## 7. Pinterest AI Agent — AWS Deployment
+## 7. Pinterest AI Agent — Design-Level Intelligence
+
+The design ↔ pin relationship, Version 1 of per-design analytics (pinmap / perf / ai:design), categorization strategy, the future data model, and the future creative intelligence loop with Stages 1-4.
+
+---
+
+## 8. Pinterest AI Agent — AWS Deployment
 
 Lambda deployment, EventBridge scheduling, Secrets Manager, DynamoDB persistence, SES reporting, and operational automation.
 
@@ -170,21 +176,7 @@ uploader recommendations
 
 # Strategic Direction
 
-The long-term goal is:
+The long-term goal is **AI-assisted multi-platform marketing intelligence with human supervision**, not fully autonomous marketing.
 
-```text
-
-AI-assisted multi-platform marketing intelligence
-
-```
-
-not:
-
-```text
-
-uncontrolled fully autonomous marketing
-
-```
-
-Human supervision remains part of the recommended architecture.
+The canonical statement of this stance, with the reasoning behind it, lives in **AI Reasoning.md → Important Strategic Direction**.
 

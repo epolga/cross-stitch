@@ -24,49 +24,58 @@ The goal is to reduce master-document size and begin modularizing the project do
 
 ## Status
 
-In progress.
+Substantially completed.
 
 ## Goal
 
-Apply for external marketing/developer APIs early while technical development continues.
+Establish developer access to external marketing/analytics APIs early so technical work isn't blocked on platform approvals.
 
-## Targets
+## Completed platform infrastructure
 
-### Already approved
+```text
 
-* Pinterest
+✔ Pinterest developer infrastructure
+✔ Google developer infrastructure
+✔ Anthropic AI infrastructure
+✔ Meta developer infrastructure
 
-### Recommended next applications
+```
 
-* Meta / Facebook / Instagram
+### Meta details
+
+Completed:
+
+* Meta for Developers access
+
+* clean Meta app creation
+
+* Marketing API use case selection
+
+* development-mode app setup
+
+* future Facebook/Instagram integration path established
+
+The Meta app currently acts as internal/private infrastructure and is intentionally kept in Development mode. Only the owner/business uses it; no public distribution is planned, so Tech Provider status and advanced Meta reviews are NOT currently required.
+
+This reflects the broader architectural goal: a private intelligent business tool, not a public SaaS platform for external users.
+
+## Deferred / lower-priority platforms
+
+Currently deferred — not blockers for the intelligence architecture:
 
 * Reddit
-
-* Google Ads
-
-### Lower priority
 
 * TikTok
 
 * X / Twitter
 
+* Google Ads (lower priority while AdSense + Pinterest Ads cover monetization signal)
+
+Priority remains: Pinterest, Google, AI reasoning, historical memory system.
+
 ## Important understanding
 
-API approvals may take:
-
-* days
-
-* weeks
-
-* longer
-
-Therefore:
-
-```text
-
-Approval processes should run in parallel with development.
-
-```
+API approvals can take days, weeks, or longer. Approval processes should run in parallel with development rather than gating it.
 
 ---
 
@@ -564,31 +573,9 @@ with:
 
 ---
 
-# Important Strategic Understanding
+# Strategic stance
 
-The long-term goal is NOT:
-
-```text
-
-fully autonomous uncontrolled marketing
-
-```
-
-The recommended direction is:
-
-```text
-
-AI-assisted business intelligence
-
-+
-
-controlled automation
-
-+
-
-human supervision
-
-```
+This roadmap targets AI-assisted business intelligence with controlled automation and human supervision — not fully autonomous marketing. See **AI Reasoning.md → Important Strategic Direction** for the canonical statement of this stance.
 
 ---
 

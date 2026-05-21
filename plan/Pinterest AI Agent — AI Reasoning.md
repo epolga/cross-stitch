@@ -16,13 +16,7 @@ Anthropic API
 
 ```
 
-## Current model
-
-```text
-
-claude-sonnet-4-6
-
-```
+The specific Claude model and API-level integration details live in **API Integrations.md → Anthropic API**. This document focuses on reasoning and prompt design, not API mechanics.
 
 ## Current usage
 
@@ -33,6 +27,8 @@ claude-sonnet-4-6
 * operational recommendations
 
 * strategic reasoning
+
+* design-level theme/style recommendations
 
 ---
 
