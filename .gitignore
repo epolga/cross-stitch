@@ -63,3 +63,7 @@ automation/pinterest-agent/.env
 automation/pinterest-agent/pinterest_tokens.json
 automation/pinterest-agent/google-oauth-client.json
 automation/pinterest-agent/reports/
+automation/pinterest-agent/daily-run.log
+
+# Claude Code local settings (per-user permissions, never committed)
+.claude/settings.local.json
