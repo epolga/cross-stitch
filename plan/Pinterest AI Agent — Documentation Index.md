@@ -80,7 +80,21 @@ Tools to install on a fresh machine, the originally-suggested repo structure (ke
 
 ### Pinterest AI Agent — VS Code Technical Implementation Plan
 
-The original 4,500-line master planning document. Its content has been redistributed across docs 1-8 above. The file itself is now a stub pointing to where each topic moved; git history preserves the original full content.
+The original 4,500-line master planning document, retired after its content was redistributed across the thematic docs above. Git history preserves the original full content.
+
+Topic-to-doc mapping (where each original section went):
+
+| Original topic | New home |
+|---|---|
+| High-level architecture, AWS components, IAM, deployment | AWS Deployment |
+| DynamoDB schema, env vars, AI memory architecture, insights table, embeddings | Memory and Trend Analysis |
+| Milestones 1-7, Phase 2 actions, recommended sequence | Milestones and Roadmap |
+| AI agent role, scoring logic, AI memory principles, confidence scoring, learning loop, reasoning philosophy | AI Reasoning |
+| Google OAuth, Pinterest API, Anthropic API, OAuth scopes, token strategy | API Integrations |
+| WPF uploader, future uploader API contract, recommendation categories | WPF Uploader Integration |
+| Design-level intelligence, pin ↔ design relationship, creative loop | Design-Level Intelligence |
+| External platform applications (Meta, Reddit, etc.) | Milestones and Roadmap (Milestone 0) |
+| Tools to install, original repo layout, "what not to build first", business warning, first AI prompt | Practical Setup Notes |
 
 ---
 
@@ -88,7 +102,7 @@ The original 4,500-line master planning document. Its content has been redistrib
 
 ## Architecture
 
-A dedicated cross-cutting architecture document is still planned. Until it exists, architecture content is split between AWS Deployment.md (target architecture) and the retired master doc's git history (original framing).
+A dedicated cross-cutting architecture document is still planned. Until it exists, architecture content lives in AWS Deployment.md (target architecture). The original framing is preserved in the git history of the retired master doc.
 
 Planned contents:
 
