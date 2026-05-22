@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { readPinterestAccessToken } from "./readPinterestToken";
 
 const PINTEREST_API_BASE = "https://api.pinterest.com/v5";
 const MAX_RETRIES = 6;
@@ -8,11 +9,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function pinterestGet<T>(path: string): Promise<T> {
-  const token = process.env.PINTEREST_ACCESS_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing PINTEREST_ACCESS_TOKEN");
-  }
+  const token = readPinterestAccessToken();
 
   let lastBody = "";
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {

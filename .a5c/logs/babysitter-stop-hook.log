@@ -1,0 +1,7 @@
+[INFO] 2026-05-22T05:03:30.311Z handleHookRunStop started
+[INFO] 2026-05-22T05:03:30.323Z Hook input received
+[INFO] 2026-05-22T05:03:30.323Z [session=49225468-9f28-4609-a284-07346ea2dbaa] Session ID: 49225468-9f28-4609-a284-07346ea2dbaa
+[INFO] 2026-05-22T05:03:30.323Z [session=49225468-9f28-4609-a284-07346ea2dbaa] Resolved pluginRoot: C:\Users\VIP\.claude\plugins\cache\a5c-ai\babysitter\4.0.157
+[INFO] 2026-05-22T05:03:30.323Z [session=49225468-9f28-4609-a284-07346ea2dbaa] Resolved stateDir: C:\Users\VIP\.a5c\state
+[INFO] 2026-05-22T05:03:30.324Z [session=49225468-9f28-4609-a284-07346ea2dbaa] Checking session file at: C:\Users\VIP\.a5c\state/49225468-9f28-4609-a284-07346ea2dbaa.md
+[INFO] 2026-05-22T05:03:30.348Z [session=49225468-9f28-4609-a284-07346ea2dbaa] No active loop found for session 49225468-9f28-4609-a284-07346ea2dbaa — allowing exit
