@@ -9,7 +9,7 @@ This document describes how to recreate the production Elastic Beanstalk environ
 
 ## Application / Environment
 - Elastic Beanstalk Application: cross-stitch
-- Current production environment: cross-stitch-com-env
+- Current production environment: cross-stitch-com-env-clone
 - Platform: 64bit Amazon Linux 2023 running Node.js 20
 - Environment type: Load balanced (Application Load Balancer)
 
