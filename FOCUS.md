@@ -19,7 +19,7 @@ Reference docs:
 - [x] Storage created: `CrossStitchBusinessHistory` DynamoDB table (PAY_PER_REQUEST, deletion protection, PITR) and `cross-stitch-ai-reports` S3 bucket (SSE-S3, block-public-access). Idempotent `npm run init` script — cross-stitch commit `f1f8999`.
 - [x] DDB and S3 wrappers shipped: `src/services/historyStore.ts` and `src/services/aiArtifactStore.ts` — cross-stitch commit `e9c8b01`. Smoke-tested at import + sortKey level; not yet exercised against the real table.
 - [ ] **Dual-write into the daily scripts (Step 5)** — add DDB writes alongside the existing `fs.writeFileSync` calls. JSON stays as the on-disk debug artifact during the soak window.
-  - [ ] `daily-business-report.ts` → `putDailyBusiness`
+  - [x] `daily-business-report.ts` → `putDailyBusiness` (commit `9313b1d`, 2026-05-22; verified DAILY_BUSINESS#2026-05-21 via queryRange)
   - [ ] `export-design-pin-map.ts` → `batchPutDesignPinMap`
   - [ ] `build-design-performance.ts` → `batchPutDesignPerformance`
   - [ ] `test-ai-trend-analysis.ts` → `putMarkdown` + `putAiAnalysis`
