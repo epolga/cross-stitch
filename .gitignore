@@ -69,3 +69,6 @@ automation/pinterest-agent/daily-run.log
 .claude/settings.local.json
 .claude/scheduled_tasks.json
 .claude/scheduled_tasks.lock
+
+# Babysitter local working state (SDK install, run journal, drafts, blobs)
+.a5c/
