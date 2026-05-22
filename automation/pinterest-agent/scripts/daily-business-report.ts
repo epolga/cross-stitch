@@ -4,6 +4,7 @@ import path from "path";
 import { formatDate, yesterdayDate } from "../src/services/dateUtils";
 import { getPinterestAdMetrics } from "../src/services/pinterestAds";
 import { getGA4PinterestSessions, getAdSenseEarnings } from "../src/services/googleAnalytics";
+import { putDailyBusiness } from "../src/services/historyStore";
 import type { BusinessReport } from "../src/services/types";
 
 const PINTEREST_AD_ACCOUNT_ID = process.env.PINTEREST_AD_ACCOUNT_ID;
@@ -56,7 +57,33 @@ async function main() {
 
   const reportPath = path.join(reportsDir, `${dateStr}-business-report.json`);
   fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + "\n");
-  console.log(`  Saved → ${reportPath}\n`);
+  console.log(`  Saved → ${reportPath}`);
+
+  // Dual-write to DynamoDB. JSON above is the canonical artifact during the
+  // parity-verified soak window; DDB row is the future source of truth.
+  // Schema reference: plan/integration/business-history-schema.md §4.2.
+  try {
+    await putDailyBusiness({
+      date: dateStr,
+      spend: pinterestAds.spend,
+      impressions: pinterestAds.impressions,
+      clicks: pinterestAds.clicks,
+      ctr: pinterestAds.ctr,
+      cpc: pinterestAds.cpc,
+      outboundClicks: pinterestAds.outboundClicks,
+      ga4Sessions: ga4Sessions.total,
+      ga4PaidSessions: ga4Sessions.paidSocial,
+      ga4OrganicSessions: ga4Sessions.organic,
+      ga4ReferralSessions: ga4Sessions.referral,
+      adsenseRevenue: adsenseEarnings,
+      revenuePerHundredSessions: revPer100 ?? undefined,
+      profit: roughProfit,
+    });
+    console.log(`  Saved → DDB CrossStitchBusinessHistory[DAILY_BUSINESS#${dateStr}]\n`);
+  } catch (err) {
+    console.error(`  DDB write failed:`, err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {
