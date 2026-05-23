@@ -11,7 +11,9 @@
     "ai:history": "tsx scripts/build-recommendation-history.ts",
     "pinmap": "tsx scripts/export-design-pin-map.ts",
     "perf": "tsx scripts/build-design-performance.ts",
-    "ai:design": "tsx scripts/test-ai-design-analysis.ts"
+    "ai:design": "tsx scripts/test-ai-design-analysis.ts",
+    "backfill": "tsx scripts/backfill-history.ts",
+    "verify-parity": "tsx scripts/verify-history-parity.ts"
   },
   "keywords": [],
   "author": "",
