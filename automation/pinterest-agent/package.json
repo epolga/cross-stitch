@@ -13,7 +13,8 @@
     "perf": "tsx scripts/build-design-performance.ts",
     "ai:design": "tsx scripts/test-ai-design-analysis.ts",
     "backfill": "tsx scripts/backfill-history.ts",
-    "verify-parity": "tsx scripts/verify-history-parity.ts"
+    "verify-parity": "tsx scripts/verify-history-parity.ts",
+    "anomaly": "tsx scripts/detect-anomalies.ts"
   },
   "keywords": [],
   "author": "",
