@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
 import { yesterdayDateStr } from "../src/services/dateUtils";
+import { putMarkdown } from "../src/services/aiArtifactStore";
+import { putAiAnalysis } from "../src/services/historyStore";
 
 interface DesignPerformance {
   designId: number;
@@ -160,6 +162,8 @@ Keep it concrete and data-grounded. Cite numbers, not vibes.`;
     messages: [{ role: "user", content: prompt }],
   });
 
+  const generatedAt = new Date().toISOString();
+
   const text = message.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
     .map((b) => b.text)
@@ -229,6 +233,37 @@ Keep it concrete and data-grounded. Cite numbers, not vibes.`;
   console.log(`  Saved → ${jsonPath}`);
   console.log(`  Saved → ${latestMdPath}`);
   console.log(`  Saved → ${latestJsonPath}\n`);
+
+  // Dual-write to S3 + DynamoDB. JSON above stays as the canonical artifact
+  // during the parity-verified soak window. Only persist a DDB row when the
+  // AI produced a structured recommendation — without topAlbums/reasoning
+  // the row would be incomplete.
+  // Schema reference: plan/integration/business-history-schema.md §4.3, §10.
+  if (!recommendation) {
+    console.log("  (no recommendation block in AI output → skipping S3 + DDB dual-write)\n");
+    return;
+  }
+  try {
+    const s3Key = await putMarkdown(dateStr, generatedAt, "design", mdBody);
+    await putAiAnalysis({
+      generatedAt,
+      analysisType: "design",
+      forDate: dateStr,
+      reasoning: recommendation.reasoning,
+      markdownS3Key: s3Key,
+      topAlbums: recommendation.topAlbums,
+      underperformingAlbums: recommendation.underperformingAlbums,
+      designDirectionsToCreate: recommendation.designDirectionsToCreate,
+      totalDesignsAnalyzed: perf.successCount,
+      confidence: recommendation.confidence,
+      sourceWindow: perf.window,
+    });
+    console.log(`  Saved → S3 cross-stitch-ai-reports/${s3Key}`);
+    console.log(`  Saved → DDB CrossStitchBusinessHistory[AI_ANALYSIS#${generatedAt}#design]\n`);
+  } catch (err) {
+    console.error(`  S3/DDB dual-write failed:`, err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {
