@@ -25,10 +25,10 @@ Reference docs:
   - [x] `test-ai-trend-analysis.ts` → `putMarkdown` + `putAiAnalysis` (commit `99fb854`, 2026-05-23; AI_ANALYSIS#2026-05-23T04:50:29.078Z#trend + S3 analysis/2026-05-22/...-trend.md verified end-to-end via queryRange + getMarkdown. Bumped `max_tokens` 1500→3000 to keep the confidence JSON block from truncating)
   - [x] `test-ai-design-analysis.ts` → `putMarkdown` + `putAiAnalysis` (commit `d81c2f4`, 2026-05-23; AI_ANALYSIS#2026-05-23T04:57:47.783Z#design + S3 analysis/2026-05-22/...-design.md verified end-to-end via queryRange + getMarkdown — topAlbums/underperformingAlbums/designDirectionsToCreate/sourceWindow all round-trip)
   - [ ] `build-recommendation-history.ts` — re-evaluate; it currently *summarizes* `ai-recommendations-history.json` rather than writing it, so it may not need a dual-write at all.
-- [ ] Backfill script — `scripts/backfill-history.ts` walks every existing `reports/*.json` + AI markdown into DDB/S3. Idempotent.
-- [ ] Parity verifier — `scripts/verify-history-parity.ts` daily diff during the soak window.
+- [x] Backfill script — `scripts/backfill-history.ts` (2026-05-23): wrote 6 DAILY_BUSINESS rows (May 15–21) + 3 AI_ANALYSIS rows (trend@2026-05-20, design@2026-05-20, design@2026-05-21). trend@2026-05-21 skipped — its source JSON has `confidence: null` from the pre-existing max_tokens=1500 truncation bug.
+- [x] Parity verifier — `scripts/verify-history-parity.ts` (2026-05-23). Post-backfill audit: 13 pass, 1 warn (trend@2026-05-21 expected gap), 0 fail. Wired into `daily-run.bat` as the final step; non-zero exit fails the cron.
 - [ ] Read cutover — `historyBuilder.loadReports` → `historyStore.queryRange`.
-- [ ] One-week dual-write soak with daily parity check.
+- [ ] One-week dual-write soak with daily parity check. **Tracking in [SOAK-WINDOW.md](SOAK-WINDOW.md)** — day 0 (manual audit) on 2026-05-23; first cron-driven check is day 1 on 2026-05-24.
 - [ ] Strip the `fs.writeFileSync` calls; markdown lives only in S3 after this.
 - [ ] Anomaly detector — `src/services/anomalyDetector.ts` writing `ANOMALY_EVENT` rows after `npm run history`. Notifications deferred to Milestone 8.
 - [ ] End-to-end verified: one day's data flows APIs → DDB → AI analysis without local JSON being the source of truth.
