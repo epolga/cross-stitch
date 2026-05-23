@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { formatDate, yesterdayDate } from "../src/services/dateUtils";
 import { getPinAnalytics, type PinMetrics } from "../src/services/pinterestPinAnalytics";
+import { batchPutDesignPerformance } from "../src/services/historyStore";
 
 interface DesignPinRecord {
   designId: number;
@@ -104,6 +105,24 @@ async function main() {
   const outPath = path.join(reportsDir, "design-performance.json");
   fs.writeFileSync(outPath, JSON.stringify(output, null, 2) + "\n");
   console.log(`Saved → ${outPath}`);
+
+  // Dual-write to DynamoDB. JSON above is the canonical artifact during the
+  // parity-verified soak window; DDB rows are the future source of truth.
+  // Schema reference: plan/integration/business-history-schema.md §4.5.
+  try {
+    const ddbInputs = enriched.map(({ error, ...rest }) => ({
+      snapshotDate: endStr,
+      windowLabel: `${WINDOW_DAYS}d`,
+      windowStartDate: startStr,
+      windowEndDate: endStr,
+      ...rest,
+    }));
+    await batchPutDesignPerformance(ddbInputs);
+    console.log(`Saved → DDB CrossStitchBusinessHistory[DESIGN_PERFORMANCE × ${ddbInputs.length}] (snapshotDate=${endStr})`);
+  } catch (err) {
+    console.error(`  DDB write failed:`, err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {
