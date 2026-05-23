@@ -4,6 +4,8 @@ import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
 import { yesterdayDateStr } from "../src/services/dateUtils";
 import type { BusinessHistory } from "../src/services/types";
+import { putMarkdown } from "../src/services/aiArtifactStore";
+import { putAiAnalysis } from "../src/services/historyStore";
 
 const apiKey = process.env.ANTHROPIC_API_KEY;
 if (!apiKey || apiKey === "your-key-here") {
@@ -73,9 +75,11 @@ Keep the analysis concise and data-driven. Focus on patterns, not single-day noi
   const client = new Anthropic({ apiKey });
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 1500,
+    max_tokens: 3000,
     messages: [{ role: "user", content: prompt }],
   });
+
+  const generatedAt = new Date().toISOString();
 
   const text = message.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
@@ -140,6 +144,36 @@ Keep the analysis concise and data-driven. Focus on patterns, not single-day noi
 
   console.log(`  Saved → ${mdPath}`);
   console.log(`  Saved → ${jsonPath}\n`);
+
+  // Dual-write to S3 + DynamoDB. JSON above stays as the canonical artifact
+  // during the parity-verified soak window. We only persist a DDB row when
+  // the AI produced a structured confidence block — without it there's no
+  // reasoning/recommendedAction to record, so the row would be incomplete.
+  // Schema reference: plan/integration/business-history-schema.md §4.3, §10.
+  if (!confidence) {
+    console.log("  (no confidence block in AI output → skipping S3 + DDB dual-write)\n");
+    return;
+  }
+  try {
+    const mdBody = `# AI Trend Analysis (${dateStr})\n\n${text}\n`;
+    const s3Key = await putMarkdown(dateStr, generatedAt, "trend", mdBody);
+    await putAiAnalysis({
+      generatedAt,
+      analysisType: "trend",
+      forDate: dateStr,
+      reasoning: confidence.reasoning,
+      markdownS3Key: s3Key,
+      recommendedAction: confidence.recommendedAction,
+      sourceHistoryRange: history.dateRange,
+      totalDaysAnalyzed: history.totalDays,
+      confidence: confidence.confidence,
+    });
+    console.log(`  Saved → S3 cross-stitch-ai-reports/${s3Key}`);
+    console.log(`  Saved → DDB CrossStitchBusinessHistory[AI_ANALYSIS#${generatedAt}#trend]\n`);
+  } catch (err) {
+    console.error(`  S3/DDB dual-write failed:`, err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {
