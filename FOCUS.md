@@ -23,7 +23,7 @@ Reference docs:
   - [x] `export-design-pin-map.ts` → `batchPutDesignPinMap` (commit `be8c807`, 2026-05-23; 63 rows written + verified via queryRange — count and first/last records match the JSON snapshot)
   - [x] `build-design-performance.ts` → `batchPutDesignPerformance` (commit `64a8df9`, 2026-05-23; 63 rows × snapshotDate 2026-05-22; totals match the JSON snapshot — imp=46712, clk=1112, outbound=55, saves=347)
   - [x] `test-ai-trend-analysis.ts` → `putMarkdown` + `putAiAnalysis` (commit `99fb854`, 2026-05-23; AI_ANALYSIS#2026-05-23T04:50:29.078Z#trend + S3 analysis/2026-05-22/...-trend.md verified end-to-end via queryRange + getMarkdown. Bumped `max_tokens` 1500→3000 to keep the confidence JSON block from truncating)
-  - [ ] `test-ai-design-analysis.ts` → `putMarkdown` + `putAiAnalysis`
+  - [x] `test-ai-design-analysis.ts` → `putMarkdown` + `putAiAnalysis` (commit `d81c2f4`, 2026-05-23; AI_ANALYSIS#2026-05-23T04:57:47.783Z#design + S3 analysis/2026-05-22/...-design.md verified end-to-end via queryRange + getMarkdown — topAlbums/underperformingAlbums/designDirectionsToCreate/sourceWindow all round-trip)
   - [ ] `build-recommendation-history.ts` — re-evaluate; it currently *summarizes* `ai-recommendations-history.json` rather than writing it, so it may not need a dual-write at all.
 - [ ] Backfill script — `scripts/backfill-history.ts` walks every existing `reports/*.json` + AI markdown into DDB/S3. Idempotent.
 - [ ] Parity verifier — `scripts/verify-history-parity.ts` daily diff during the soak window.
