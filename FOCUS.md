@@ -30,7 +30,7 @@ Reference docs:
 - [ ] Read cutover — `historyBuilder.loadReports` → `historyStore.queryRange`.
 - [ ] One-week dual-write soak with daily parity check. **Tracking in [SOAK-WINDOW.md](SOAK-WINDOW.md)** — day 0 (manual audit) on 2026-05-23; first cron-driven check is day 1 on 2026-05-24.
 - [ ] Strip the `fs.writeFileSync` calls; markdown lives only in S3 after this.
-- [x] Anomaly detector — `src/services/anomalyDetector.ts` writing `ANOMALY_EVENT` rows after `npm run history`. Notifications deferred to Milestone 8. (commit `8e585b1`, 2026-05-23; 6 synthetic-data unit tests pass; live run currently skips because 6 DAILY_BUSINESS rows < 8 needed — first real detection lands on 2026-05-30 once two more cron-driven rows arrive.)
+- [x] Anomaly detector — `src/services/anomalyDetector.ts` writing `ANOMALY_EVENT` rows after `npm run history`. (commit `8e585b1`, 2026-05-23; 6 synthetic-data unit tests pass; live run currently skips because 6 DAILY_BUSINESS rows < 8 needed — first real detection lands on 2026-05-30 once two more cron-driven rows arrive.) **Notifications consumer shipped same day as part of Milestone 8** (SES `notify-anomalies` step in daily-run.bat right after `anomaly`; verified end-to-end with a synthetic row).
 - [ ] End-to-end verified: one day's data flows APIs → DDB → AI analysis without local JSON being the source of truth.
 
 ## Out of scope (do NOT do, even if tempting)
