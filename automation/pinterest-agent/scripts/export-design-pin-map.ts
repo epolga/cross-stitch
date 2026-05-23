@@ -7,6 +7,7 @@ import {
   type AttributeValue,
   type ScanCommandInput,
 } from "@aws-sdk/client-dynamodb";
+import { batchPutDesignPinMap } from "../src/services/historyStore";
 
 const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || "CrossStitchItems";
 const REGION = process.env.AWS_REGION || "us-east-1";
@@ -138,6 +139,17 @@ async function main() {
   const outPath = path.join(reportsDir, "design-pin-map.json");
   fs.writeFileSync(outPath, JSON.stringify(records, null, 2) + "\n");
   console.log(`Saved → ${outPath}`);
+
+  // Dual-write to DynamoDB. JSON above is the canonical artifact during the
+  // parity-verified soak window; DDB rows are the future source of truth.
+  // Schema reference: plan/integration/business-history-schema.md §4.4.
+  try {
+    await batchPutDesignPinMap(records);
+    console.log(`Saved → DDB CrossStitchBusinessHistory[DESIGN_PIN_MAP × ${records.length}]`);
+  } catch (err) {
+    console.error(`  DDB write failed:`, err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {
