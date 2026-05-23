@@ -38,6 +38,10 @@ Only proceed if days 1–7 all show `✓`.
   - `test-ai-design-analysis.ts` — same as above; remove `design-insights.{md,json}` writes
 - [ ] Update `verify-history-parity.ts` to skip checks that no longer have a JSON side (or delete the script entirely if every input is gone).
 - [ ] Remove `verify-parity` from `daily-run.bat` once there's nothing to verify against.
+- [ ] Disable the day-7 reminder: `schtasks /Delete /TN MilestoneFiveSoakReminder /F` (created 2026-05-23 to nudge daily at 8:57 AM from 2026-05-30 onward until the cutover lands).
+- [ ] Delete `automation/pinterest-agent/soak-reminder.bat`.
+- [ ] Remove the "While SOAK-WINDOW.md exists" section from [CLAUDE.md](CLAUDE.md).
+- [ ] Delete this file (`SOAK-WINDOW.md`).
 - [ ] Mark Milestone 5 complete in [FOCUS.md](FOCUS.md) and [the milestones doc](../cross-stitch-platform-docs/plan/cross-stitch/Pinterest%20AI%20Agent%20%E2%80%94%20Milestones%20and%20Roadmap.md).
 
 ## If a parity check fails mid-window
