@@ -20,8 +20,8 @@ Reference docs:
 - [x] DDB and S3 wrappers shipped: `src/services/historyStore.ts` and `src/services/aiArtifactStore.ts` — cross-stitch commit `e9c8b01`. Smoke-tested at import + sortKey level; not yet exercised against the real table.
 - [ ] **Dual-write into the daily scripts (Step 5)** — add DDB writes alongside the existing `fs.writeFileSync` calls. JSON stays as the on-disk debug artifact during the soak window.
   - [x] `daily-business-report.ts` → `putDailyBusiness` (commit `9313b1d`, 2026-05-22; verified DAILY_BUSINESS#2026-05-21 via queryRange)
-  - [ ] `export-design-pin-map.ts` → `batchPutDesignPinMap`
-  - [ ] `build-design-performance.ts` → `batchPutDesignPerformance`
+  - [x] `export-design-pin-map.ts` → `batchPutDesignPinMap` (commit `be8c807`, 2026-05-23; 63 rows written + verified via queryRange — count and first/last records match the JSON snapshot)
+  - [x] `build-design-performance.ts` → `batchPutDesignPerformance` (commit `64a8df9`, 2026-05-23; 63 rows × snapshotDate 2026-05-22; totals match the JSON snapshot — imp=46712, clk=1112, outbound=55, saves=347)
   - [ ] `test-ai-trend-analysis.ts` → `putMarkdown` + `putAiAnalysis`
   - [ ] `test-ai-design-analysis.ts` → `putMarkdown` + `putAiAnalysis`
   - [ ] `build-recommendation-history.ts` — re-evaluate; it currently *summarizes* `ai-recommendations-history.json` rather than writing it, so it may not need a dual-write at all.
