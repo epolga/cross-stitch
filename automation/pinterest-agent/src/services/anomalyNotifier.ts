@@ -57,7 +57,12 @@ function formatTextBody(rows: AnomalyRow[]): string {
     "These are statistical signals only — no action recommended automatically.",
     "Check daily-run.log and reports/ai-analysis/*-trend-analysis.md before reacting.",
     "",
-    "Detection threshold: 2σ above/below the trailing-7-row mean.",
+    "How to read this:",
+    "  σ (sigma) is the standard deviation of the trailing 7 rows — the metric's",
+    "  typical day-to-day wiggle. \"Deviation\" tells you how many of those wiggles",
+    "  today's value sits away from the recent mean. The detector flags anything",
+    "  at or above 2σ; 5σ+ is rare and usually a data issue or a real shock.",
+    "",
     "Schema: CrossStitchBusinessHistory[ANOMALY_EVENT]."
   );
   return lines.join("\n") + "\n";
@@ -104,9 +109,13 @@ function formatHtmlBody(rows: AnomalyRow[]): string {
 <tbody>
 ${rowsHtml}
 </tbody></table>
-<p style="color:#666;font-size:13px;margin-top:24px">
-  Statistical signals only — no action recommended automatically. Detection threshold: 2σ.<br>
-  Check <code>daily-run.log</code> and <code>reports/ai-analysis/*-trend-analysis.md</code> before reacting.<br>
+<p style="color:#666;font-size:13px;margin-top:24px;line-height:1.5">
+  Statistical signals only — no action recommended automatically. Check <code>daily-run.log</code> and <code>reports/ai-analysis/*-trend-analysis.md</code> before reacting.
+</p>
+<p style="color:#666;font-size:13px;line-height:1.5;background:#fafafa;padding:10px 14px;border-left:3px solid #ddd">
+  <b>How to read this:</b> <code>σ</code> (sigma) is the standard deviation of the trailing 7 rows — the metric's typical day-to-day wiggle. The "Deviation" column tells you how many of those wiggles today's value sits away from the recent mean. The detector flags anything at or above <b>2σ</b>; 5σ+ is rare and usually a data issue or a real shock.
+</p>
+<p style="color:#999;font-size:12px;margin-top:16px">
   Schema: <code>CrossStitchBusinessHistory[ANOMALY_EVENT]</code>.
 </p>
 </body></html>
