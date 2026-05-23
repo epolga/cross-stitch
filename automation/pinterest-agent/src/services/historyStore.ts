@@ -7,6 +7,7 @@ import {
   PutCommand,
   QueryCommand,
   BatchWriteCommand,
+  UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 
 const REGION = process.env.AWS_REGION || "us-east-1";
@@ -198,6 +199,29 @@ export async function putAnomaly(input: AnomalyEventInput): Promise<void> {
         SortKey: sortKey.anomalyEvent(input.detectedAt, input.metric),
         notified: false,
         ...input,
+      },
+    })
+  );
+}
+
+// Mark a single ANOMALY_EVENT row as notified — called by the alerter after
+// the email send succeeds. Stamps notifiedAt so the row carries its own audit
+// trail without a separate journal.
+export async function markAnomalyNotified(
+  detectedAt: string,
+  metric: AnomalyMetric
+): Promise<void> {
+  await ddb.send(
+    new UpdateCommand({
+      TableName: TABLE,
+      Key: {
+        EntityType: "ANOMALY_EVENT",
+        SortKey: sortKey.anomalyEvent(detectedAt, metric),
+      },
+      UpdateExpression: "SET notified = :t, notifiedAt = :n",
+      ExpressionAttributeValues: {
+        ":t": true,
+        ":n": new Date().toISOString(),
       },
     })
   );

@@ -5,6 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "init": "tsx scripts/init-history-storage.ts",
+    "setup-ses-iam": "tsx scripts/setup-ses-iam.ts",
     "daily": "tsx scripts/daily-business-report.ts",
     "history": "tsx scripts/build-business-history.ts",
     "ai:trend": "tsx scripts/test-ai-trend-analysis.ts",
@@ -14,7 +15,9 @@
     "ai:design": "tsx scripts/test-ai-design-analysis.ts",
     "backfill": "tsx scripts/backfill-history.ts",
     "verify-parity": "tsx scripts/verify-history-parity.ts",
-    "anomaly": "tsx scripts/detect-anomalies.ts"
+    "anomaly": "tsx scripts/detect-anomalies.ts",
+    "test-email": "tsx scripts/test-email.ts",
+    "notify": "tsx scripts/notify-anomalies.ts"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +26,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
     "@aws-sdk/client-dynamodb": "^3.1051.0",
+    "@aws-sdk/client-iam": "^3.1053.0",
     "@aws-sdk/client-s3": "^3.1051.0",
+    "@aws-sdk/client-sesv2": "^3.1053.0",
     "@aws-sdk/lib-dynamodb": "^3.1051.0",
     "dotenv": "^17.4.2",
     "googleapis": "^171.4.0",
