@@ -7,6 +7,7 @@ import {
   PutCommand,
   QueryCommand,
   BatchWriteCommand,
+  type BatchWriteCommandOutput,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 
@@ -236,7 +237,9 @@ async function batchPutRows(items: Record<string, unknown>[]): Promise<void> {
       [TABLE]: chunk.map((Item) => ({ PutRequest: { Item } })),
     };
     while (requestItems && Object.keys(requestItems).length > 0) {
-      const res = await ddb.send(new BatchWriteCommand({ RequestItems: requestItems }));
+      const res: BatchWriteCommandOutput = await ddb.send(
+        new BatchWriteCommand({ RequestItems: requestItems }),
+      );
       const unprocessed = res.UnprocessedItems;
       requestItems =
         unprocessed && Object.keys(unprocessed).length > 0
