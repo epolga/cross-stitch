@@ -122,6 +122,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               </Link>
             </p>
             <PrivacyPolicyFooterLink />
+
+            <p className="mt-3 text-xs text-gray-400">
+              Cross Stitch Pinterest Agent — automation and analytics tools for cross-stitch.com
+            </p>
           </div>
         </footer>
       </body>
