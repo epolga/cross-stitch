@@ -43,8 +43,27 @@ const server = http.createServer(async (req, res) => {
 
     const { tokens } = await oauth2Client.getToken(code);
 
-    console.log("\nSAVE THIS REFRESH TOKEN:\n");
+    console.log("\nNew refresh token:\n");
     console.log(tokens.refresh_token);
+
+    // Auto-patch .env so the weekly refresh reminder is a one-click flow
+    // (browser consent → token saved → done, no copy/paste).
+    const envPath = path.join(process.cwd(), ".env");
+    if (tokens.refresh_token && fs.existsSync(envPath)) {
+      const env = fs.readFileSync(envPath, "utf-8");
+      const replaced = env.replace(
+        /^GOOGLE_REFRESH_TOKEN=.*$/m,
+        `GOOGLE_REFRESH_TOKEN=${tokens.refresh_token}`,
+      );
+      if (replaced !== env) {
+        fs.writeFileSync(envPath, replaced);
+        console.log(`\n.env updated → ${envPath}`);
+      } else {
+        console.log(`\n(.env had no GOOGLE_REFRESH_TOKEN= line to replace — paste manually.)`);
+      }
+    } else {
+      console.log("\n(Couldn't auto-update .env — paste the token manually.)");
+    }
 
     res.end("Authentication successful. You may close this tab.");
     server.close();
