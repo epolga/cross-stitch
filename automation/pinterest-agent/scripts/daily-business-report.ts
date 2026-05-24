@@ -14,7 +14,10 @@ if (!PINTEREST_AD_ACCOUNT_ID) {
 }
 
 async function main() {
-  const dateStr = formatDate(yesterdayDate());
+  // Default = yesterday (cron mode). Optional --date=YYYY-MM-DD lets one
+  // backfill a missed day (e.g. when the cron failed at OAuth refresh).
+  const argDate = process.argv.find((a) => a.startsWith("--date="))?.split("=")[1];
+  const dateStr = argDate ?? formatDate(yesterdayDate());
 
   const [pinterestAds, ga4Sessions, adsenseEarnings] = await Promise.all([
     getPinterestAdMetrics(PINTEREST_AD_ACCOUNT_ID!, dateStr),
