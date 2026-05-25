@@ -121,6 +121,15 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 Etsy API app details
               </Link>
             </p>
+            <p className="mt-2">
+              <Link
+                href="/pinterest-agent"
+                className="text-blue-600 hover:underline"
+                aria-label="Open Cross Stitch Pinterest Agent details page"
+              >
+                Pinterest API app details
+              </Link>
+            </p>
             <PrivacyPolicyFooterLink />
 
             <p className="mt-3 text-xs text-gray-400">
