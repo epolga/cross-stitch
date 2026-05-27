@@ -158,7 +158,13 @@ Keep it concrete and data-grounded. Cite numbers, not vibes.`;
   const client = new Anthropic({ apiKey });
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 4000,
+    // Bumped 4000 → 8000 on 2026-05-27 after the 2026-05-26 run cut off
+    // mid-recommendation block ("Stylized cartoon-adjacent nursery animals"
+    // with no closing quote/bracket/brace), which caused the parser to skip
+    // the S3+DDB dual-write and the next-day verify-parity to log a "no
+    // structured block in JSON" warning. Same shape of bug as the documented
+    // trend@2026-05-21 historical gap that was previously bumped 1500 → 3000.
+    max_tokens: 8000,
     messages: [{ role: "user", content: prompt }],
   });
 

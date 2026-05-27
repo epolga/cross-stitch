@@ -27,7 +27,13 @@ const ZERO_METRICS: PinMetrics = {
 };
 
 const WINDOW_DAYS = 30;
-const CONCURRENCY = 3;
+// Dropped 3 → 1 on 2026-05-27 after the morning cron saw 6 / 238 pin-analytics
+// fetches fail to 5-attempt-exhausted Pinterest 429s. With 3 concurrent
+// requests the analytics endpoint's rate limit kicks in around fetch #60–80
+// and exponential backoff can't recover. Serial requests pace naturally well
+// within the limit at the cost of a ~2-minute run instead of ~30 seconds —
+// fine for a once-a-day cron.
+const CONCURRENCY = 1;
 
 function daysBefore(date: Date, n: number): Date {
   const d = new Date(date);
