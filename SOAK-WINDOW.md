@@ -8,13 +8,15 @@
 |----------|------------|-------------|----------------------------------------------------------------------------------------------------------------------|
 | 0        | 2026-05-23 | ✓ (manual)  | Post-backfill audit: 13 pass, 1 warn (trend@2026-05-21 — confidence=null in source from old max_tokens=1500 truncation), 0 fail |
 | (reset)  | 2026-05-24 | ✗           | Cron failed at 5 AM with OAuth `invalid_grant` (Google refresh token expired; consent screen still in "Testing" → 7-day token lifetime). Rotated GOOGLE_REFRESH_TOKEN, backfilled 5/22 + 5/23 via `daily-business-report.ts --date=...`, ran the full pipeline manually. Pipeline ALSO surfaced a latent dup-key bug: DESIGN_PIN_MAP failed because DesignID 5355 ("Black Cat" in album 130) had two DDB rows (NPage 00013 + 00021), each independently pinned by AutoPinner; user deleted the 00013 row + its Pinterest pin. Manual end-of-day parity: 17 pass, 1 warn (same 5/21 gap), 0 fail. Soak counter reset per the mid-window-failure rule below. |
-| 1        | 2026-05-25 | ⏳ pending   | First cron-driven check (post-reset)                                                                                 |
-| 2        | 2026-05-26 | ⏳ pending   |                                                                                                                      |
-| 3        | 2026-05-27 | ⏳ pending   |                                                                                                                      |
-| 4        | 2026-05-28 | ⏳ pending   |                                                                                                                      |
-| 5        | 2026-05-29 | ⏳ pending   |                                                                                                                      |
-| 6        | 2026-05-30 | ⏳ pending   |                                                                                                                      |
-| 7        | 2026-05-31 | ⏳ pending   | If all green, proceed to cutover step (below)                                                                        |
+| (reset)  | 2026-05-25 | ✗           | `DDB write failed: Provided list of item keys contains duplicates` on DESIGN_PIN_MAP export — pipeline failed fast before parity ran. Soak counter reset. |
+| (reset)  | 2026-05-26 | ✗           | Same DESIGN_PIN_MAP duplicate error. Parity not reached. Soak counter reset. |
+| 1        | 2026-05-27 | ✓           | First clean run post-reset: DESIGN_PIN_MAP × 238 succeeded, parity = 23 passed, 2 warnings (expected), 0 failed.    |
+| 2        | 2026-05-28 | ⏳ pending   |                                                                                                                      |
+| 3        | 2026-05-29 | ⏳ pending   |                                                                                                                      |
+| 4        | 2026-05-30 | ⏳ pending   |                                                                                                                      |
+| 5        | 2026-05-31 | ⏳ pending   |                                                                                                                      |
+| 6        | 2026-06-01 | ⏳ pending   |                                                                                                                      |
+| 7        | 2026-06-02 | ⏳ pending   | If all green, proceed to cutover step (below)                                                                        |
 
 Mark each row as `✓` (passed) or `✗` (failed, with a short root-cause note) after reviewing `daily-run.log` the morning after the cron runs.
 
