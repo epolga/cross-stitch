@@ -214,6 +214,7 @@ async function initializeCache(): Promise<void> {
               const album: Album = {
                 AlbumID: albumId,
                 Caption: caption,
+                SeoDescription: item.SeoDescription?.S || undefined,
               };
               albumCache.set(albumId, album);
               albumCaptionCache.set(albumId, caption); // Update caption cache
@@ -442,6 +443,7 @@ export async function getDesignsByAlbumId(albumId: string, pageSize: number, nPa
   return withCache(async () => {
     try {
       const albumCaption = await getAlbumCaption(parseInt(albumId)) || "Unknown Album";
+      const albumSeoDescription = albumCache.get(parseInt(albumId))?.SeoDescription;
 
       const allDesigns = Array.from(designCache.values()).filter(
         (design) => design.AlbumID === parseInt(albumId)
@@ -455,6 +457,7 @@ export async function getDesignsByAlbumId(albumId: string, pageSize: number, nPa
         pageSize,
         totalPages: Math.ceil(totalItems / pageSize) || 1,
         albumCaption,
+        albumSeoDescription,
       };
 
       if (totalItems === 0) {

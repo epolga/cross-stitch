@@ -27,4 +27,5 @@ export interface DesignsResponse {
     pageSize: number;
     totalPages: number;
     albumCaption?: string;
+    albumSeoDescription?: string;
 }

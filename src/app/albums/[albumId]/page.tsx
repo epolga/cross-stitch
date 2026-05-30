@@ -131,16 +131,27 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
     );
   }
 
-  const { designs, entryCount, page: currentPage, totalPages, albumCaption } = designsResponse;
+  const { designs, entryCount, page: currentPage, totalPages, albumCaption, albumSeoDescription } = designsResponse;
   const baseUrl = albumCaption ? await CreateAlbumUrl(albumCaption) : `/albums/${albumId}`;
   const isBookmarksAlbum = (albumCaption || '').toLowerCase() === 'bookmarks';
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Designs in {albumCaption || `Album ${albumId}`} ({entryCount} designs)</h1>
-      <p className="text-gray-700 mb-4">
-        This curated collection of free PDF charts includes instant downloads and stitch details tailored to the {albumCaption || `album ${albumId}`} theme.
-        Looking for more ideas? <Link href="/XStitch-Charts.aspx" className="text-blue-600 hover:underline">View all free cross-stitch albums</Link>.
-      </p>
+      {albumSeoDescription ? (
+        <div className="text-gray-600 text-sm mb-4">
+          {albumSeoDescription.split('\n').filter(p => p.trim()).map((para, i) => (
+            <p key={i} className="mb-2">{para.trim()}</p>
+          ))}
+          <p className="mt-1">
+            Looking for more ideas? <Link href="/XStitch-Charts.aspx" className="text-blue-600 hover:underline">View all free cross-stitch albums</Link>.
+          </p>
+        </div>
+      ) : (
+        <p className="text-gray-700 mb-4">
+          This curated collection of free PDF charts includes instant downloads and stitch details tailored to the {albumCaption || `album ${albumId}`} theme.
+          Looking for more ideas? <Link href="/XStitch-Charts.aspx" className="text-blue-600 hover:underline">View all free cross-stitch albums</Link>.
+        </p>
+      )}
       {isBookmarksAlbum ? (
         <p className="text-gray-700 mb-4">
           Explore free cross-stitch bookmark patterns with slim, ready-to-print PDF charts—ideal for quick gifts and travel-friendly stitching.

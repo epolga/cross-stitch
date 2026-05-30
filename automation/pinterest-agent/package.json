@@ -20,6 +20,7 @@
     "notify": "tsx scripts/notify-anomalies.ts",
     "gsc": "tsx scripts/gsc-report.ts",
     "seo:backfill": "tsx scripts/backfill-seo-description.ts",
+    "seo:backfill-albums": "tsx scripts/backfill-album-seo-description.ts",
     "setup-token": "tsx scripts/get-google-refresh-token.ts"
   },
   "keywords": [],
