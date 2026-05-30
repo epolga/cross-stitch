@@ -11,9 +11,9 @@
 | (reset)  | 2026-05-25 | ✗           | `DDB write failed: Provided list of item keys contains duplicates` on DESIGN_PIN_MAP export — pipeline failed fast before parity ran. Soak counter reset. |
 | (reset)  | 2026-05-26 | ✗           | Same DESIGN_PIN_MAP duplicate error. Parity not reached. Soak counter reset. |
 | 1        | 2026-05-27 | ✓           | First clean run post-reset: DESIGN_PIN_MAP × 238 succeeded, parity = 23 passed, 2 warnings (expected), 0 failed.    |
-| 2        | 2026-05-28 | ⏳ pending   |                                                                                                                      |
-| 3        | 2026-05-29 | ⏳ pending   |                                                                                                                      |
-| 4        | 2026-05-30 | ⏳ pending   |                                                                                                                      |
+| 2        | 2026-05-28 | ✓           | 29 passed, 1 warning, 0 failed. Pin map 286 records. Clean.                                                          |
+| 3        | 2026-05-29 | ✓           | 29 passed, 1 warning, 0 failed. Clean.                                                                               |
+| 4        | 2026-05-30 | ✓           | Morning cron failed (GA4 perms — token switched to ann who lacked GA4 access). Fixed mid-day, reran manually. 32 passed, 1 warning, 0 failed.                                                                        |
 | 5        | 2026-05-31 | ⏳ pending   |                                                                                                                      |
 | 6        | 2026-06-01 | ⏳ pending   |                                                                                                                      |
 | 7        | 2026-06-02 | ⏳ pending   | If all green, proceed to cutover step (below)                                                                        |
