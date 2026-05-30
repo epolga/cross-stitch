@@ -169,7 +169,8 @@ async function initializeCache(): Promise<void> {
                 readOptionalAttributeString(item.PinUrl) ||
                 readOptionalAttributeString(item.PinURL) ||
                 null,
-              NGlobalPage: item.NGlobalPage?.N ? parseInt(item.NGlobalPage.N) : 0
+              NGlobalPage: item.NGlobalPage?.N ? parseInt(item.NGlobalPage.N) : 0,
+              SeoDescription: item.SeoDescription?.S || undefined
             };
             if (design.DesignID > 0) {
               designCache.set(design.DesignID, design);

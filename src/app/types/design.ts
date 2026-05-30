@@ -17,6 +17,7 @@ export interface Design {
     PinterestPinId?: string | null;
     PinterestPinUrl?: string | null;
     NGlobalPage: number;
+    SeoDescription?: string;
 }
 
 export interface DesignsResponse {
