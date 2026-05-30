@@ -299,7 +299,7 @@ export default async function DesignPage({ params }: Props) {
 
           {design.SeoDescription && (
             <div className="text-gray-500 text-xs mt-4 border-t border-gray-100 pt-4">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">About this pattern</h3>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Pattern description</h3>
               {design.SeoDescription.split('\n').filter(p => p.trim()).map((para, i) => (
                 <p key={i} className="mb-2">{para.trim()}</p>
               ))}
