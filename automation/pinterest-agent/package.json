@@ -17,7 +17,9 @@
     "verify-parity": "tsx scripts/verify-history-parity.ts",
     "anomaly": "tsx scripts/detect-anomalies.ts",
     "test-email": "tsx scripts/test-email.ts",
-    "notify": "tsx scripts/notify-anomalies.ts"
+    "notify": "tsx scripts/notify-anomalies.ts",
+    "gsc": "tsx scripts/gsc-report.ts",
+    "setup-token": "tsx scripts/get-google-refresh-token.ts"
   },
   "keywords": [],
   "author": "",

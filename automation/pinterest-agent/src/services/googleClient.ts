@@ -16,4 +16,5 @@ oauth2Client.setCredentials({ refresh_token: GOOGLE_REFRESH_TOKEN });
 
 export const analyticsData = google.analyticsdata({ version: "v1beta", auth: oauth2Client });
 export const adsense = google.adsense({ version: "v2", auth: oauth2Client });
+export const searchConsole = google.searchconsole({ version: "v1", auth: oauth2Client });
 export { GA4_PROPERTY_ID };

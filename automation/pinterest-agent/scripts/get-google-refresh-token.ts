@@ -21,6 +21,7 @@ const oauth2Client = new google.auth.OAuth2(
 const scopes = [
   "https://www.googleapis.com/auth/analytics.readonly",
   "https://www.googleapis.com/auth/adsense.readonly",
+  "https://www.googleapis.com/auth/webmasters.readonly",
 ];
 
 const authUrl = oauth2Client.generateAuthUrl({
