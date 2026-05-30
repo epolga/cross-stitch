@@ -1,8 +1,10 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import type { Design } from '@/app/types/design';
 import type { Metadata } from 'next';
-import { buildCanonicalUrl, CreateDesignUrl, getSiteBaseUrl } from '@/lib/url-helper';
+import { buildCanonicalUrl, CreateAlbumUrl, CreateDesignUrl, getSiteBaseUrl } from '@/lib/url-helper';
 import { isPaidDownloadMode } from '@/lib/download-mode';
+import { getAdjacentDesigns } from '@/lib/data-access';
 import { DesignDownloadControls } from './DesignDownloadControls';
 import AdSlot from '@/app/components/AdSlot';
 import PinterestSaveLink from '@/app/components/PinterestSaveLink';
@@ -175,6 +177,11 @@ export default async function DesignPage({ params }: Props) {
   const missingDesigns = await getMissingDesigns();
   const isMissing = missingDesigns.has(design.DesignID);
 
+  const nav = await getAdjacentDesigns(design.DesignID);
+  const albumUrl = nav?.albumCaption
+    ? CreateAlbumUrl(nav.albumCaption)
+    : nav ? `/albums/${nav.albumId}` : null;
+
   const featureItems: string[] = [];
   if (design.Width && design.Height) {
     featureItems.push(`Stitch count: ${design.Width} x ${design.Height}`);
@@ -259,6 +266,37 @@ export default async function DesignPage({ params }: Props) {
                 <li key={item}>{item}</li>
               ))}
             </ul>
+          )}
+
+          {nav && (
+            <div className="flex items-stretch gap-3 mb-5">
+              <Link
+                href={nav.prev ? CreateDesignUrl(nav.prev) : CreateDesignUrl(design)}
+                className="flex-1 flex flex-col items-start px-4 py-3 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
+              >
+                <span className="text-2xl font-bold text-gray-500">←</span>
+                <span className="text-sm font-semibold text-gray-700">Previous design</span>
+                <span className="text-xs text-gray-400 truncate w-full mt-0.5">{nav.prev?.Caption ?? design.Caption}</span>
+              </Link>
+              {albumUrl && (
+                <Link
+                  href={albumUrl}
+                  className="flex flex-col items-center justify-center px-4 py-3 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors text-center shrink-0"
+                >
+                  <span className="text-2xl font-bold text-gray-500">↑</span>
+                  <span className="text-sm font-semibold text-gray-700">Back to album</span>
+                  <span className="text-xs text-gray-400 mt-0.5">{nav.albumCaption ?? `Album ${nav.albumId}`}</span>
+                </Link>
+              )}
+              <Link
+                href={nav.next ? CreateDesignUrl(nav.next) : CreateDesignUrl(design)}
+                className="flex-1 flex flex-col items-end px-4 py-3 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors text-right"
+              >
+                <span className="text-2xl font-bold text-gray-500">→</span>
+                <span className="text-sm font-semibold text-gray-700">Next design</span>
+                <span className="text-xs text-gray-400 truncate w-full mt-0.5">{nav.next?.Caption ?? design.Caption}</span>
+              </Link>
+            </div>
           )}
 
           {design.ImageUrl ? (
