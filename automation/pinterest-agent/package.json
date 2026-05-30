@@ -19,6 +19,7 @@
     "test-email": "tsx scripts/test-email.ts",
     "notify": "tsx scripts/notify-anomalies.ts",
     "gsc": "tsx scripts/gsc-report.ts",
+    "seo:backfill": "tsx scripts/backfill-seo-description.ts",
     "setup-token": "tsx scripts/get-google-refresh-token.ts"
   },
   "keywords": [],
