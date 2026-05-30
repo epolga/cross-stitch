@@ -280,6 +280,16 @@ export default async function DesignPage({ params }: Props) {
           )}
 
           <p className="text-gray-700 mb-4">{design.Description || 'No description available'}</p>
+
+          {design.SeoDescription && (
+            <div className="text-gray-500 text-xs mb-4 border-t border-gray-100 pt-4">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Pattern description</h3>
+              {design.SeoDescription.split('\n').filter(p => p.trim()).map((para, i) => (
+                <p key={i} className="mb-2">{para.trim()}</p>
+              ))}
+            </div>
+          )}
+
           <div className="text-left bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 space-y-2">
             <h3 className="text-base font-semibold text-gray-900">Stitch planning checklist</h3>
             <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
@@ -296,15 +306,6 @@ export default async function DesignPage({ params }: Props) {
             <p key={index}>{line.trim()}</p>
           ))}
          </div>
-
-          {design.SeoDescription && (
-            <div className="text-gray-500 text-xs mt-4 border-t border-gray-100 pt-4">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Pattern description</h3>
-              {design.SeoDescription.split('\n').filter(p => p.trim()).map((para, i) => (
-                <p key={i} className="mb-2">{para.trim()}</p>
-              ))}
-            </div>
-          )}
 
           {adsEnabled && adSlotBottom && (
             <div className="my-4">
