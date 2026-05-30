@@ -226,7 +226,6 @@ Instructions:
     await Promise.all(chunk.map(processOne));
     console.log(`  --- ${Math.min(i + concurrency, designs.length)}/${designs.length} done ---\n`);
   }
-  }
 
   console.log(`\nDone. processed=${ok}  skipped=${skipped}`);
 })();
