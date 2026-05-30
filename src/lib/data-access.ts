@@ -830,6 +830,25 @@ export function isCacheInitialized(): boolean {
   return cacheInitialized;
 }
 
+export async function getAdjacentAlbums(albumId: number): Promise<{
+  prev: Album | null;
+  next: Album | null;
+} | null> {
+  return withCache(async () => {
+    const albums = Array.from(albumCache.values())
+      .sort((a, b) => a.AlbumID - b.AlbumID);
+
+    const idx = albums.findIndex(a => a.AlbumID === albumId);
+    if (idx === -1) return null;
+
+    const total = albums.length;
+    const prev = total > 1 ? albums[(idx - 1 + total) % total] : null;
+    const next = total > 1 ? albums[(idx + 1) % total] : null;
+
+    return { prev, next };
+  });
+}
+
 export async function getAdjacentDesigns(designId: number): Promise<{
   prev: Design | null;
   next: Design | null;

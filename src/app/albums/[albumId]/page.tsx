@@ -3,6 +3,7 @@ import { DesignList } from '@/app/components/DesignList'; // Adjust path
 import type { DesignsResponse } from '@/app/types/design';
 import { buildCanonicalUrl, CreateAlbumUrl } from '@/lib/url-helper';
 import { isPaidDownloadMode } from '@/lib/download-mode';
+import { getAdjacentAlbums } from '@/lib/data-access';
 import Link from 'next/link';
 import AdSlot from '@/app/components/AdSlot';
 
@@ -134,6 +135,7 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
   const { designs, entryCount, page: currentPage, totalPages, albumCaption, albumSeoDescription } = designsResponse;
   const baseUrl = albumCaption ? await CreateAlbumUrl(albumCaption) : `/albums/${albumId}`;
   const isBookmarksAlbum = (albumCaption || '').toLowerCase() === 'bookmarks';
+  const nav = await getAdjacentAlbums(parseInt(albumId));
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Designs in {albumCaption || `Album ${albumId}`} ({entryCount} designs)</h1>
@@ -174,6 +176,33 @@ export default async function AlbumDesignsPage({ params, searchParams }: Props) 
           <li>Open a design to view the PDF, color key, and notes before you start stitching.</li>
         </ul>
       </div>
+      {nav && (
+        <div className="flex items-stretch gap-3 mb-5">
+          <Link
+            href={nav.prev ? CreateAlbumUrl(nav.prev.Caption) : baseUrl}
+            className="flex-1 flex flex-col items-start px-4 py-3 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
+          >
+            <span className="text-2xl font-bold text-gray-500">←</span>
+            <span className="text-sm font-semibold text-gray-700">Previous album</span>
+            <span className="text-xs text-gray-400 truncate w-full mt-0.5">{nav.prev?.Caption ?? albumCaption}</span>
+          </Link>
+          <Link
+            href="/XStitch-Charts.aspx"
+            className="flex flex-col items-center justify-center px-4 py-3 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors text-center shrink-0"
+          >
+            <span className="text-2xl font-bold text-gray-500">↑</span>
+            <span className="text-sm font-semibold text-gray-700">All albums</span>
+          </Link>
+          <Link
+            href={nav.next ? CreateAlbumUrl(nav.next.Caption) : baseUrl}
+            className="flex-1 flex flex-col items-end px-4 py-3 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors text-right"
+          >
+            <span className="text-2xl font-bold text-gray-500">→</span>
+            <span className="text-sm font-semibold text-gray-700">Next album</span>
+            <span className="text-xs text-gray-400 truncate w-full mt-0.5">{nav.next?.Caption ?? albumCaption}</span>
+          </Link>
+        </div>
+      )}
       <DesignList
         designs={designs}
         page={currentPage}
