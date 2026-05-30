@@ -36,6 +36,10 @@ const limitArg = args.find((a) => a.startsWith("--limit=") || a === "--limit");
 const limit = all ? Infinity : limitArg
   ? parseInt(args[args.indexOf("--limit") + 1] ?? limitArg.split("=")[1] ?? "1", 10)
   : 1;
+const concurrencyArg = args.find((a) => a.startsWith("--concurrency=") || a === "--concurrency");
+const concurrency = concurrencyArg
+  ? parseInt(args[args.indexOf("--concurrency") + 1] ?? concurrencyArg.split("=")[1] ?? "1", 10)
+  : 1;
 
 // ── DynamoDB ──────────────────────────────────────────────────────────────────
 
@@ -181,7 +185,7 @@ Instructions:
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 (async () => {
-  console.log(`\nBackfill SeoDescription  limit=${limit === Infinity ? "all" : limit}  dryRun=${dryRun}`);
+  console.log(`\nBackfill SeoDescription  limit=${limit === Infinity ? "all" : limit}  concurrency=${concurrency}  dryRun=${dryRun}`);
 
   if (!ANTHROPIC_API_KEY) {
     console.error("ERROR: ANTHROPIC_API_KEY not set in .env");
@@ -194,28 +198,34 @@ Instructions:
   let ok = 0;
   let skipped = 0;
 
-  for (const design of designs) {
+  async function processOne(design: DesignRow): Promise<void> {
     if (!all && design.hasSeoDescription) {
       console.log(`  [skip] DesignID=${design.designId} — already has SeoDescription`);
       skipped++;
-      continue;
+      return;
     }
 
     const albumCaption = await getAlbumCaption(design.albumId);
     console.log(`  [gen]  DesignID=${design.designId}  "${design.caption}"  album="${albumCaption}"  ${design.width}×${design.height}  ${design.nColors}c`);
 
     const text = await generateSeoDescription(design, albumCaption);
-    console.log(`         ${text.length} chars generated`);
-    console.log(`         ${text.slice(0, 120)}...`);
+    console.log(`         DesignID=${design.designId}  ${text.length} chars  "${text.slice(0, 80)}..."`);
 
     if (!dryRun) {
       await writeSeoDescription(design, text);
-      console.log(`         ✓ written to DDB`);
+      console.log(`         DesignID=${design.designId}  ✓ written`);
     } else {
-      console.log(`         (dry-run — not written)`);
+      console.log(`         DesignID=${design.designId}  (dry-run)`);
     }
-
     ok++;
+  }
+
+  // Process in chunks of `concurrency` in parallel
+  for (let i = 0; i < designs.length; i += concurrency) {
+    const chunk = designs.slice(i, i + concurrency);
+    await Promise.all(chunk.map(processOne));
+    console.log(`  --- ${Math.min(i + concurrency, designs.length)}/${designs.length} done ---\n`);
+  }
   }
 
   console.log(`\nDone. processed=${ok}  skipped=${skipped}`);
