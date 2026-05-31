@@ -366,6 +366,7 @@ async function main() {
     for (const e of errors) console.log(e);
     process.exit(1);
   }
+  process.exit(0);
 }
 
 main().catch((err) => {
