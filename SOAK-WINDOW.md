@@ -14,7 +14,7 @@
 | 2        | 2026-05-28 | ✓           | 29 passed, 1 warning, 0 failed. Pin map 286 records. Clean.                                                          |
 | 3        | 2026-05-29 | ✓           | 29 passed, 1 warning, 0 failed. Clean.                                                                               |
 | 4        | 2026-05-30 | ✓           | Morning cron failed (GA4 perms — token switched to ann who lacked GA4 access). Fixed mid-day, reran manually. 32 passed, 1 warning, 0 failed.                                                                        |
-| 5        | 2026-05-31 | ⏳ pending   |                                                                                                                      |
+| 5        | 2026-05-31 | ✓           | Parity passed (35 passed, 1 warning, 0 failed). Cron exit code 1 due to `verify-history-parity.ts` missing `process.exit(0)` — Node.js hung on open DynamoDB connections after printing the summary, Task Scheduler killed the process. Bug was always present; previous days exited before the kill. Fixed (process.exit(0) added, pushed). No data integrity issue — no reset. |
 | 6        | 2026-06-01 | ⏳ pending   |                                                                                                                      |
 | 7        | 2026-06-02 | ⏳ pending   | If all green, proceed to cutover step (below)                                                                        |
 
