@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { formatDate, yesterdayDate } from "../src/services/dateUtils";
 import { getPinAnalytics, type PinMetrics } from "../src/services/pinterestPinAnalytics";
+import { getPinCreatedAt } from "../src/services/pinterestPinDetails";
 import { batchPutDesignPerformance } from "../src/services/historyStore";
 
 interface DesignPinRecord {
@@ -15,6 +16,10 @@ interface DesignPinRecord {
 }
 
 interface DesignPerformanceRecord extends DesignPinRecord, PinMetrics {
+  pinCreatedAt?: string;
+  daysSinceCreation?: number;
+  savesPerDay?: number;
+  impressionsPerDay?: number;
   error?: string;
 }
 
@@ -27,18 +32,34 @@ const ZERO_METRICS: PinMetrics = {
 };
 
 const WINDOW_DAYS = 30;
-// Dropped 3 → 1 on 2026-05-27 after the morning cron saw 6 / 238 pin-analytics
-// fetches fail to 5-attempt-exhausted Pinterest 429s. With 3 concurrent
-// requests the analytics endpoint's rate limit kicks in around fetch #60–80
-// and exponential backoff can't recover. Serial requests pace naturally well
-// within the limit at the cost of a ~2-minute run instead of ~30 seconds —
-// fine for a once-a-day cron.
+// Serial requests to stay within Pinterest analytics rate limits.
 const CONCURRENCY = 1;
+
+const CACHE_PATH = path.join(process.cwd(), "reports", "pin-created-at-cache.json");
+
+function loadCreatedAtCache(): Record<string, string> {
+  if (!fs.existsSync(CACHE_PATH)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(CACHE_PATH, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+function saveCreatedAtCache(cache: Record<string, string>): void {
+  fs.writeFileSync(CACHE_PATH, JSON.stringify(cache, null, 2) + "\n");
+}
 
 function daysBefore(date: Date, n: number): Date {
   const d = new Date(date);
   d.setDate(d.getDate() - n);
   return d;
+}
+
+function daysSince(isoDate: string, reference: Date): number {
+  const created = new Date(isoDate);
+  const diffMs = reference.getTime() - created.getTime();
+  return Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
 }
 
 async function processInBatches<T, U>(
@@ -68,6 +89,25 @@ async function main() {
   const designs: DesignPinRecord[] = JSON.parse(fs.readFileSync(inputPath, "utf8"));
   console.log(`Loaded ${designs.length} design-pin records`);
 
+  // Load created_at cache and fetch missing entries from Pinterest
+  const cache = loadCreatedAtCache();
+  const missing = designs.filter((d) => !cache[d.pinId]);
+  if (missing.length > 0) {
+    console.log(`Fetching created_at for ${missing.length} pins from Pinterest...`);
+    let done = 0;
+    for (const d of missing) {
+      const createdAt = await getPinCreatedAt(d.pinId);
+      if (createdAt) cache[d.pinId] = createdAt;
+      done++;
+      process.stdout.write(`  ${done}/${missing.length} fetched\r`);
+    }
+    process.stdout.write("\n");
+    saveCreatedAtCache(cache);
+    console.log(`  Saved → ${CACHE_PATH}`);
+  } else {
+    console.log(`created_at cache is complete (${Object.keys(cache).length} entries)`);
+  }
+
   const endDate = yesterdayDate();
   const startDate = daysBefore(endDate, WINDOW_DAYS - 1);
   const startStr = formatDate(startDate);
@@ -81,7 +121,21 @@ async function main() {
       const metrics = await getPinAnalytics(d.pinId, startStr, endStr);
       done++;
       process.stdout.write(`  ${done}/${designs.length} fetched\r`);
-      return { ...d, ...metrics } as DesignPerformanceRecord;
+
+      const pinCreatedAt = cache[d.pinId];
+      const daysSinceCreation = pinCreatedAt ? daysSince(pinCreatedAt, endDate) : undefined;
+      const effectiveDays = daysSinceCreation ? Math.min(daysSinceCreation, WINDOW_DAYS) : WINDOW_DAYS;
+      const savesPerDay = Math.round((metrics.saves / effectiveDays) * 1000) / 1000;
+      const impressionsPerDay = Math.round((metrics.impressions / effectiveDays) * 10) / 10;
+
+      return {
+        ...d,
+        ...metrics,
+        pinCreatedAt,
+        daysSinceCreation,
+        savesPerDay,
+        impressionsPerDay,
+      } as DesignPerformanceRecord;
     } catch (err) {
       done++;
       process.stdout.write(`  ${done}/${designs.length} fetched\r`);
@@ -112,9 +166,7 @@ async function main() {
   fs.writeFileSync(outPath, JSON.stringify(output, null, 2) + "\n");
   console.log(`Saved → ${outPath}`);
 
-  // Dual-write to DynamoDB. JSON above is the canonical artifact during the
-  // parity-verified soak window; DDB rows are the future source of truth.
-  // Schema reference: plan/integration/business-history-schema.md §4.5.
+  // Dual-write to DynamoDB.
   try {
     const ddbInputs = enriched.map(({ error, ...rest }) => ({
       snapshotDate: endStr,
@@ -129,6 +181,8 @@ async function main() {
     console.error(`  DDB write failed:`, err instanceof Error ? err.message : err);
     process.exit(1);
   }
+
+  process.exit(0);
 }
 
 main().catch((err) => {

@@ -18,6 +18,10 @@ interface DesignPerformance {
   outboundClicks: number;
   ctr: number;
   saves: number;
+  pinCreatedAt?: string;
+  daysSinceCreation?: number;
+  savesPerDay?: number;
+  impressionsPerDay?: number;
   error?: string;
 }
 
@@ -101,12 +105,15 @@ async function main() {
       albumCaption: d.albumCaption,
       designCaption: d.designCaption,
       impressions: d.impressions,
+      impressionsPerDay: d.impressionsPerDay,
       clicks: d.clicks,
       outboundClicks: d.outboundClicks,
       ctr: d.ctr,
       saves: d.saves,
+      savesPerDay: d.savesPerDay,
+      daysSinceCreation: d.daysSinceCreation,
     }))
-    .sort((a, b) => b.impressions - a.impressions);
+    .sort((a, b) => (b.savesPerDay ?? 0) - (a.savesPerDay ?? 0));
 
   const summary = {
     window: perf.window,
@@ -115,27 +122,29 @@ async function main() {
     designs: designSummary,
   };
 
-  const prompt = `You are a content strategy analyst for a cross-stitch pattern website. The site sells nothing directly — it monetizes via AdSense, and traffic comes mostly from Pinterest. You're analyzing organic Pinterest pin performance to recommend which design types Olga should create more of.
+  const prompt = `You are a content strategy analyst for a cross-stitch pattern website. The site monetizes via AdSense; traffic comes mostly from Pinterest. You're analyzing Pinterest pin performance to recommend which design types Olga should create more of.
 
 Important context:
-- Only ${perf.successCount} of ${perf.totalPins} designs have pin IDs. Olga only started pinning a few months ago, so the sample is small and skewed toward recent designs.
-- "Album" is the current theme categorization (e.g. Cats, Birds, Bookmarks). It is a temporary stand-in for richer themes / styles.
-- Some albums have many designs, some have just 1-2 — be honest about statistical significance.
-- Window: ${perf.window.startDate} to ${perf.window.endDate} (${perf.window.label}).
+- Only ${perf.successCount} of ${perf.totalPins} designs have pin IDs. Olga started pinning a few months ago — sample is small and skewed toward recent designs.
+- "Album" is the theme categorization (e.g. Cats, Birds, Bookmarks).
+- Some albums have many designs, some have just 1–2 — be honest about statistical significance.
+- Metrics window: ${perf.window.startDate} to ${perf.window.endDate} (${perf.window.label}).
+- **Use normalized rates (savesPerDay, impressionsPerDay) as the primary comparison metric.** Raw saves and impressions are misleading because pins created recently have had less time to accumulate engagement than older ones. savesPerDay = saves in window / min(daysSinceCreation, 30). A pin with 5 saves in 5 days (savesPerDay=1.0) outperforms one with 20 saves in 200 days (savesPerDay=0.1).
+- daysSinceCreation is the pin's age in days at the end of the window.
 
-Performance data:
+Performance data (designs sorted by savesPerDay desc):
 
 ${JSON.stringify(summary, null, 2)}
 
 Answer three questions, with numbers from the data backing every claim:
 
-1. **Which design themes/styles appear strongest?** Look at album-level totals AND per-design averages. Distinguish "high volume because there are many designs" from "high volume per design". Identify what the top designs have in common beyond their album label (subject matter, style cues, season).
+1. **Which design themes/styles appear strongest?** Use savesPerDay and impressionsPerDay as primary metrics. Also look at album-level CTR. Distinguish "high volume because many designs" from "high rate per design". Note which top performers are young pins (daysSinceCreation < 30) — their rates are based on a shorter real window and may be even more impressive than they look.
 
-2. **Which albums underperform?** Look at low avgImpressionsPerDesign or low CTR. Explicitly mark which albums have too few designs to judge confidently — don't recommend cutting an album that has only one design.
+2. **Which albums underperform?** Look at low impressionsPerDay or low CTR at album level. Explicitly flag albums with too few designs (< 3) as statistically inconclusive — don't recommend cutting them.
 
-3. **Which design types should be created more?** Based on the top performers, recommend 2-4 concrete design directions for Olga to prioritize in new pins. Be specific (e.g. "more kitten portraits with soft pastels" — not "more cute things").
+3. **Which design types should be created more?** Based on top savesPerDay performers, recommend 2–4 concrete design directions. Be specific (e.g. "close-up kitten face with large eyes and warm tabby coloring" — not "more cute animals").
 
-Then add a short **Caveats** paragraph noting what this snapshot can't see (seasonality, pin-age effects, engagement quality, audience drift).
+Then add a short **Caveats** paragraph noting what this data can't see (seasonality, whether high saves convert to site visits, audience drift, Pinterest algorithm changes).
 
 Output a JSON recommendation block at the end:
 
@@ -149,7 +158,7 @@ Output a JSON recommendation block at the end:
 }
 \`\`\`
 
-Keep it concrete and data-grounded. Cite numbers, not vibes.`;
+Keep it concrete and data-grounded. Cite savesPerDay numbers, not just vibes.`;
 
   console.log(
     `\n=== AI Design Analysis (${perf.window.startDate} → ${perf.window.endDate}, ${perf.successCount} designs) ===\n`
